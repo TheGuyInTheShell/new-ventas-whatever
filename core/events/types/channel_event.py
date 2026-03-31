@@ -1,0 +1,52 @@
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Set, Union, Awaitable, Optional, Iterator, Self, TYPE_CHECKING
+from .event import ABCEvent, TAction
+
+CallsType = Callable[[tuple[tuple, dict, Any]], Any]
+
+
+if TYPE_CHECKING:
+    from ..types.event import ABCEvent
+
+
+class ABCChannelEvent(ABC):
+
+    _triggered_event: Iterator[ABCEvent]
+
+    def __init__(self):
+
+        self.events: Dict[str, ABCEvent] = dict()
+
+    @abstractmethod
+    def emit_to(self, event_key: str):
+
+        pass
+
+    @abstractmethod
+    def subscribe_to(
+        self,
+        event_key: str,
+        action: TAction = "before",
+        handler: Optional[Union[Callable[..., Any], Callable[..., Awaitable]]] = None,
+    ) -> Callable[..., Any]:
+
+        pass
+
+    @abstractmethod
+    def listen_to(self, event_key: str):
+
+        pass
+
+    @abstractmethod
+    def with_args_types(self, event: ABCEvent):
+
+        pass
+
+
+    @abstractmethod
+    def _iterator(self, event: ABCEvent, func: Callable, *args, **kwargs):
+
+        pass
+
+  
+

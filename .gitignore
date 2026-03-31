@@ -1,0 +1,9 @@
+venv
+__pycache__
+**/__pycache__
+pictures/*
+node_modules
+.env
+.mypy_cache
+.mypy_cache/*
+
