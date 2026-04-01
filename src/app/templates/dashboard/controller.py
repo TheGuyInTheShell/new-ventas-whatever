@@ -3,10 +3,10 @@ from fastapi.responses import HTMLResponse
 from core.utils.fastapi.fastapi_class import fastapi_class
 
 
-view = fastapi_class()
-class Controller(view.Base):
+fc = fastapi_class()
+class Controller(fc.Base):
     
-    @view.router.get("/", response_class=HTMLResponse)
+    @fc.router.get("/", response_class=HTMLResponse)
     async def main_dashboard(self, request: "Request"):
         return self.templates.TemplateResponse(
             request,
@@ -15,4 +15,3 @@ class Controller(view.Base):
                 "request": request,
             },
         )
-    
