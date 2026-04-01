@@ -1,18 +1,18 @@
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from core.types.ui.templates import ABCTemplate
+from core.services.fastapi.fastapi_class import fastapi_class
 
 
-class Template(ABCTemplate):
+view = fastapi_class()
+class Controller(view.Base):
     
-    def add_pages(self):
-
-        @self.router.get("", response_class=HTMLResponse)
-        async def main_dashboard(request: Request):
-            return self.templates.TemplateResponse(
-                request,
-                name="pages/dashboard.html",
-                context={
-                    "request": request,
-                },
-            )
+    @view.router.get("/", response_class=HTMLResponse)
+    async def main_dashboard(self, request: "Request"):
+        return self.templates.TemplateResponse(
+            request,
+            name="pages/index.html",
+            context={
+                "request": request,
+            },
+        )
+    

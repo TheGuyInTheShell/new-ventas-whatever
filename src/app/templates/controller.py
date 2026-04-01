@@ -1,9 +1,9 @@
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from core.types.ui.templates import ABCTemplate
+from core.types.ui.templates import ViewFast
 
 
-class Template(ABCTemplate):
+class Template(ViewFast):
     
     def add_pages(self):
 
