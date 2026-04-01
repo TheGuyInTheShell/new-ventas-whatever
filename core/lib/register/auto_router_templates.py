@@ -28,21 +28,10 @@ def auto_router_templates(app: FastAPI, templates: Jinja2Templates, templates_co
             module.Controller(templates)
             router: APIRouter = module.fc.router 
 
-            # Apply dependencies when including the router, not after
-            # if mode develoment not apply role verify cookie
-
-            # dependencies = (
-            #     [Depends(ROLE_VERIFY_COOKIE)]
-            # )
-
-            if settings.MODE == "DEVELOPMENT":
-                dependencies = []
-
             app.include_router(
                 router,
                 prefix=f"{prefix}/{module_name}",
                 tags=[f"view - {module_name}"],
-                #dependencies=dependencies,
             )
 
         except ValueError as e:

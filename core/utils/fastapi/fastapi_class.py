@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 from fastapi.routing import APIRouter
-from enum import Enum
 from fastapi_restful.cbv import cbv
+from enum import Enum
 if TYPE_CHECKING:
     from fastapi.templating import Jinja2Templates
 
