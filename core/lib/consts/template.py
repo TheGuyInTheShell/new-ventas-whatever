@@ -1,0 +1,32 @@
+"""<!doctype html>
+<html {{ _injectable.html.attrs }}>
+  <head {{ _injectable.head.attrs }}>
+    {{ _injectable.head.styles }} {{ _injectable.head.metas }} {{
+    _injectable.head.scripts }} {{ _injectable.head.links }}
+  </head>
+
+  <body {{ _injectable.body.attrs }}>
+    {{ _injectable.body.scripts_before }} {% block page %}{% endblock %} {{
+    _injectable.body.scripts_after }}
+  </body>
+</html>
+"""
+from typing import Any
+
+CONTEXT_INJECTABLE: dict[str, Any] = {
+    "html": {
+        "attrs": ""
+    },
+    "head": {
+        "attrs": "",
+        "styles": "",
+        "metas": "",
+        "scripts": "",
+        "links": "",
+    },
+    "body": {
+        "attrs": "",
+        "scripts_before": "",
+        "scripts_after": "",
+    },
+}

@@ -11,6 +11,7 @@ registrar árboles de templates y controllers API independientes.
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 
+from core.lib.consts.template import CONTEXT_INJECTABLE
 from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 
@@ -29,7 +30,10 @@ app: FastAPI = FastAPI(
 # ---------------------------------------------------------------------------
 
 admin_templates: Jinja2Templates = Jinja2Templates(directory="src/admin/web")
+admin_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
+
 app_templates: Jinja2Templates = Jinja2Templates(directory="src/app/web")
+app_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
 
 
 # ---------------------------------------------------------------------------

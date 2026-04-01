@@ -28,7 +28,7 @@ class Index(Template):
         """
         return self.templates.TemplateResponse(
             request,
-            name="pages/dashboard.html",
+            name="pages/index.html",
             context={
                 "request": request,
             },
