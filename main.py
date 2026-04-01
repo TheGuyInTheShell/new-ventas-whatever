@@ -1,17 +1,17 @@
 """
 Punto de entrada de la aplicación FastAPI.
 
-Configura la aplicación y auto-registra las rutas de templates
-para los módulos admin y app usando la librería de auto-registro.
+Configura la aplicación y auto-registra las rutas de templates y API
+usando la librería de auto-registro.
 
-Ejemplo de uso de ``auto_router_templates`` para registrar
-dos árboles de templates independientes, cada uno con su propio
-proveedor de templates (Jinja2) y prefix HTTP.
+Ejemplo de uso de ``auto_router_templates`` y ``auto_router_api`` para
+registrar árboles de templates y controllers API independientes.
 """
 
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 
+from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 
 
@@ -38,7 +38,6 @@ app_templates: Jinja2Templates = Jinja2Templates(directory="src/app/web")
 # Estructura esperada:
 #   src/admin/templates/template.py       → /admin/
 #   src/admin/templates/dashboard/template.py → /admin/dashboard
-#   src/admin/templates/dashboard/logs/template.py → /admin/dashboard/logs
 # ---------------------------------------------------------------------------
 
 auto_router_templates(
@@ -53,8 +52,8 @@ auto_router_templates(
 # Auto-registro de rutas de templates para app
 # ---------------------------------------------------------------------------
 # Estructura esperada:
-#   src/app/templates/template.py         → /app/
-#   src/app/templates/dashboard/template.py → /app/dashboard
+#   src/app/templates/template.py         → /
+#   src/app/templates/dashboard/template.py → /dashboard
 # ---------------------------------------------------------------------------
 
 auto_router_templates(
@@ -62,4 +61,23 @@ auto_router_templates(
     template_provider=app_templates,
     templates_controllers_path="src/app/templates",
     prefix="",
+)
+
+
+# ---------------------------------------------------------------------------
+# Auto-registro de rutas de API
+# ---------------------------------------------------------------------------
+# Estructura esperada:
+#   src/api/health/controller.py → /api/v1/health
+#   src/api/users/controller.py  → /api/v1/users
+#   src/api/auth/controller.py   → /api/v1/auth
+#
+# Directorios ignorados automáticamente:
+#   schemas/, services/, models/, utils/, types/, middlewares/, dependencies/
+# ---------------------------------------------------------------------------
+
+auto_router_api(
+    app=app,
+    controllers_path="src/api",
+    prefix="/api/v1",
 )

@@ -4,8 +4,6 @@ Template controller para la raíz de admin (/admin).
 Este módulo define las rutas de la página principal del panel de administración.
 """
 
-from typing import Any
-
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 

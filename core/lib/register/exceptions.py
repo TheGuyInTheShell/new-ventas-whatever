@@ -2,10 +2,16 @@
 Excepciones personalizadas para el sistema de auto-registro de rutas.
 
 Este módulo define las excepciones y warnings que se lanzan durante
-el proceso de descubrimiento y registro automático de rutas HTTP.
+el proceso de descubrimiento y registro automático de rutas HTTP,
+tanto para templates como para controllers de API.
 """
 
 from typing import Optional
+
+
+# ---------------------------------------------------------------------------
+# Excepciones compartidas (templates y API)
+# ---------------------------------------------------------------------------
 
 
 class DuplicateRouteHandlerError(Exception):
@@ -47,6 +53,11 @@ class DuplicateRouteHandlerError(Exception):
             message += f" Conflicting registration in module '{conflicting_module}'."
 
         super().__init__(message)
+
+
+# ---------------------------------------------------------------------------
+# Excepciones para Templates
+# ---------------------------------------------------------------------------
 
 
 class TemplateControllerMissingError(Exception):
@@ -102,6 +113,69 @@ class TemplateFileNotFoundWarning(UserWarning):
             f"Template file not found: "
             f"the directory '{directory_path}' does not contain a 'template.py' file. "
             f"This directory will be skipped during route auto-registration."
+        )
+
+        super().__init__(message)
+
+
+# ---------------------------------------------------------------------------
+# Excepciones para API Controllers
+# ---------------------------------------------------------------------------
+
+
+class ApiControllerMissingError(Exception):
+    """Se lanza cuando un archivo controller.py no contiene una clase que herede de Controller.
+
+    Esto indica que el archivo controller.py existe en el directorio de la API,
+    pero no define ninguna clase controladora válida que herede de la clase base
+    ``Controller``.
+
+    Attributes:
+        controller_file_path: Ruta absoluta del archivo controller.py problemático.
+        module_path: Ruta del módulo Python importado.
+    """
+
+    def __init__(
+        self,
+        controller_file_path: str,
+        module_path: Optional[str] = None,
+    ) -> None:
+        self.controller_file_path: str = controller_file_path
+        self.module_path: Optional[str] = module_path
+
+        message: str = (
+            f"API controller missing: "
+            f"the file '{controller_file_path}' exists but does not contain "
+            f"any class that inherits from 'Controller'."
+        )
+
+        if module_path is not None:
+            message += f" Module path: '{module_path}'."
+
+        super().__init__(message)
+
+
+class ControllerFileNotFoundWarning(UserWarning):
+    """Warning emitido cuando un directorio dentro del árbol API no contiene controller.py.
+
+    Este warning no interrumpe la ejecución. Se emite con ``warnings.warn()``
+    para informar al desarrollador de que un directorio fue ignorado durante
+    el escaneo recursivo porque no contiene el archivo ``controller.py`` requerido.
+
+    Attributes:
+        directory_path: Ruta del directorio que no contiene controller.py.
+    """
+
+    def __init__(
+        self,
+        directory_path: str,
+    ) -> None:
+        self.directory_path: str = directory_path
+
+        message: str = (
+            f"Controller file not found: "
+            f"the directory '{directory_path}' does not contain a 'controller.py' file. "
+            f"This directory will be skipped during API route auto-registration."
         )
 
         super().__init__(message)
