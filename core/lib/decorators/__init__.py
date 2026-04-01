@@ -1,11 +1,29 @@
-from core.lib.decorators.http_methods import Get, Post, Delete, Put, Patch, Head, Options
+"""Exports públicos del paquete de decoradores HTTP."""
 
-__all__ = [
-    "Get",
-    "Post",
+from core.lib.decorators.http_methods import (
+    Delete,
+    Get,
+    Head,
+    HTTPMethod,
+    Options,
+    Patch,
+    Post,
+    Put,
+    RouteDefinition,
+    RouteRegistry,
+    route_registry,
+)
+
+__all__: list[str] = [
     "Delete",
-    "Put",
-    "Patch",
+    "Get",
     "Head",
+    "HTTPMethod",
     "Options",
+    "Patch",
+    "Post",
+    "Put",
+    "RouteDefinition",
+    "RouteRegistry",
+    "route_registry",
 ]

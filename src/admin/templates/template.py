@@ -1,7 +1,7 @@
 """
-Template controller para la raíz de app (/).
+Template controller para la raíz de admin (/admin).
 
-Este módulo define las rutas de la página principal de la aplicación pública.
+Este módulo define las rutas de la página principal del panel de administración.
 """
 
 from typing import Any
@@ -14,11 +14,11 @@ from core.lib.register import Template
 
 
 class Index(Template):
-    """Controlador de templates para la raíz de la aplicación pública."""
+    """Controlador de templates para la raíz del panel de administración."""
 
     @Get("/", response_class=HTMLResponse)
     async def main_dashboard(self, request: Request) -> HTMLResponse:
-        """Renderiza la página principal de la aplicación.
+        """Renderiza la página principal del panel de administración.
 
         Args:
             request: Objeto Request de FastAPI.
