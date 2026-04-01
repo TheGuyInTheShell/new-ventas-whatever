@@ -1,6 +1,10 @@
 {
-    "watch": ["admin/src", "admin/global"],
-    "ext": "html,js,css",
-    "exec": "npx tailwindcss -i ./admin/global/css/app.css -o ./admin/static/css/app.css"
-  }
-  
+  "watch": [
+    "src/app/assets",
+    "src/admin/assets",
+    "src/app/web/**/*.html",
+    "src/admin/web/**/*.html"
+  ],
+  "ext": "html,js,ts,css",
+  "exec": "npm run build"
+}

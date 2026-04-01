@@ -1,0 +1,24 @@
+
+≡ƒî╝   [35mdaisyUI[39m [2m4.11.1[22m
+Γö£ΓöÇ [32mΓ£ö∩╕Ä[39m 1 theme added[2m		https://daisyui.com/docs/themes[22m
+Γò░ΓöÇ [32mΓ¥ñ∩╕Ä[39m [0mSupport daisyUI project:[0m	[2mhttps://opencollective.com/daisyui[22m
+
+
+ ERROR  Build failed with 1 error:
+
+[UNSUPPORTED_FEATURE] Error: Bundling CSS is no longer supported (experimental support has been removed). See https://github.com/rolldown/rolldown/issues/4271 for details.
+   Γò¡ΓöÇ[ export default undefined;:1:1 ]
+   Γöé
+ 1 Γöé C:\Users\elies\OneDrive\Documents\Projects\new-finance-app\src\app\assets\css\app.css
+   Γöé Γöé 
+   Γöé Γò░ΓöÇ 
+ΓöÇΓöÇΓöÇΓò»
+
+
+    at aggregateBindingErrorsIntoJsError (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/shared/error-DBGOT6sf.mjs:48:18)
+    at unwrapBindingResult (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/shared/error-DBGOT6sf.mjs:18:128)
+    at #build (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/shared/rolldown-build-hRnqgxyz.mjs:3313:34)
+    at async bundleInner (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/cli.mjs:1005:49)
+    at async bundleWithConfig (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/cli.mjs:919:7)
+    at async main (/C:/Users/elies/OneDrive/Documents/Projects/new-finance-app/node_modules/rolldown/dist/cli.mjs:1177:3)
+
