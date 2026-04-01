@@ -1,6 +1,6 @@
 from fastapi import Request
 from fastapi.responses import HTMLResponse
-from core.services.fastapi.fastapi_class import fastapi_class
+from core.utils.fastapi.fastapi_class import fastapi_class
 
 
 view = fastapi_class()
