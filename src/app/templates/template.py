@@ -9,14 +9,13 @@ from fastapi.responses import HTMLResponse
 
 from core.lib.decorators import Get
 from core.lib.register import Template
-from core.services.ui.enqueue_js import enqueue_js, Site
-from fasthtml.common import ScriptX
+from core.services.ui.enqueue_js import enqueue_js, Site, Script
 
 class Index(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 
     @Get("/", response_class=HTMLResponse)
-    @enqueue_js(js_tag=str(ScriptX('src/app/assets/javascript/app.js', src="/web/out/javascript/app.js", type="module", defer=True)), position=Site.BODY_AFTER)
+    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/app.js", type="module", defer=True)), position=Site.BODY_AFTER)
     async def main_dashboard(self, request: Request) -> HTMLResponse:
         """Renderiza la página principal de la aplicación.
 

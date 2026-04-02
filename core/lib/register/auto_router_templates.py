@@ -255,6 +255,33 @@ def _build_router_from_definitions(
     return router
 
 
+def _build_statics_route(
+    app: FastAPI, 
+    statics_prefix: str = "", 
+    statics_path: str = ""
+) -> None:
+    """Monta un directorio para servir archivos estáticos."""
+    if not (statics_prefix and statics_path):
+        return
+
+    if not os.path.isdir(statics_path):
+        warnings.warn(
+            f"Directorio de estáticos no encontrado o no es un directorio válido: {statics_path}",
+            stacklevel=2
+        )
+        return
+
+    # Usamos import inline de 'fastapi.staticfiles' para evitar errores si no
+    # está instalado o no se requiere usar archivos estáticos en el entorno.
+    from fastapi.staticfiles import StaticFiles
+    
+    route_name: str = statics_prefix.strip("/").replace("/", "_") or "static"
+    app.mount(
+        statics_prefix, 
+        StaticFiles(directory=statics_path), 
+        name=route_name
+    )
+
 # ---------------------------------------------------------------------------
 # Función pública principal
 # ---------------------------------------------------------------------------
@@ -265,6 +292,8 @@ def auto_router_templates(
     template_provider: Any,
     templates_controllers_path: str,
     prefix: str = "",
+    statics_prefix: str = "",
+    statics_path: str = ""
 ) -> FastAPI:
     """Auto-registra rutas de templates escaneando recursivamente un árbol de directorios.
 
@@ -304,6 +333,13 @@ def auto_router_templates(
             contiene ``template.py``.
     """
     normalized_base_path: str = templates_controllers_path.replace("\\", "/").rstrip("/")
+
+    # Registrar rutas de archivos estáticos si están definidas
+    _build_statics_route(
+        app=app,
+        statics_prefix=statics_prefix,
+        statics_path=statics_path
+    )
 
     for current_root, subdirectories, files in os.walk(normalized_base_path):
         # Filtrar directorios ignorados para evitar recursión innecesaria
