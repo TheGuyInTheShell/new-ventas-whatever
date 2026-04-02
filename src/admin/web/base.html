@@ -1,12 +1,14 @@
 <!doctype html>
 <html {{ _injectable.html.attrs }}>
-  <head {{ _injectable.head.attrs }}>
-    {{ _injectable.head.styles }} {{ _injectable.head.metas }} {{
-    _injectable.head.scripts }} {{ _injectable.head.links }}
-  </head>
 
-  <body {{ _injectable.body.attrs }}>
-    {{ _injectable.body.scripts_before }} {% block page %}{% endblock %} {{
-    _injectable.body.scripts_after }}
-  </body>
+<head {{ _injectable.head.attrs }}>
+  {{ _injectable.head.styles | safe }} {{ _injectable.head.metas | safe }} {{
+  _injectable.head.scripts | safe }} {{ _injectable.head.links | safe }}
+</head>
+
+<body {{ _injectable.body.attrs }}>
+  {{ _injectable.body.scripts_before | safe }} {% block page %}{% endblock %} {{
+  _injectable.body.scripts_after | safe }}
+</body>
+
 </html>

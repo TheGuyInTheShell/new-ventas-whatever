@@ -9,6 +9,7 @@ registrar árboles de templates y controllers API independientes.
 """
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from core.lib.consts.template import CONTEXT_INJECTABLE
