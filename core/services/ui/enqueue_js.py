@@ -76,7 +76,9 @@ def enqueue_js(
                                 elif section == "body_after":
                                     injectable["body"]["scripts_after"] += f"\n{js_tag}"
 
-                    return await class_method(*args, **kwargs)  # Crucial: await inside try block
+                    import typing
+                    _async_callable = typing.cast(typing.Callable[..., typing.Awaitable[typing.Any]], class_method)
+                    return await _async_callable(*args, **kwargs)
                 finally:
                     if injectable:
                         # Ensures the context gets emptied after being returned to client.

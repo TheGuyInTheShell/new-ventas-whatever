@@ -5,12 +5,12 @@ import path from 'path';
 
 export default defineConfig({
   input: Object.fromEntries(
-    globSync('src/app/assets/javascript/**/*.js').map((file) => [
+    globSync('src/app/assets/**/*.js').map((file) => [
       // This removes `src/` as well as the file extension from each
       // file, so e.g. src/nested/foo.js becomes nested/foo, and
       // normalizes Windows backslashes to forward slashes.
       path
-        .relative('src/app/assets/javascript/', file.slice(0, file.length - path.extname(file).length))
+        .relative('src/app/assets/', file.slice(0, file.length - path.extname(file).length))
         .split(path.sep)
         .join('/'),
       // This expands the relative paths to absolute paths, so e.g.
@@ -19,10 +19,11 @@ export default defineConfig({
     ]),
   ),
   output: {
-    dir: "./src/app/web/out/javascript",
+    dir: "./src/app/web/out/",
     format: "esm",
     entryFileNames: "[name].js",
     chunkFileNames: "chunks/[name]-[hash].js",
+    minify: true,
   },
   moduleTypes: {
     ".css": "js",
@@ -30,7 +31,7 @@ export default defineConfig({
   plugins: [
     postcss({
       extract: "css/app.css", // relative to output.dir → src/app/web/out/css/app.css
-      minimize: false,
+      minimize: true,
     }),
   ],
 });
