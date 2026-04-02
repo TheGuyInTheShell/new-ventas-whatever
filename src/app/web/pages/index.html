@@ -1,6 +1,15 @@
 {% extends "base.html" %} {% block page %}
 
 <div>hello world</div>
+
+<div class="my-6">
+    <!-- Lucide Icon Example -->
+    <p class="flex items-center gap-2 text-primary text-xl font-bold bg-base-200 p-4 rounded-lg w-fit">
+        <i data-lucide="rocket" class="w-6 h-6"></i>
+        Lucide Icons are working!
+    </p>
+</div>
+
 <div x-data="{ open: false }">
 
     <button @click="open = !open" :class="open ? 'bg-red-500' : 'bg-blue-500'" style="padding: 10px; color: white;">
