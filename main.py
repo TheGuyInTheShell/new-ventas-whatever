@@ -11,6 +11,8 @@ from fastapi.templating import Jinja2Templates
 from core.lib.consts.template import CONTEXT_INJECTABLE
 from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
+from core.lib.register.plugin_loader import plugin_lifespan
+from core.lib.register.extension_loader import load_extensions
 
 
 # ---------------------------------------------------------------------------
@@ -19,8 +21,11 @@ from core.lib.register.auto_router_templates import auto_router_templates
 
 app: FastAPI = FastAPI(
     title="FastAPI Template",
+    lifespan=plugin_lifespan,
 )
 
+# Initial load of extensions (e.g. Middlewares)
+load_extensions(app)
 
 # ---------------------------------------------------------------------------
 # Proveedores de templates (Jinja2) por módulo
