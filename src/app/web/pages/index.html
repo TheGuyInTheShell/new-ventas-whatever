@@ -1,4 +1,14 @@
 {% extends "base.html" %} {% block page %}
 
 <div>hello world</div>
+<div x-data="{ open: false }">
+
+    <button @click="open = !open" :class="open ? 'bg-red-500' : 'bg-blue-500'" style="padding: 10px; color: white;">
+        <span x-text="open ? 'Close Message' : 'Open Message'"></span>
+    </button>
+
+    <div x-show="open" x-transition>
+        <p>Hello! I was toggled using Alpine.js.</p>
+    </div>
+</div>
 {% endblock %}

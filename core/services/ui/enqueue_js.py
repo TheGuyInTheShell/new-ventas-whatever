@@ -52,28 +52,65 @@ def enqueue_js(
     """Decorator to enqueue a script tag into the template globals."""
 
     def decorator(class_method: Callable[P, R]) -> Callable[P, R]:
-        @functools.wraps(class_method)
-        def inner(*args: P.args, **kwargs: P.kwargs) -> R:
-            # We assume a class method where the first argument is the class instance (self).
-            # The instance has access to its templates (self.templates).
-            if args:
-                instance: Any = args[0]
-                if hasattr(instance, "templates"):
-                    template_provider: Any = instance.templates
-                    injectable = template_provider.env.globals["_injectable"]
-                    
-                    section = position.value
-                    if section == "head":
-                        injectable["head"]["scripts"] += f"\n{js_tag}"
-                    elif section == "body_before":
-                        injectable["body"]["scripts_before"] += f"\n{js_tag}"
-                    elif section == "body_after":
-                        injectable["body"]["scripts_after"] += f"\n{js_tag}"
+        
+        # We need to check if the route is async so we handle it properly.
+        is_coroutine = asyncio.iscoroutinefunction(class_method)
 
-            # Original async support: if the method is async, we return the coroutine.
-            # FastAPI/Uvicorn handles awaiting the result of the decorator.
-            return class_method(*args, **kwargs)
+        if is_coroutine:
+            @functools.wraps(class_method)
+            async def async_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
+                injectable = None
+                try:
+                    if args:
+                        instance: Any = args[0]
+                        if hasattr(instance, "templates"):
+                            template_provider: Any = instance.templates
+                            injectable = template_provider.env.globals.get("_injectable")
+                            
+                            if injectable:
+                                section = position.value
+                                if section == "head":
+                                    injectable["head"]["scripts"] += f"\n{js_tag}"
+                                elif section == "body_before":
+                                    injectable["body"]["scripts_before"] += f"\n{js_tag}"
+                                elif section == "body_after":
+                                    injectable["body"]["scripts_after"] += f"\n{js_tag}"
 
-        return inner
+                    return await class_method(*args, **kwargs)  # Crucial: await inside try block
+                finally:
+                    if injectable:
+                        # Ensures the context gets emptied after being returned to client.
+                        injectable["body"]["scripts_after"] = ""
+                        injectable["body"]["scripts_before"] = ""
+                        injectable["head"]["scripts"] = ""
+            return async_inner  # type: ignore
+
+        else:
+            @functools.wraps(class_method)
+            def sync_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
+                injectable = None
+                try:
+                    if args:
+                        instance: Any = args[0]
+                        if hasattr(instance, "templates"):
+                            template_provider: Any = instance.templates
+                            injectable = template_provider.env.globals.get("_injectable")
+                            
+                            if injectable:
+                                section = position.value
+                                if section == "head":
+                                    injectable["head"]["scripts"] += f"\n{js_tag}"
+                                elif section == "body_before":
+                                    injectable["body"]["scripts_before"] += f"\n{js_tag}"
+                                elif section == "body_after":
+                                    injectable["body"]["scripts_after"] += f"\n{js_tag}"
+
+                    return class_method(*args, **kwargs)
+                finally:
+                    if injectable:
+                        injectable["body"]["scripts_after"] = ""
+                        injectable["body"]["scripts_before"] = ""
+                        injectable["head"]["scripts"] = ""
+            return sync_inner  # type: ignore
 
     return decorator
