@@ -1,6 +1,11 @@
 import { createIcons, icons } from 'lucide';
 
-// Re-initialize icons dynamically when HTMX swaps content (useful since you use htmx)
+// Initialize Lucide icons on initial page load
 document.addEventListener('DOMContentLoaded', () => {
+    createIcons({ icons });
+});
+
+// Re-initialize icons dynamically when HTMX swaps content
+document.addEventListener('htmx:load', () => {
     createIcons({ icons });
 });
