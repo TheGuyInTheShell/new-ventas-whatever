@@ -1,12 +1,14 @@
 @import "tailwindcss";
 @plugin "daisyui";
 @import 'tailwind-animations';
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
 @source "../../web/**/*.html";
 @source "../../../admin/web/**/*.html";
 @source "../../../../node_modules/preline/dist/*.js";
 
 @theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --color-primary: #009485;
   --color-secondary: #8b5cf6;
   --color-accent: #22d3ee;
@@ -16,4 +18,52 @@
   --color-success: #448aff;
   --color-warning: #ffa65c;
   --color-error: #ff0000;
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-base-content) 20%, transparent);
+    border-radius: 20px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+}
+
+@utility glass-morphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
