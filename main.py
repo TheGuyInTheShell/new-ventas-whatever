@@ -13,7 +13,7 @@ from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 from core.lib.register.plugin_loader import plugin_lifespan
 from core.lib.register.extension_loader import load_extensions
-
+import fastapi_plugins
 
 # ---------------------------------------------------------------------------
 # Inicialización de la aplicación FastAPI
@@ -23,6 +23,8 @@ app: FastAPI = FastAPI(
     title="FastAPI Template",
     lifespan=plugin_lifespan,
 )
+
+app = fastapi_plugins.register_middleware(app)
 
 # Initial load of extensions (e.g. Middlewares)
 load_extensions(app)
