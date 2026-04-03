@@ -74,11 +74,17 @@ async def plugin_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Execute startup logic
     for plugin in plugins:
-        plugin.init()
+        if inspect.iscoroutinefunction(plugin.init):
+            await plugin.init()
+        else:
+            plugin.init()
 
     # Pass control to FastAPI
     yield
 
     # Execute shutdown logic
     for plugin in plugins:
-        plugin.terminate()
+        if inspect.iscoroutinefunction(plugin.terminate):
+            await plugin.terminate()
+        else:
+            plugin.terminate()
