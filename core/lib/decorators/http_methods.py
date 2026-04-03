@@ -23,7 +23,16 @@ Uso típico::
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Sequence, Set, Type
+
+from fastapi import Response, params
+from fastapi.routing import APIRoute
+from starlette.responses import JSONResponse
+from starlette.routing import BaseRoute
+
+
+# Sentinel object to distinguish "not provided" from explicit None.
+_UNSET: Any = object()
 
 
 class HTTPMethod(Enum):
@@ -151,6 +160,28 @@ route_registry: RouteRegistry = RouteRegistry()
 def route(
     http_method: HTTPMethod,
     route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
     **kwargs: Any,
 ) -> Callable[..., Any]:
     """Decorador base que define una ruta HTTP para un método handler.
@@ -172,20 +203,50 @@ def route(
         Función decoradora que envuelve al handler original.
     """
 
+    # Collect only explicitly provided parameters, skip _UNSET ones
+    # so FastAPI's own defaults are preserved.
+    _explicit: Dict[str, Any] = {
+        "response_model": response_model,
+        "status_code": status_code,
+        "tags": tags,
+        "dependencies": dependencies,
+        "summary": summary,
+        "description": description,
+        "response_description": response_description,
+        "responses": responses,
+        "deprecated": deprecated,
+        "operation_id": operation_id,
+        "response_model_include": response_model_include,
+        "response_model_exclude": response_model_exclude,
+        "response_model_exclude_unset": response_model_exclude_unset,
+        "response_model_exclude_defaults": response_model_exclude_defaults,
+        "response_model_exclude_none": response_model_exclude_none,
+        "include_in_schema": include_in_schema,
+        "response_class": response_class,
+        "name": name,
+        "callbacks": callbacks,
+        "openapi_extra": openapi_extra,
+        "generate_unique_id_function": generate_unique_id_function,
+    }
+    all_kwargs: Dict[str, Any] = {
+        k: v for k, v in _explicit.items() if v is not _UNSET
+    }
+    all_kwargs.update(kwargs)
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         route_definition: RouteDefinition = RouteDefinition(
             handler_name=func.__name__,
             http_method=http_method,
             route_path=route_path,
             handler=func,
-            kwargs=kwargs,
+            kwargs=all_kwargs,
         )
 
         # Almacenar metadata en el método decorado para inspección posterior
         func.__route_definition__ = route_definition  # type: ignore[attr-defined]
         func.__http_method__ = http_method  # type: ignore[attr-defined]
         func.__route_path__ = route_path  # type: ignore[attr-defined]
-        func.__kwargs__ = kwargs  # type: ignore[attr-defined]
+        func.__kwargs__ = all_kwargs  # type: ignore[attr-defined]
 
         return func
 
@@ -197,92 +258,233 @@ def route(
 # ---------------------------------------------------------------------------
 
 
-def Get(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP GET.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.GET, route_path, **kwargs)
-
-
-def Post(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP POST.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.POST, route_path, **kwargs)
-
-
-def Delete(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP DELETE.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.DELETE, route_path, **kwargs)
+def Get(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP GET."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.GET, route_path, **_params, **kwargs)
 
 
-def Put(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP PUT.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.PUT, route_path, **kwargs)
-
-
-def Patch(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP PATCH.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.PATCH, route_path, **kwargs)
-
-
-def Head(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP HEAD.
-
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
-
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.HEAD, route_path, **kwargs)
+def Post(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP POST."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.POST, route_path, **_params, **kwargs)
 
 
-def Options(route_path: Union[str, List[str]] = "/", **kwargs: Any) -> Callable[..., Any]:
-    """Decorador para rutas HTTP OPTIONS.
+def Delete(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP DELETE."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.DELETE, route_path, **_params, **kwargs)
 
-    Args:
-        route_path: Path o lista de paths para la ruta.
-        **kwargs: Argumentos adicionales para FastAPI.
 
-    Returns:
-        Función decoradora.
-    """
-    return route(HTTPMethod.OPTIONS, route_path, **kwargs)
+def Put(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP PUT."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.PUT, route_path, **_params, **kwargs)
+
+
+def Patch(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP PATCH."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.PATCH, route_path, **_params, **kwargs)
+
+
+def Head(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP HEAD."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.HEAD, route_path, **_params, **kwargs)
+
+
+def Options(
+    route_path: Union[str, List[str]] = "/",
+    *,
+    response_model: Any = _UNSET,
+    status_code: Optional[int] = _UNSET,
+    tags: Optional[List[Union[str, Enum]]] = _UNSET,
+    dependencies: Optional[Sequence[params.Depends]] = _UNSET,
+    summary: Optional[str] = _UNSET,
+    description: Optional[str] = _UNSET,
+    response_description: str = _UNSET,
+    responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = _UNSET,
+    deprecated: Optional[bool] = _UNSET,
+    operation_id: Optional[str] = _UNSET,
+    response_model_include: Optional[Any] = _UNSET,
+    response_model_exclude: Optional[Any] = _UNSET,
+    response_model_exclude_unset: bool = _UNSET,
+    response_model_exclude_defaults: bool = _UNSET,
+    response_model_exclude_none: bool = _UNSET,
+    include_in_schema: bool = _UNSET,
+    response_class: Type[Response] = _UNSET,
+    name: Optional[str] = _UNSET,
+    callbacks: Optional[List[BaseRoute]] = _UNSET,
+    openapi_extra: Optional[Dict[str, Any]] = _UNSET,
+    generate_unique_id_function: Callable[[APIRoute], str] = _UNSET,
+    **kwargs: Any,
+) -> Callable[..., Any]:
+    """Decorador para rutas HTTP OPTIONS."""
+    _params = locals()
+    _params.pop("route_path")
+    _params.pop("kwargs")
+    return route(HTTPMethod.OPTIONS, route_path, **_params, **kwargs)
+
