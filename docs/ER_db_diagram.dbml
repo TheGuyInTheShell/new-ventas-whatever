@@ -1,0 +1,226 @@
+TablePartial shared{
+  uid varchar [pk, unique, note: "UUID"]
+  id int [pk, increment] // 'increment' es vital para IDs numéricos
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  deleted_at timestamp // Para Soft Deletes
+}
+
+Table users {
+  ~shared
+
+  username varchar [unique, not null]
+  role_ref varchar [ref: - roles.id, not null]
+  password varchar [not null]
+  email varchar [unique]
+  full_name varchar [not null]
+  otp_secret varchar
+  otp_enabled bool
+}
+
+Table meta_users{
+  ~meta
+  user_ref varchar [ref: - users.id, not null]
+
+}
+
+Table roles {
+  ~shared
+
+  name varchar [not null]
+  action varchar [not null]
+  description varchar [not null]
+  level int [unique, not null]
+  permissions "varchar[]" [not null]
+  disabled bool [default: false]
+}
+
+Table permissions {
+  ~shared
+  is_deleted bool
+
+  name varchar [unique, not null]
+  action varchar [not null]
+  description varchar [not null]
+  type varchar [not null]
+}
+
+Table permissions_roles{
+  ~shared
+  ref_role varchar [ref: - roles.id, not null]
+  ref_permission varchar [ref: - permissions.id, not null]
+}
+
+Table meta_permissions{
+  ~meta
+  ref_permission varchar [ref: - permissions.id, not null]
+}
+
+
+Table values{ // values are the units of measurement for the finances app "can be any kind of value that can be compared with another value"
+  ~shared
+  name varchar // dolar, Hummer H2, stock
+  type varchar // vehicle, crypto, supply, fiat
+  expresion varchar // usd, btc, kg, mt, mt^2, CAR denomination or something like that
+  identifier varchar // 2016, "some text that not repeat beetween names like 'date, especification'  can be null"
+}
+
+Table meta_values{
+  ~meta // meta data for values like year, month, day, promotion
+  value_ref varchar [ref: - values.id, not null]
+
+}
+
+Table business_entities {
+  ~shared
+  context varchar
+  name varchar [not null]
+  type varchar  
+  metadata jsonb
+}
+
+Table business_entities_groups {
+  ~shared
+  ref_entity_top int [ref: - business_entities.id, not null]
+  ref_entity_bottom int [ref: - business_entities.id, not null] 
+}
+
+Table balances {
+  ~shared
+  currency varchar
+  value_ref varchar [ref: - values.id, not null]
+}
+
+Table transactions {
+  ~shared
+  quantity varchar
+  operation_type enum("+", "-")
+  reference_code varchar [note: "Nro Factura, Recibo"]
+  ref_inverse_transaction int [ref: - transactions.id, not null]
+  ref_by_user int [ref: - users.id, not null]
+  ref_balance_from int [ref: - balances.id, not null]
+  ref_balance_to int [ref: - balances.id, not null]
+}
+
+Table meta_transactions_buffer {
+  ~meta
+  ref_transactions_buffer int [ref: - transactions_buffer.id, not null]
+}
+
+Table invoice_transactions {
+  ~shared
+  ref_invoice int [ref: - invoice.id]
+  ref_transactions int [ref: > transactions.id, not null]
+
+}
+
+Table invoice {
+  ~shared
+  context varchar
+  name varchar
+  type varchar
+  serial varchar
+  notes text
+}
+
+Table meta_invoice {
+  ~meta
+  ref_invoice int [ref: - invoice.id]
+
+}
+
+
+Table invoice_business_entities {
+  ~shared
+  value_invoice varchar [ref: - invoice.id, not null]
+  value_business_entity varchar [ref: - business_entities.id, not null]
+}
+
+
+
+Table transactions_buffer {
+  ~shared
+  quantity varchar
+  operation_type enum("+", "-")
+  state varchar
+  trigger varchar
+  ref_inverse_transaction int [ref: - transactions_buffer.id, not null]
+  ref_by_user int [ref: - users.id, not null]
+  ref_balance_from int [ref: - balances.id, not null]
+  ref_balance_to int [ref: - balances.id, not null]
+}
+
+Table meta_transactions {
+  ~meta
+  ref_transactions int [ref: - transactions.id, not null]
+}
+
+
+Table balances_business_entities{
+  ~shared
+  ref_business_entity int [ref: - business_entities.id, not null]
+  ref_balances int [ref: - balances.id, not null]
+}
+
+
+Table persons {
+  ~shared 
+  first_names varchar [not null]
+  last_names varchar [not null]
+  email varchar
+  indentifier varchar
+  type_identifier varchar
+}
+
+Table persons_business_entities {
+  ~shared 
+  ref_persons int [ref: - persons.id, not null]
+  ref_business_entity int [ref: - business_entities.id, not null]
+}
+
+Table meta_persons {
+  ~meta
+  ref_person int [ref: - persons.id, not null]
+}
+
+Table meta_comparation_values{
+  ~shared
+  ref_comparation_values varchar [ref: - comparation_values.id, not null] // USD
+
+}
+
+Table comparation_values{ // comparation values are the values that are compared with another value
+  ~shared
+  context varchar
+  quantity_from int // 1
+  quantity_to varcahr //  465.7
+  value_from varchar [ref: - values.id, not null] // USD
+  value_to varchar [ref: - values.id, not null] // Bs
+}
+
+Table comparation_values_historical{
+  ~shared
+  quantity_from int // 1
+  quantity_to varcahr //  465.7
+  value_from varchar [ref: - values.id, not null] // USD
+  value_to varchar [ref: - values.id, not null] // Bs
+}
+
+Table meta_comparation_values_historical{
+  ~meta
+  ref_comparation_values_historical varchar [ref: - comparation_values_historical.id, not null] // Bs
+}
+
+Table options {
+  ~shared
+  context varchar
+  name varchar
+  value text
+}
+
+TablePartial meta {
+  uid varchar [pk, unique, note: "UUID"]
+  id int [pk, increment]
+  key varchar
+  value varchar
+}
