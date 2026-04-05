@@ -1,0 +1,33 @@
+{
+    "scripts": {
+        "build:app": "rolldown -c rolldown.config.app.mjs",
+        "build:admin": "rolldown -c rolldown.config.admin.mjs",
+        "build": "npm run build:app && npm run build:admin",
+        "watch:app": "rolldown -c rolldown.config.app.mjs -w",
+        "watch:admin": "rolldown -c rolldown.config.admin.mjs -w",
+        "dev": "npm run build"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.2.2",
+        "autoprefixer": "^10.4.27",
+        "daisyui": "^5.5.19",
+        "nodemon": "^2.0.22",
+        "postcss": "^8.5.8",
+        "rolldown": "^1.0.0-rc.13",
+        "rollup-plugin-postcss": "^4.0.2",
+        "tailwindcss": "^4.2.2"
+    },
+    "dependencies": {
+        "@alpinejs/collapse": "^3.15.10",
+        "@alpinejs/focus": "^3.15.10",
+        "@alpinejs/mask": "^3.15.10",
+        "alpinejs": "^3.15.2",
+        "apexcharts": "^3.49.1",
+        "htmx.org": "^2.0.8",
+        "lucide": "^1.7.0",
+        "mermaid": "^10.9.5",
+        "tailwind-animations": "^1.0.1",
+        "tinyglobby": "^0.2.15",
+        "yup": "^1.4.0"
+    }
+}
