@@ -150,10 +150,18 @@ def auto_router_sockets(
                     continue
                 
                 bound_method = getattr(socket_instance, attr_name)
-                event_name = getattr(bound_method, "__ws_event__", None)
                 
-                if event_name:
-                    sio.on(event_name, namespace=namespace)(bound_method)
+                # Check for Sio event
+                ws_event_name = getattr(bound_method, "__ws_event__", None)
+                if ws_event_name:
+                    sio.on(ws_event_name, namespace=namespace)(bound_method)
+                    
+                # Check for Channel event
+                channel_event_name = getattr(bound_method, "__channel_event__", None)
+                if channel_event_name:
+                    action = getattr(bound_method, "__channel_action__", "after")
+                    from core.events import ChannelEvent
+                    ChannelEvent().subscribe_to(channel_event_name, action, handler=bound_method)
 
             print(
                 f"[auto_router_sockets] Registered: "

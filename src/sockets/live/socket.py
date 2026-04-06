@@ -15,8 +15,8 @@ class LiveEvents(WebSocket):
         )
 
     @Channel.subscribe_to("test:event")
-    async def test(self, args):
+    async def test(self, msg):
 
-        print(args)
+        print(msg)
 
-        await self.sio.emit("test:event", "test message", namespace=self.namespace)
+        await self.sio.emit("test:event", msg, namespace=self.namespace)

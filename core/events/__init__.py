@@ -13,9 +13,14 @@ from typing import (
     Awaitable,
     TYPE_CHECKING,
     Optional,
-    Iterator
+    Iterator,
+    ParamSpec,
+    TypeVar
 )
 from .base.event import Event
+
+P = ParamSpec("P")
+R = TypeVar("R")
 from .utils.type_check import type_check
 from .types.channel_event import ABCChannelEvent, ABCEvent
 
@@ -157,8 +162,8 @@ class ChannelEvent(ABCChannelEvent):
         self,
         event_key: str,
         action: "TAction" = "before",
-        handler: Union[Callable[..., Any], Callable[..., Awaitable]] | None = None,
-    ) -> Callable[..., Any]:
+        handler: Callable[P, R] | None = None,
+    ) -> Union[Callable[[Callable[P, R]], Callable[P, R]], Callable[P, R]]:
         """
 
         subscribe to an event
@@ -166,8 +171,8 @@ class ChannelEvent(ABCChannelEvent):
         """
 
         def decorator(
-            handler: Union[Callable[..., Any], Callable[..., Awaitable]],
-        ) -> Any:
+            handler: Callable[P, R],
+        ) -> Callable[P, R]:
 
             event: "ABCEvent" | None = self.events.get(event_key)
 
@@ -181,7 +186,7 @@ class ChannelEvent(ABCChannelEvent):
 
             event.add_listener(action, handler)
 
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
 
                 return handler(*args, **kwargs)
 
