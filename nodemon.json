@@ -3,7 +3,9 @@
     "src/app/assets",
     "src/admin/assets",
     "src/app/web/**/*.html",
-    "src/admin/web/**/*.html"
+    "src/admin/web/**/*.html",
+    "plugins/admin_core/assets",
+    "plugins/admin_core/web/**/*.html"
   ],
   "ext": "html,js,ts,css",
   "exec": "npm run build"
