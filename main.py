@@ -13,7 +13,6 @@ from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 from core.lib.register.plugin_loader import plugin_lifespan
 from core.lib.register.extension_loader import load_extensions
-import fastapi_plugins
 
 # ---------------------------------------------------------------------------
 # Inicialización de la aplicación FastAPI
@@ -24,7 +23,6 @@ app: FastAPI = FastAPI(
     lifespan=plugin_lifespan,
 )
 
-app = fastapi_plugins.register_middleware(app)
 
 # Initial load of extensions (e.g. Middlewares)
 load_extensions(app)
@@ -32,10 +30,6 @@ load_extensions(app)
 # ---------------------------------------------------------------------------
 # Proveedores de templates (Jinja2) por módulo
 # ---------------------------------------------------------------------------
-
-admin_templates: Jinja2Templates = Jinja2Templates(directory="src/admin/web")
-admin_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
-admin_templates.env.globals["STATIC_URL"] = "/admin-static"
 
 app_templates: Jinja2Templates = Jinja2Templates(directory="src/app/web")
 app_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
@@ -45,16 +39,6 @@ app_templates.env.globals["STATIC_URL"] = "/app-static"
 # ---------------------------------------------------------------------------
 # Auto-registro de rutas
 # ---------------------------------------------------------------------------
-
-# Admin: prefix /admin
-auto_router_templates(
-    app=app,
-    template_provider=admin_templates,
-    templates_controllers_path="src/admin/templates",
-    prefix="/admin",
-    statics_prefix="/admin-static",
-    statics_path="src/admin/web/out",
-)
 
 # App: prefix "" (raíz)
 auto_router_templates(
