@@ -1,10 +1,8 @@
 {
     "scripts": {
-        "build:app": "rolldown -c rolldown.config.app.mjs",
-        "build:admin": "rolldown -c rolldown.config.admin.mjs",
-        "build": "npm run build:app && npm run build:admin",
-        "watch:app": "rolldown -c rolldown.config.app.mjs -w",
-        "watch:admin": "rolldown -c rolldown.config.admin.mjs -w",
+        "build:app": "rolldown -c rolldown.config.mjs",
+        "build": "npm run build:app",
+        "watch:app": "rolldown -c rolldown.config.mjs -w",
         "dev": "npm run build"
     },
     "devDependencies": {
