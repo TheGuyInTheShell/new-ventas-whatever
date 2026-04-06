@@ -179,3 +179,50 @@ class ControllerFileNotFoundWarning(UserWarning):
         )
 
         super().__init__(message)
+
+
+# ---------------------------------------------------------------------------
+# Excepciones para WebSocket Controllers
+# ---------------------------------------------------------------------------
+
+
+class SocketControllerMissingError(Exception):
+    """Se lanza cuando un archivo events.py no contiene una clase que herede de WebSocket."""
+
+    def __init__(
+        self,
+        socket_file_path: str,
+        module_path: Optional[str] = None,
+    ) -> None:
+        self.socket_file_path: str = socket_file_path
+        self.module_path: Optional[str] = module_path
+
+        message: str = (
+            f"WebSocket controller missing: "
+            f"the file '{socket_file_path}' exists but does not contain "
+            f"any class that inherits from 'WebSocket'."
+        )
+
+        if module_path is not None:
+            message += f" Module path: '{module_path}'."
+
+        super().__init__(message)
+
+
+class SocketFileNotFoundWarning(UserWarning):
+    """Warning emitido cuando un directorio dentro del árbol de sockets no contiene events.py."""
+
+    def __init__(
+        self,
+        directory_path: str,
+    ) -> None:
+        self.directory_path: str = directory_path
+
+        message: str = (
+            f"Socket file not found: "
+            f"the directory '{directory_path}' does not contain an 'events.py' file. "
+            f"This directory will be skipped during socket route auto-registration."
+        )
+
+        super().__init__(message)
+

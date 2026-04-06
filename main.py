@@ -13,6 +13,7 @@ from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 from core.lib.register.plugin_loader import plugin_lifespan
 from core.lib.register.extension_loader import load_extensions
+from core.lib.register.auto_router_sockets import auto_router_sockets
 
 # ---------------------------------------------------------------------------
 # Inicialización de la aplicación FastAPI
@@ -55,4 +56,21 @@ auto_router_api(
     app=app,
     controllers_path="src/api",
     prefix="/api/v1",
+)
+
+
+# ---------------------------------------------------------------------------
+# Auto-registro de sockets
+# ---------------------------------------------------------------------------
+
+# Sockets: prefix "/ws"
+auto_router_sockets(
+    app=app,
+    sockets_path="src/sockets",
+    async_mode="asgi",
+    cors_allowed_origins=[],
+    path="/sio",
+    logger=True,
+    engineio_logger=True,
+    allow_upgrades=True,
 )
