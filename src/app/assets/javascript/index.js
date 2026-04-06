@@ -9,7 +9,7 @@ import Alpine from "alpinejs"
 import mask from '@alpinejs/mask'
 import focus from '@alpinejs/focus'
 import collapse from '@alpinejs/collapse'
-
+import { io } from "socket.io-client";
 
 Alpine.plugin(mask)
 Alpine.plugin(focus)
@@ -29,10 +29,6 @@ document.addEventListener('alpine:init', () => {
 
 
 Alpine.start();
-
-
-
-import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
 
 try {
     const socket = io("http://localhost:8000/live", {

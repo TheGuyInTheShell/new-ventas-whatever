@@ -3,11 +3,12 @@ import postcss from "rollup-plugin-postcss";
 import { globSync, glob } from 'tinyglobby';
 import path from 'path';
 import { pathToFileURL } from 'node:url';
+import { optimizeLodashImports } from "@optimize-lodash/rollup-plugin";
 
 // 1. Buscamos todas las configuraciones de plugins
-const subConfigPaths = await glob(['plugins/**/rolldown.config.mjs'], { 
+const subConfigPaths = await glob(['plugins/**/rolldown.config.mjs'], {
   absolute: true,
-  ignore: ['**/node_modules/**'] 
+  ignore: ['**/node_modules/**']
 });
 
 const loadSubConfigs = async () => {
@@ -43,7 +44,6 @@ const baseConfig = defineConfig({
     dir: "./src/app/web/out/",
     format: "esm",
     entryFileNames: "[name].js",
-    chunkFileNames: "chunks/[name]-[hash].js",
     minify: true,
   },
   moduleTypes: {
@@ -54,6 +54,7 @@ const baseConfig = defineConfig({
       extract: "css/app.css", // relative to output.dir → src/app/web/out/css/app.css
       minimize: true,
     }),
+    optimizeLodashImports(),
   ],
 });
 
