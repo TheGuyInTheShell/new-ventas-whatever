@@ -1,3 +1,4 @@
+from numpy.f2py.auxfuncs import isstring
 import inspect
 import os
 import warnings
@@ -9,6 +10,7 @@ from socketio import AsyncServer
 
 from core.lib.decorators.ws import init_sio_decorator
 from core.lib.register.websocket import WebSocket
+from core.events.types.event import TAction
 
 _IGNORED_DIRECTORIES: frozenset[str] = frozenset({
     "__pycache__",
@@ -159,7 +161,7 @@ def auto_router_sockets(
                 # Check for Channel event
                 channel_event_name = getattr(bound_method, "__channel_event__", None)
                 if channel_event_name:
-                    action = getattr(bound_method, "__channel_action__", "after")
+                    action: TAction = getattr(bound_method, "__channel_action__", "after")
                     from core.events import ChannelEvent
                     ChannelEvent().subscribe_to(channel_event_name, action, handler=bound_method)
 
@@ -176,5 +178,7 @@ def auto_router_sockets(
     
     # We must mount it at the root of the path provided so FastAPI handles it
     app.mount(path, sio_app)
+
+    app.state.SIO = sio
 
     return app
