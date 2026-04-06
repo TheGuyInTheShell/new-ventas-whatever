@@ -70,10 +70,24 @@ def auto_router_sockets(
     Configura el namespace usando el nombre de la carpeta e inicializa el decorador `Sio`.
     """
 
+
+    module_names = [f for f in os.listdir(sockets_path)]
+
+    namespaces = []
+
+    for module_name in module_names:
+
+        # Only process directories that are not __pycache__
+        if not os.path.isdir(os.path.join(sockets_path, module_name)) or module_name == "__pycache__":
+            continue
+
+        namespaces.append(f"/{module_name}")
+
     sio = AsyncServer(
         async_mode=async_mode,
         cors_allowed_origins=cors_allowed_origins,
         path=path,
+        namespaces=namespaces,
         logger=logger,
         engineio_logger=engineio_logger,
         allow_upgrades=allow_upgrades,
@@ -140,7 +154,7 @@ def auto_router_sockets(
 
     # Mount the SocketIO ASGI app onto FastAPI
     from socketio import ASGIApp
-    sio_app = ASGIApp(socketio_server=sio)
+    sio_app = ASGIApp(socketio_server=sio,  other_asgi_app=app, socketio_path="/sio/")
     
     # We must mount it at the root of the path provided so FastAPI handles it
     app.mount(path, sio_app)
