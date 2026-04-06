@@ -59,7 +59,7 @@ class RedisProvider(CacheProvider):
             if asyncio.iscoroutinefunction(callback)
             else callback()
         )
-        await self.set(key, result, ttl)
+        await self.set(key, result, ttl or 300)
         return result  # type: ignore[return-value]
 
     async def flush_pattern(self, pattern: str) -> int:

@@ -34,7 +34,7 @@ class RedisBridge(Plugin):
             await redis_plugin.init()
 
             # Late import to avoid circular references at module load time
-            from .includes.privider import RedisProvider
+            from .includes.provider import RedisProvider
 
             self.app.state.CACHE = RedisProvider(
                 client=redis_plugin.redis,
