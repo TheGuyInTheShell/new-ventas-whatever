@@ -24,7 +24,7 @@ _IGNORED_DIRECTORIES: frozenset[str] = frozenset({
     "dependencies",
 })
 
-_SOCKET_MODULE_NAME: str = "events"
+_SOCKET_MODULE_NAME: str = "socket"
 _SOCKET_FILE_NAME: str = f"{_SOCKET_MODULE_NAME}.py"
 
 
@@ -144,6 +144,16 @@ def auto_router_sockets(
             # send the sio server instance in the param __init__ WebSocket
             # the namespace need be the name of the folder
             socket_instance = socket_class(sio=sio, module_name=folder_name)
+            
+            for attr_name in dir(socket_instance):
+                if attr_name.startswith("_"):
+                    continue
+                
+                bound_method = getattr(socket_instance, attr_name)
+                event_name = getattr(bound_method, "__ws_event__", None)
+                
+                if event_name:
+                    sio.on(event_name, namespace=namespace)(bound_method)
 
             print(
                 f"[auto_router_sockets] Registered: "

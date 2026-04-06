@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 from core.lib.decorators import Get
 from core.lib.register import Controller
+from core.events import ChannelEvent
 
 
 class HealthController(Controller):
@@ -43,6 +44,7 @@ class HealthController(Controller):
         Returns:
             Diccionario con respuesta pong.
         """
+        ChannelEvent().emit_to("test:event").run("test")
         return {
             "ping": "pong",
         }

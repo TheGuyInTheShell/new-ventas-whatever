@@ -51,7 +51,7 @@
             img.src = url;
         })
 
-        socket.on("test2", (msg) => console.log("Test2 event:", msg))
+        socket.on("test:event", (msg) => console.log("Test event:", msg))
 
     } catch (error) {
         console.log(error);

@@ -6,5 +6,6 @@ class Channel:
     @classmethod
     def subscribe_to(cls, event: str):
         def decorator(func):
+            print(func)
             ChannelEvent().subscribe_to(event, func)
         return decorator

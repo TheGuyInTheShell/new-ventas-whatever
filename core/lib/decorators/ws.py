@@ -20,7 +20,8 @@ class SocketIO:
 
     def on(self, event: str):
         def decorator(func):
-            self.sio.on(event, namespace=self.namespace)(func)
+            func.__ws_event__ = event
+            return func
         return decorator
 
 
