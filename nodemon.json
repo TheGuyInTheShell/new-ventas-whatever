@@ -8,5 +8,5 @@
     "plugins/admin_core/web/**/*.html"
   ],
   "ext": "html,js,ts,css",
-  "exec": "npm run build"
+  "exec": "npm run watch"
 }

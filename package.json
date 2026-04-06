@@ -2,7 +2,7 @@
     "scripts": {
         "build:app": "rolldown -c rolldown.config.mjs",
         "build": "npm run build:app",
-        "watch:app": "rolldown -c rolldown.config.mjs -w",
+        "watch": "rolldown -c rolldown.config.mjs -w",
         "dev": "npm run build"
     },
     "devDependencies": {
