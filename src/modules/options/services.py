@@ -7,7 +7,7 @@ from core.database import get_async_db
 from fastapi_injectable import injectable
 
 class OptionsService(Service):
-    
+
     @injectable
     async def create_options(
         self,
@@ -20,8 +20,10 @@ class OptionsService(Service):
         Create a new options in the database.
         
         Args:
-            db: Database session
             name: Name of the options
+            context: Context of the options
+            value: Value of the options
+            db: Database session -> its injected by fastapi-injectable
             
         Returns:
             Option: The created options
