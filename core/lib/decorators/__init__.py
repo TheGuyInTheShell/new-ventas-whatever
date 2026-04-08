@@ -13,6 +13,7 @@ from core.lib.decorators.http_methods import (
     RouteRegistry,
     route_registry,
 )
+from core.lib.decorators.services import Services
 
 __all__: list[str] = [
     "Delete",
@@ -26,4 +27,5 @@ __all__: list[str] = [
     "RouteDefinition",
     "RouteRegistry",
     "route_registry",
+    "Services",
 ]

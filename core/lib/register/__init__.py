@@ -11,6 +11,7 @@ from core.lib.register.exceptions import (
     TemplateFileNotFoundWarning,
 )
 from core.lib.register.template import Template
+from core.lib.register.service import Service
 
 __all__: list[str] = [
     "auto_router_api",
@@ -22,4 +23,5 @@ __all__: list[str] = [
     "Template",
     "TemplateControllerMissingError",
     "TemplateFileNotFoundWarning",
+    "Service",
 ]
