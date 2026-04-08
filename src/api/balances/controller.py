@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_async_db
-from core import cache
+from core.lib.decorators.cache import cache
 from core.lib.decorators import Get, Post, Delete, Put
 from core.lib.register import Controller
 
