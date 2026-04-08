@@ -226,3 +226,57 @@ class SocketFileNotFoundWarning(UserWarning):
 
         super().__init__(message)
 
+
+# ---------------------------------------------------------------------------
+# Excepciones para Partials
+# ---------------------------------------------------------------------------
+
+
+class PartialControllerMissingError(Exception):
+    """Se lanza cuando un archivo partial.py no contiene una clase que herede de Partial.
+
+    Attributes:
+        partial_file_path: Ruta absoluta del archivo partial.py problemático.
+        module_path: Ruta del módulo Python importado.
+    """
+
+    def __init__(
+        self,
+        partial_file_path: str,
+        module_path: Optional[str] = None,
+    ) -> None:
+        self.partial_file_path: str = partial_file_path
+        self.module_path: Optional[str] = module_path
+
+        message: str = (
+            f"Partial controller missing: "
+            f"the file '{partial_file_path}' exists but does not contain "
+            f"any class that inherits from 'Partial'."
+        )
+
+        if module_path is not None:
+            message += f" Module path: '{module_path}'."
+
+        super().__init__(message)
+
+
+class PartialFileNotFoundWarning(UserWarning):
+    """Warning emitido cuando un directorio dentro del árbol de partials no contiene partial.py.
+
+    Attributes:
+        directory_path: Ruta del directorio que no contiene partial.py.
+    """
+
+    def __init__(
+        self,
+        directory_path: str,
+    ) -> None:
+        self.directory_path: str = directory_path
+
+        message: str = (
+            f"Partial file not found: "
+            f"the directory '{directory_path}' does not contain a 'partial.py' file. "
+            f"This directory will be skipped during partial route auto-registration."
+        )
+
+        super().__init__(message)

@@ -1,12 +1,45 @@
-{% extends "base.html" %} {% block page %}
+{% extends "base.html" %} 
+{% block page %}
 
-<div>
-    <h1>Sign In</h1>
-    <form hx-post="/partials/sign/in" hx-target="this">
-        <input type="text" name="username" placeholder="Username" required x-mask="9999999999">
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Sign In</button>
+<div class="min-h-screen flex items-center justify-center bg-base-200">
+  <div class="card w-96 glass shadow-xl p-6 bg-base-100 dark:bg-base-300">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold font-sans text-primary">Welcome Back</h1>
+      <p class="text-sm opacity-70 mt-2 font-medium">Sign in to your account</p>
+    </div>
+
+    <div id="notification" class="flex justify-center items-center min-h-[40px] mb-4 transition-all duration-300">
+      <div x-data="spinner" id="spinner" :class="{ '!hidden': !loading }" class="hidden">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    </div>
+
+    <form id="sign-in" hx-post="/partials/sign/in" hx-swap="innerHTML" hx-target="#notification">
+      <div class="form-control mb-4">
+        <label class="label">
+          <span class="label-text font-semibold">Username</span>
+          <span id="label-username" class="label-text-alt text-error font-semibold"></span>
+        </label>
+        <label class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+          <i data-lucide="user" class="w-4 h-4 opacity-70"></i>
+          <input id="input-username" name="username" type="text" class="grow" placeholder="Username" required />
+        </label>
+      </div>
+
+      <div class="form-control mb-6">
+        <label class="label">
+          <span class="label-text font-semibold">Password</span>
+          <span id="label-password" class="label-text-alt text-error font-semibold"></span>
+        </label>
+        <label class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+          <i data-lucide="lock" class="w-4 h-4 opacity-70"></i>
+          <input id="input-password" name="password" type="password" class="grow" placeholder="Password" required />
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full text-white font-bold hover:scale-[1.02] active:scale-95 transition-transform">Sign in</button>
     </form>
+  </div>
 </div>
 
 {% endblock %}

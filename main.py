@@ -14,6 +14,7 @@ from core.lib.register.auto_router_templates import auto_router_templates
 from core.lib.register.plugin_loader import plugin_lifespan
 from core.lib.register.extension_loader import load_extensions
 from core.lib.register.auto_router_sockets import auto_router_sockets
+from core.lib.register.auto_router_partials import auto_router_partials
 
 # ---------------------------------------------------------------------------
 # Inicialización de la aplicación FastAPI
@@ -49,6 +50,13 @@ auto_router_templates(
     prefix="",
     statics_prefix="/app-static",
     statics_path="src/app/web/out",
+)
+
+auto_router_partials(
+    app=app,
+    template_provider=app_templates,
+    partials_controllers_path="src/app/partials",
+    prefix="/partials",
 )
 
 # API: prefix /api/v1
