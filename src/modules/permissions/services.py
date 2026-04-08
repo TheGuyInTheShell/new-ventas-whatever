@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .models import Permission
 from .schemas import RQCreatePermission, RQBulkPermission, RSPermission, RSBulkPermissionResult
-from app.modules.roles.models import Role
-from app.modules.role_permissions.models import RolePermission
-from app.modules.permissions.meta.models import MetaPermissions
-from app.modules.options.models import Options
+from src.modules.roles.models import Role
+from src.modules.role_permissions.models import RolePermission
+from src.modules.permissions.meta.models import MetaPermissions
+from src.modules.options.models import Options
 from sqlalchemy import select
 import hashlib
 import json

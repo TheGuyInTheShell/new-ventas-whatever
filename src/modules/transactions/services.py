@@ -40,8 +40,8 @@ async def process_sale(
     2. Create historical snapshot of that price.
     3. Create transaction linked to that snapshot.
     """
-    from app.modules.comparison_values.models import ComparisonValue
-    from app.modules.comparison_values.services import find_comparison_rate, create_historical_snapshot
+    from src.modules.comparison_values.models import ComparisonValue
+    from src.modules.comparison_values.services import find_comparison_rate, create_historical_snapshot
     from sqlalchemy import select
     
     transactions = []

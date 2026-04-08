@@ -1,22 +1,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from typing import Optional, TYPE_CHECKING
-from app.modules.values.services import create_value_with_meta, update_value_with_meta
-from app.modules.comparison_values.services import create_comparison, update_comparison
-from app.modules.values.schemas import RSValue
-from app.modules.comparison_values.schemas import RSComparisonValue
-from app.modules.d.schemas.values_with_comparison import RQValueWithComparison, RSValueWithComparison, QueryValuesWithComparison, ResultValueWithComparison
-from app.modules.d.models.values_with_comparison import BuilderValueWithComparison
+from src.modules.values.services import create_value_with_meta, update_value_with_meta
+from src.modules.comparison_values.services import create_comparison, update_comparison
+from src.modules.values.schemas import RSValue
+from src.modules.comparison_values.schemas import RSComparisonValue
+from src.modules.d.schemas.values_with_comparison import RQValueWithComparison, RSValueWithComparison, QueryValuesWithComparison, ResultValueWithComparison
+from src.modules.d.models.values_with_comparison import BuilderValueWithComparison
 
-from app.modules.values.hierarchy.models import ValuesHierarchy
-from app.modules.balances.models import Balance
-from app.modules.balances_business_entities.models import BalanceBusinessEntity
+from src.modules.values.hierarchy.models import ValuesHierarchy
+from src.modules.balances.models import Balance
+from src.modules.balances_business_entities.models import BalanceBusinessEntity
 
 from sqlalchemy import delete
 
 if TYPE_CHECKING:
-    from app.modules.values.models import Value
-    from app.modules.comparison_values.models import ComparisonValue
+    from src.modules.values.models import Value
+    from src.modules.comparison_values.models import ComparisonValue
 
 async def save_value_with_comparison_service(db: AsyncSession, data: RQValueWithComparison) -> RSValueWithComparison:
     """
@@ -101,7 +101,7 @@ async def update_value_with_comparison_service(db: AsyncSession, id: str, data: 
         # We need to find the existing ComparisonValue where value_from == updated_value.id
         # For simplicity, using query builder or direct select:
         from sqlalchemy import select
-        from app.modules.comparison_values.models import ComparisonValue
+        from src.modules.comparison_values.models import ComparisonValue
         
         stmt = select(ComparisonValue).where(ComparisonValue.value_from == updated_value.id)
         result = await db.execute(stmt)

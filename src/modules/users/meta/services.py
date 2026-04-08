@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import MetaUsers
-from app.modules.users.models import User
+from src.modules.users.models import User
 
 async def create_meta_users(
     db: AsyncSession,

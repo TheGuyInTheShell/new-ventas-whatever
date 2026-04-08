@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_async_db
-from app.modules.auth.services import decode_token, create_token, TokenData
+from src.modules.auth.services import decode_token, create_token, TokenData
 
 from .models import User
 from .schemas import RSUserTokenData
-from app.modules.permissions.schemas import RSPermission, RSUserMe
-from app.modules.role_permissions.models import RolePermission
-from app.modules.permissions.models import Permission
-from app.modules.permissions.meta.models import MetaPermissions
-from app.modules.roles.models import Role
+from src.modules.permissions.schemas import RSPermission, RSUserMe
+from src.modules.role_permissions.models import RolePermission
+from src.modules.permissions.models import Permission
+from src.modules.permissions.meta.models import MetaPermissions
+from src.modules.roles.models import Role
 from sqlalchemy import select
 
 # prefix /users

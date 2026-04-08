@@ -1,4 +1,4 @@
-from core.config.globals import settings
+from core.config.settings import settings
 import time
 from typing import Union
 from fastapi import HTTPException, Depends
@@ -7,7 +7,7 @@ from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 
-from app.modules.users.models import User
+from src.modules.users.models import User
 from core.services.init_subscriber import initialize_subscriber_role
 
 from .schemas import INUser, RQUser, RSUser

@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.users.models import User
-    from app.modules.balances.models import Balance
-    from app.modules.transactions.meta.models import MetaTransaction
+    from src.modules.users.models import User
+    from src.modules.balances.models import Balance
+    from src.modules.transactions.meta.models import MetaTransaction
 
 
 class Transaction(BaseAsync):

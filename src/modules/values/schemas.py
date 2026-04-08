@@ -1,5 +1,5 @@
 from typing import List, Optional, Literal
-from app.modules.comparison_values.schemas import RSComparisonValue
+from src.modules.comparison_values.schemas import RSComparisonValue
 from pydantic import BaseModel
 
 

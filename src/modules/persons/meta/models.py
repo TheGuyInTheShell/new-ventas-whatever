@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.persons.models import Person
+    from src.modules.persons.models import Person
 
 class MetaPerson(BaseAsync):
     __tablename__ = "meta_persons"

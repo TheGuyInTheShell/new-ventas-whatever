@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from .models import ComparisonValue
 from .historical import ComparisonValueHistorical
 from .schemas import RQComparisonValue
-from app.modules.values.models import Value
+from src.modules.values.models import Value
 
 
 async def create_comparison(

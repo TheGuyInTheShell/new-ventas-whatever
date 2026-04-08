@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import MetaPermissions
-from app.modules.permissions.models import Permission
+from src.modules.permissions.models import Permission
 
 
 async def create_meta_permissions(

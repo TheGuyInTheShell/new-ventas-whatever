@@ -3,8 +3,8 @@ from typing import Annotated
 from enum import Enum
 from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.d.schemas.transaction_and_invoice import RQAdjustBalance, InvoiceSales
-from app.modules.d.services.transaction_and_invoice import (
+from src.modules.d.schemas.transaction_and_invoice import RQAdjustBalance, InvoiceSales
+from src.modules.d.services.transaction_and_invoice import (
     adjust_transaction_and_invoice_service,
     create_transaction_and_invoice_service
 )

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.invoices.models import Invoice
+    from src.modules.invoices.models import Invoice
 
 
 class MetaInvoice(BaseAsync):

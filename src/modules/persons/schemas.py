@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel
-from app.modules.business_entities.schemas import RSBusinessEntity
+from src.modules.business_entities.schemas import RSBusinessEntity
 
 class RQPerson(BaseModel):
     first_names: str

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.invoices.models import Invoice
-    from app.modules.business_entities.models import BusinessEntity
+    from src.modules.invoices.models import Invoice
+    from src.modules.business_entities.models import BusinessEntity
 
 
 class InvoiceBusinessEntity(BaseAsync):

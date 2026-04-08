@@ -1,7 +1,7 @@
 import asyncio
 import requests
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from core.config.globals import settings
+from core.config.settings import settings
 from .schemas import ImgCDNResponse
 from .models import ImageFile
 from core.database import get_async_db

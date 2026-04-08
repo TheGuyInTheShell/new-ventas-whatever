@@ -1,11 +1,11 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.permissions.models import Permission
+from src.modules.permissions.models import Permission
 
 from .models import Role
 from .schemas import RQRole, RSRole
-from app.modules.role_permissions.models import RolePermission
+from src.modules.role_permissions.models import RolePermission
 
 
 async def create_role(db: AsyncSession, rq_role: RQRole) -> RSRole:

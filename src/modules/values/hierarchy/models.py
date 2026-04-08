@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.values.models import Value
+    from src.modules.values.models import Value
 
 
 class ValuesHierarchy(BaseAsync):

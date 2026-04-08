@@ -2,7 +2,7 @@ from sqlalchemy import String, Integer, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import BaseAsync
-from app.modules.values.models import Value
+from src.modules.values.models import Value
 
 
 class MetaValue(BaseAsync):

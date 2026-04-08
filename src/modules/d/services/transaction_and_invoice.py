@@ -7,16 +7,16 @@ import json
 # Shared float precision for all inventory/balance quantities
 
 from app.context.globals import _round_quantity
-from app.modules.balances.models import Balance
-from app.modules.d.schemas.transaction_and_invoice import RQAdjustBalance
-from app.modules.invoices.models import Invoice
-from app.modules.transactions.models import Transaction
-from app.modules.invoice_transactions.models import InvoiceTransaction
-from app.modules.invoice_business_entities.models import InvoiceBusinessEntity
+from src.modules.balances.models import Balance
+from src.modules.d.schemas.transaction_and_invoice import RQAdjustBalance
+from src.modules.invoices.models import Invoice
+from src.modules.transactions.models import Transaction
+from src.modules.invoice_transactions.models import InvoiceTransaction
+from src.modules.invoice_business_entities.models import InvoiceBusinessEntity
 
-from app.modules.comparison_values.historical.models import ComparisonValueHistorical
-from app.modules.balances_business_entities.models import BalanceBusinessEntity
-from app.modules.d.schemas.transaction_and_invoice import InvoiceSales
+from src.modules.comparison_values.historical.models import ComparisonValueHistorical
+from src.modules.balances_business_entities.models import BalanceBusinessEntity
+from src.modules.d.schemas.transaction_and_invoice import InvoiceSales
 
 async def create_transaction_and_invoice_service(db: AsyncSession, data: InvoiceSales) -> dict:
     """

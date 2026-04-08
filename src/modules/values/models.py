@@ -10,10 +10,10 @@ class Value(BaseAsync):
     Examples: Dollar (USD), Bitcoin (BTC), Hummer H2 (CAR) (Vehicle) 2016, etc.
     """
     if TYPE_CHECKING:
-        from app.modules.comparison_values.models import ComparisonValue
-        from app.modules.values.meta.models import MetaValue
-        from app.modules.balances.models import Balance
-        from app.modules.values.schemas import RQValueQuery
+        from src.modules.comparison_values.models import ComparisonValue
+        from src.modules.values.meta.models import MetaValue
+        from src.modules.balances.models import Balance
+        from src.modules.values.schemas import RQValueQuery
         from sqlalchemy.ext.asyncio import AsyncSession
     __tablename__ = "values"
 
@@ -71,7 +71,7 @@ class Value(BaseAsync):
         """
         from sqlalchemy import select, func, desc as sa_desc
         from sqlalchemy.orm import selectinload
-        from app.modules.comparison_values.models import ComparisonValue
+        from src.modules.comparison_values.models import ComparisonValue
 
         # ---- base query ----
         stmt = select(cls)

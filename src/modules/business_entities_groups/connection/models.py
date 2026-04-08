@@ -5,8 +5,8 @@ from core.database import BaseAsync
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.modules.business_entities_groups.models import BusinessEntitiesGroup
-    from app.modules.business_entities.models import BusinessEntity
+    from src.modules.business_entities_groups.models import BusinessEntitiesGroup
+    from src.modules.business_entities.models import BusinessEntity
 
 class BusinessEntitiesGroupConnection(BaseAsync):
     __tablename__ = "business_entities_groups_connections"

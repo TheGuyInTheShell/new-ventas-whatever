@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.business_entities.models import BusinessEntity
+    from src.modules.business_entities.models import BusinessEntity
 
 class MetaBusinessEntity(BaseAsync):
     __tablename__ = "meta_business_entities"

@@ -34,7 +34,7 @@ async def process_invoice_bulk(
     3. For each item: create Transaction with quantity (given) and quantity_to (received) → link InvoiceTransaction
     4. Single commit at the end
     """
-    from app.modules.transactions.models import Transaction
+    from src.modules.transactions.models import Transaction
     from ..invoice_transactions.models import InvoiceTransaction
     from ..invoice_business_entities.models import InvoiceBusinessEntity
 
@@ -124,7 +124,7 @@ async def process_invoice_full_transaction_bulk(
        c. Link transaction to invoice via InvoiceTransaction
     3. Single commit at the end
     """
-    from app.modules.transactions.models import Transaction
+    from src.modules.transactions.models import Transaction
     from ..invoice_transactions.models import InvoiceTransaction
     from ..invoice_business_entities.models import InvoiceBusinessEntity
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.transactions_buffer.models import TransactionBuffer
+    from src.modules.transactions_buffer.models import TransactionBuffer
 
 
 class MetaTransactionBuffer(BaseAsync):

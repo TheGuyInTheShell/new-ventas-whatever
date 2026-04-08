@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.invoices.meta.models import MetaInvoice
+    from src.modules.invoices.meta.models import MetaInvoice
     from ..invoice_transactions.models import InvoiceTransaction
     from ..invoice_business_entities.models import InvoiceBusinessEntity
 

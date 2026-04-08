@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.business_entities.meta.models import MetaBusinessEntity
-    from app.modules.business_entities_groups.models import BusinessEntitiesGroup
+    from src.modules.business_entities.meta.models import MetaBusinessEntity
+    from src.modules.business_entities_groups.models import BusinessEntitiesGroup
 
 
 class BusinessEntity(BaseAsync):

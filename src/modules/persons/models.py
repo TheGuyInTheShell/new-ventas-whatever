@@ -3,10 +3,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
 from core.database import BaseAsync
-from app.modules.business_entities.models import BusinessEntity
+from src.modules.business_entities.models import BusinessEntity
 
 if TYPE_CHECKING:
-    from app.modules.persons.meta.models import MetaPerson
+    from src.modules.persons.meta.models import MetaPerson
 
 
 

@@ -1,7 +1,7 @@
 from typing import Optional, List
 from pydantic import BaseModel
-from app.modules.values.schemas import RQValue, RSValue
-from app.modules.comparison_values.schemas import RQComparisonValue, RSComparisonValue
+from src.modules.values.schemas import RQValue, RSValue
+from src.modules.comparison_values.schemas import RQComparisonValue, RSComparisonValue
 
 class RQValueWithComparison(BaseModel):
     value: RQValue

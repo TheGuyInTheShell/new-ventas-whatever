@@ -2,7 +2,7 @@ from sqlalchemy import String, Integer, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import BaseAsync
-from app.modules.values.models import Value
+from src.modules.values.models import Value
 
 
 class Balance(BaseAsync):

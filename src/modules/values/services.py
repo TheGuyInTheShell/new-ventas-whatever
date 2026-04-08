@@ -40,7 +40,7 @@ async def create_value_with_meta(
         
     # Create price comparison if provided
     if value_data.price is not None and value_data.currency_id is not None:
-        from app.modules.comparison_values.models import ComparisonValue
+        from src.modules.comparison_values.models import ComparisonValue
         comparison = ComparisonValue(
             quantity_from=1,
             quantity_to=value_data.price,

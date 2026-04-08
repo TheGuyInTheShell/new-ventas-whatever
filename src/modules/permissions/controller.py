@@ -16,10 +16,10 @@ from .schemas import (
     RSBulkPermissionsResponse
 )
 from .services import create_permission, create_bulk_permissions_with_roles
-from app.modules.permissions.meta.models import MetaPermissions
+from src.modules.permissions.meta.models import MetaPermissions
 from sqlalchemy import select
-from app.modules.role_permissions.models import RolePermission
-from app.modules.auth.services import decode_token
+from src.modules.role_permissions.models import RolePermission
+from src.modules.auth.services import decode_token
 
 # prefix /permissions
 router = APIRouter()

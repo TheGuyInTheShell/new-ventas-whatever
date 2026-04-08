@@ -14,5 +14,5 @@ class RolePermission(BaseAsync):
     )
 
     # Relationships (Optional, but useful)
-    role = relationship("app.modules.roles.models.Role", backref="role_permission_entries")
-    permission = relationship("app.modules.permissions.models.Permission", backref="role_permission_entries")
+    role = relationship("src.modules.roles.models.Role", backref="role_permission_entries")
+    permission = relationship("src.modules.permissions.models.Permission", backref="role_permission_entries")

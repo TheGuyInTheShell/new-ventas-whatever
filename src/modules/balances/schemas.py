@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel
-# from app.modules.values.schemas import RSValue # Avoid circular imports if possible or use if needed
+# from src.modules.values.schemas import RSValue # Avoid circular imports if possible or use if needed
 
 class RQBalance(BaseModel):
     currency: str

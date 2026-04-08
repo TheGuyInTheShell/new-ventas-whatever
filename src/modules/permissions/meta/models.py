@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BaseAsync
 from typing import TYPE_CHECKING
 
-from app.modules.permissions.models import Permission
+from src.modules.permissions.models import Permission
 
 
 class MetaPermissions(BaseAsync):

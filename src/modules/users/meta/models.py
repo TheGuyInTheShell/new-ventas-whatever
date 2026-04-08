@@ -2,7 +2,7 @@ from sqlalchemy import String, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import BaseAsync
-from app.modules.users.models import User
+from src.modules.users.models import User
 
 class MetaUsers(BaseAsync):
     __tablename__ = "meta_users"

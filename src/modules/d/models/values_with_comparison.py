@@ -3,10 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 
-from app.modules.values.models import Value
-from app.modules.comparison_values.models import ComparisonValue
-from app.modules.values.hierarchy.models import ValuesHierarchy
-from app.modules.d.schemas.values_with_comparison import QueryValuesWithComparison, ResultValueWithComparison, RSValueWithHierarchy
+from src.modules.values.models import Value
+from src.modules.comparison_values.models import ComparisonValue
+from src.modules.values.hierarchy.models import ValuesHierarchy
+from src.modules.d.schemas.values_with_comparison import QueryValuesWithComparison, ResultValueWithComparison, RSValueWithHierarchy
 
 class BuilderValueWithComparison:
     def __init__(self, db: AsyncSession):
@@ -137,8 +137,8 @@ class BuilderValueWithComparison:
 
     async def execute(self) -> ResultValueWithComparison:
         from sqlalchemy.orm.attributes import instance_state
-        from app.modules.values.schemas import RSMetaValue
-        from app.modules.comparison_values.schemas import RSComparisonValue, RSComparisonValueSimple
+        from src.modules.values.schemas import RSMetaValue
+        from src.modules.comparison_values.schemas import RSComparisonValue, RSComparisonValueSimple
         
         result = await self.db.execute(self.stmt)
         rows = result.unique().all()

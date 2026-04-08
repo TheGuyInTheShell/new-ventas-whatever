@@ -2,7 +2,7 @@ from sqlalchemy import Integer, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import BaseAsync
-from app.modules.values.models import Value
+from src.modules.values.models import Value
 
 class ComparisonValueHistorical(BaseAsync):
     """

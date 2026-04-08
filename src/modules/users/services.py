@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.users.models import User
-from app.modules.users.schemas import RSUser
-from app.modules.auth.services import decode_token
+from src.modules.users.models import User
+from src.modules.users.schemas import RSUser
+from src.modules.auth.services import decode_token
 from core.database import get_async_db
 from fastapi.security import OAuth2PasswordBearer
 

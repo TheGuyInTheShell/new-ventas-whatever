@@ -8,7 +8,7 @@ from core.database import get_async_db
 from .models import Value
 from .schemas import RQValue, RQValueQuery, RSValue, RSValueList, RSMetaValue
 from .services import create_value_with_meta, update_value_with_meta, get_values_paginated
-from app.modules.comparison_values.controller import comparison_to_response
+from src.modules.comparison_values.controller import comparison_to_response
 
 # prefix /values (auto-registered by core/routes)
 router = APIRouter()

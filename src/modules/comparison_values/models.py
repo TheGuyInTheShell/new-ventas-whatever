@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from core.database import BaseAsync
 
 if TYPE_CHECKING:
-    from app.modules.values.models import Value
-    from app.modules.comparison_values.meta.models import MetaComparisonValue
+    from src.modules.values.models import Value
+    from src.modules.comparison_values.meta.models import MetaComparisonValue
 
 
 class ComparisonValue(BaseAsync):
