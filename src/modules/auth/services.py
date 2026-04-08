@@ -1,9 +1,9 @@
+from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
 from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
-from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 
@@ -11,7 +11,7 @@ from ..users.models import User
 from core.services.init_subscriber import initialize_subscriber_role
 from core.lib.register.service import Service
 
-from .schemas import INUser, RQUser, RSUser
+from .schemas import RQUser, RSUser
 from .types import TokenData
 
 import bcrypt
@@ -19,24 +19,25 @@ from bcrypt import _bcrypt # type: ignore
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 
-oauth2_schema = OAuth2PasswordBearer("auth/sign-in")
+import pyotp
+import qrcode
+import base64
+
 
 if not hasattr(bcrypt, "__about__"):
    setattr(bcrypt, "__about__", type("About", (object,), {"__version__": _bcrypt.__version_ex__}))
 
-hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY_JWT = settings.JWT_KEY.encode()
-USED_ALGORITHM = settings.JWT_ALG
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
-REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-
-import pyotp
-import qrcode
-import io
-import base64
 
 class AuthService(Service):
+
+    SECRET_KEY_JWT = settings.JWT_KEY.encode()
+    USED_ALGORITHM = settings.JWT_ALG
+
+    ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
+    REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+    hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
     def generate_otp_secret(self) -> str:
         """Generates a random base32 formatted secret string."""
         return pyotp.random_base32()
@@ -85,7 +86,7 @@ class AuthService(Service):
             return None
 
     def verify_password(self, plane_password: str, current_password: str) -> bool:
-        return hash_context.verify(plane_password, current_password)
+        return self.hash_context.verify(plane_password, current_password)
 
     async def authenticade_user(self, db: AsyncSession, username: str, password: str) -> RSUser:
         try:
@@ -114,7 +115,7 @@ class AuthService(Service):
             subscriber_role = await initialize_subscriber_role(db)
             user = await User(
                 username=user_data.username,
-                password=hash_context.hash(user_data.password),
+                password=self.hash_context.hash(user_data.password),
                 email=user_data.email,
                 full_name=user_data.full_name,
                 role_ref=subscriber_role.id,
@@ -135,31 +136,31 @@ class AuthService(Service):
     def create_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
         current_time = int(time.time())
         if expires_time is None:
-            expires = current_time + (ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+            expires = current_time + (self.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
         else:
             expires = current_time + int(expires_time)
         copy_user = data.copy()
         if "type" not in copy_user:
             copy_user["type"] = "access"
         copy_user.update({"exp": expires, "iat": current_time})
-        token_jwt = jwt.encode(copy_user, key=SECRET_KEY_JWT, algorithm=USED_ALGORITHM)
+        token_jwt = jwt.encode(copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM)
         return token_jwt
 
     def create_refresh_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
         current_time = int(time.time())
         if expires_time is None:
-            expires = current_time + (REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+            expires = current_time + (self.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
         else:
             expires = current_time + int(expires_time)
         copy_user = data.copy()
         copy_user.update({"exp": expires, "type": "refresh", "iat": current_time})
-        token_jwt = jwt.encode(copy_user, key=SECRET_KEY_JWT, algorithm=USED_ALGORITHM)
+        token_jwt = jwt.encode(copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM)
         return token_jwt
 
     def decode_token(self, token: str) -> TokenData | None:
         try:
             decode_cotent: dict = jwt.decode(
-                token, key=SECRET_KEY_JWT, algorithms=[USED_ALGORITHM]
+                token, key=self.SECRET_KEY_JWT, algorithms=[self.USED_ALGORITHM]
             )
             exp_time = decode_cotent.get("exp", 0)
             current_time = time.time()
@@ -171,8 +172,8 @@ class AuthService(Service):
         except Exception as e:
             return None
 
-    # We need a dependency to get current user from token for these protected endpoints
-    async def get_current_user(self, token: str = Depends(oauth2_schema), db: AsyncSession = Depends(get_async_db)):
+    @injectable
+    async def get_current_user(self, token: str = Depends(OAuth2PasswordBearer("auth/sign-in")), db: AsyncSession = Depends(get_async_db)):
         payload = self.decode_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -180,4 +181,4 @@ class AuthService(Service):
         user = query.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
-        return user
+        return user
