@@ -16,6 +16,7 @@ class PermissionMeta:
 class PermissionDefinition:
     """Definición inmutable de un permiso individual."""
     name: str
+    action: str
     type: str
     description: str
     context: str
@@ -24,6 +25,7 @@ class PermissionDefinition:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
+            "action": self.action,
             "type": self.type,
             "description": self.description,
             "context": self.context,

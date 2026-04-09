@@ -1,5 +1,8 @@
-from typing import Callable, Any, TypeVar, Optional, Tuple, Type, overload, Dict
+from typing import Callable, Any, TypeVar, Optional, Tuple, Type, overload, Dict, cast, Coroutine, ParamSpec
 from functools import wraps
+import inspect
+
+from fastapi import Request, Depends, HTTPException
 
 from .types import PermissionDefinition, PermissionMeta
 from .registry import permission_registry
@@ -7,14 +10,15 @@ from .provider import ResolverProvider
 from .errors import ShieldPermissionError
 from .scanner import scan_permissions
 
-P = TypeVar("P")
+P = ParamSpec("P")
 R = TypeVar("R")
 T = TypeVar("T")
 
 class ShieldArgPlaceholder:
     """Descriptor/Marker para inyeccion de un argumento protegido."""
-    def __init__(self, name: str, type_str: str, description: str, default: Any, context: Optional[str], meta: Tuple[Any, Any]):
+    def __init__(self, name: str, action: str, type_str: str, description: str, default: Any, context: Optional[str], meta: Tuple[Any, Any]):
         self.name = name
+        self.action = action
         self.type = type_str
         self.description = description
         self.default = default
@@ -30,9 +34,13 @@ class ShieldArgPlaceholder:
 class Shield:
     """Fachada estatica para el framework Shield."""
     
-    @staticmethod
-    def scan(path: str, callback: Callable[[Dict[str, Any]], Any], context: Optional[str] = None) -> None:
+    _global_resolver: Optional[ResolverProvider] = None
+    
+    @classmethod
+    def scan(cls, path: str, callback: Callable[[Dict[str, Any]], Any], context: Optional[str] = None, resolver: Optional[ResolverProvider] = None) -> None:
         """Escanea una carpeta recursivamente y expone el arbol de permisos al callback."""
+        if resolver:
+            cls._global_resolver = resolver
         scan_permissions(path, callback, default_context=context)
 
     @staticmethod
@@ -58,7 +66,7 @@ class Shield:
         return decorator
 
     @staticmethod
-    def need(name: str, description: str, type: str, context: Optional[str] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def need(name: str, action: str, type: str, context: Optional[str] = None, description: str = "", resolver: Optional[ResolverProvider] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Decorador para un endpoint/metodo. Asigna la necesidad de un permiso.
         """
@@ -68,6 +76,7 @@ class Shield:
             
             p_data = {
                 "name": name,
+                "action": action,
                 "description": description,
                 "type": type,
                 "context": context,
@@ -75,17 +84,43 @@ class Shield:
             }
             getattr(func, "__shield_permissions__").append(p_data)
             
+            if not hasattr(func, "__dependencies__"):
+                setattr(func, "__dependencies__", [])
+                
+            async def shield_guard(request: Request) -> None:
+                active_resolver = resolver or Shield._global_resolver
+                if active_resolver is None:
+                    return
+                
+                # Determine context: fallback to class or global
+                actual_context = context
+                if actual_context is None:
+                    qualname_parts = func.__qualname__.split(".")
+                    if len(qualname_parts) > 1:
+                        actual_context = qualname_parts[-2]
+                    else:
+                        actual_context = "Global"
+                
+                is_async = inspect.iscoroutinefunction(active_resolver.resolve)
+                if is_async:
+                    res = await cast(Coroutine[Any, Any, bool], active_resolver.resolve(name=name, type_str=type, action=action, context=actual_context, request=request))
+                else:
+                    res = cast(bool, active_resolver.resolve(name=name, type_str=type, action=action, context=actual_context, request=request))
+                
+                if not res:
+                    raise HTTPException(status_code=403, detail=f"No tienes el permiso requerido: {name} (acción: {action})")
+
+            getattr(func, "__dependencies__").append(Depends(shield_guard))
+            
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> R:
-                # Ojo: la verificacion en runtime la hara el consumidor con algun middleware o Depends. 
-                # Shield como tal aloja las definiciones.
                 return func(*args, **kwargs) # type: ignore
             return wrapper # type: ignore
             
         return decorator
 
     @staticmethod
-    def arg(name: str, type: str, description: str, default: T = None, context: Optional[str] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Any:
+    def arg(name: str, action: str, type: str, description: str, default: T = None, context: Optional[str] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Any:
         """
         Asigna el requerimiento de un permiso a un argumento especifico (simulado como marker/descriptor).
         Retorna la instancia del marker.
@@ -93,17 +128,18 @@ class Shield:
         # Para integrarse a FastAPI, esto retorna una estructura reconocible 
         # (o podria directamente retornar fastapi.Depends)
         return ShieldArgPlaceholder(
-            name=name, type_str=type, description=description, 
+            name=name, action=action, type_str=type, description=description, 
             default=default, context=context, meta=meta
         )
 
     @staticmethod
-    def create(name: str, type: str, description: str, context: str, meta: Tuple[Optional[str], Optional[str]] = (None, None), CreationProvider: Optional[Callable[..., Any]] = None) -> None:
+    def create(name: str, action: str, type: str, description: str, context: str, meta: Tuple[Optional[str], Optional[str]] = (None, None), CreationProvider: Optional[Callable[..., Any]] = None) -> None:
         """
         Registro manual imperativo de un permiso.
         """
         definition = PermissionDefinition(
             name=name,
+            action=action,
             type=type,
             description=description,
             context=context,
@@ -114,14 +150,14 @@ class Shield:
             CreationProvider(definition)
 
     @staticmethod
-    def use(name: str, type: str, context: str) -> Callable[[ResolverProvider, Callable[..., Any]], Any]:
+    def use(name: str, action: str, type: str, context: str) -> Callable[[ResolverProvider, Callable[..., Any]], Any]:
         """
         Uso de comprobacion imperativa en codigo.
         Retorna currying function esperando args (Provider, Callback).
         """
         def applier(provider: ResolverProvider, callback: Callable[..., Any]) -> Any:
             # Inject arguments to the provider as requested
-            has_permission = provider.resolve(name, type, context)
+            has_permission = provider.resolve(name, type, action, context)
             if not has_permission:
                 raise ShieldPermissionError(name=name, type_str=type, context=context)
             return callback()

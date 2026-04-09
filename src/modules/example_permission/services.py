@@ -8,8 +8,8 @@ class ExampleResolverProvider(ResolverProvider):
     Un Provider de ejemplo que asume que el usuario tiene permisos siempre.
     En un provider real, inyectarías la request o un token JWT y las reglas.
     """
-    def resolve(self, name: str, type_str: str, context: str) -> bool:
-        print(f"[Shield Simulation] Se ha verificado exitosamente el permiso '{name}' de tipo '{type_str}' para el contexto '{context}'")
+    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs) -> bool:
+        print(f"[Shield Simulation] Se ha verificado exitosamente el permiso '{name}' de tipo '{type_str}' con acción '{action}' para el contexto '{context}'")
         # Simula que si posee el permiso
         return True
 
@@ -34,6 +34,7 @@ class ExamplePermissionService(Service):
         # Ejecutamos con comprobación imperativa `Shield.use`
         return Shield.use(
             name="services:health:execute",
+            action="execute",
             type="service_action",
             context="ExamplePermissionService"
         )(provider, callback=internal_action)

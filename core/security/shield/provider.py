@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any, Coroutine
 
 class ResolverProvider(ABC):
     """
@@ -8,7 +9,7 @@ class ResolverProvider(ABC):
     """
 
     @abstractmethod
-    def resolve(self, name: str, type_str: str, context: str) -> bool:
+    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool | Coroutine[Any, Any, bool]:
         """
         Resuelve si el usuario/sesión actual tiene el permiso solicitado.
         Retorna True si tiene permiso, False de lo contrario.

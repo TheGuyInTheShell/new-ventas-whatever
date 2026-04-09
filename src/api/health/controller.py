@@ -16,6 +16,24 @@ from core.events import ChannelEvent
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 from src.modules.example_permission.services import ExamplePermissionService
+from fastapi import HTTPException
+from core.security.shield.provider import ResolverProvider
+
+class DemoGuardResolver(ResolverProvider):
+    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool:
+        if name == "health:read":
+            print(f"✅ [SHIELD-DEMO] Permitiendo acceso al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'")
+            return True
+        elif name == "health:ping":
+            print(f"❌ [SHIELD-DEMO] Denegando acceso al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'. Retornando HTTP 401")
+            raise HTTPException(status_code=401, detail="Unauthorized - Requiere autenticación (Demo Shield Guard)")
+        
+        # Comportamiento por defecto
+        print(f"✅ [SHIELD-DEMO] Permitiendo acceso por defecto al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'")
+        return True
+
+# Instalación temporal del resolver global a nivel de este archivo para la demo
+Shield._global_resolver = DemoGuardResolver()
 
 
 @Shield.register(context="HealthModule")
@@ -35,6 +53,7 @@ class HealthController(Controller):
     @Get("/")
     @Shield.need(
         name="health:read",
+        action="read",
         type="endpoint",
         description="Permite solicitar el estado general del servidor."
     )
@@ -53,6 +72,7 @@ class HealthController(Controller):
     @Get("/ping")
     @Shield.need(
         name="health:ping",
+        action="execute",
         type="endpoint",
         description="Permite enviar un ping general al servidor."
     )
@@ -70,6 +90,7 @@ class HealthController(Controller):
     @Get("/version")
     @Shield.need(
         name="health:version",
+        action="read",
         type="endpoint",
         description="Endpoint de diagnóstico - leer versión"
     )
@@ -87,6 +108,7 @@ class HealthController(Controller):
     @Get("/restricted")
     @Shield.need(
         name="health:restricted:view",
+        action="view",
         type="endpoint",
         description="Llamada a test protegido que invoca comprobaciones imperativas."
     )

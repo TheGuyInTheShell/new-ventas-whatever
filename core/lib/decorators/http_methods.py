@@ -234,6 +234,15 @@ def route(
     all_kwargs.update(kwargs)
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        shield_deps = getattr(func, "__dependencies__", [])
+        if shield_deps:
+            provided_deps = all_kwargs.get("dependencies")
+            if provided_deps is None:
+                provided_deps = []
+            elif not isinstance(provided_deps, list):
+                provided_deps = list(provided_deps)
+            all_kwargs["dependencies"] = provided_deps + list(shield_deps)
+
         route_definition: RouteDefinition = RouteDefinition(
             handler_name=func.__name__,
             http_method=http_method,

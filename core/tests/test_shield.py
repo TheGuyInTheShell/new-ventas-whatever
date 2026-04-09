@@ -25,7 +25,7 @@ class MockProvider(ResolverProvider):
     def __init__(self, allowed: bool):
         self.allowed = allowed
     
-    def resolve(self, name: str, type_str: str, context: str) -> bool:
+    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool:
         return self.allowed
 
 # --- Tests de Registro Manual e Imperativo ---
@@ -33,6 +33,7 @@ class MockProvider(ResolverProvider):
 def test_shield_create():
     Shield.create(
         name="test:manual",
+        action="create",
         type="action",
         description="A manual permission",
         context="GlobalContext",
@@ -48,9 +49,9 @@ def test_shield_create():
     assert node.permissions[0].meta.value == "tests"
 
 def test_shield_create_duplication_fails():
-    Shield.create(name="test:dup", type="action", description="1", context="Ctx")
+    Shield.create(name="test:dup", action="create", type="action", description="1", context="Ctx")
     with pytest.raises(ShieldRegistryError):
-        Shield.create(name="test:dup", type="action", description="2", context="Ctx")
+        Shield.create(name="test:dup", action="create", type="action", description="2", context="Ctx")
 
 def test_shield_use_allows_execution():
     provider = MockProvider(allowed=True)
@@ -61,7 +62,7 @@ def test_shield_use_allows_execution():
         executed = True
         return "Success"
         
-    result = Shield.use(name="test:action", type="action", context="Ctx")(provider, my_action)
+    result = Shield.use(name="test:action", action="execute", type="action", context="Ctx")(provider, my_action)
     
     assert executed
     assert result == "Success"
@@ -73,7 +74,7 @@ def test_shield_use_denies_execution():
         return "Success"
         
     with pytest.raises(ShieldPermissionError) as exc_info:
-        Shield.use(name="test:action", type="action", context="Ctx")(provider, my_action)
+        Shield.use(name="test:action", action="execute", type="action", context="Ctx")(provider, my_action)
         
     assert exc_info.value.name == "test:action"
     assert exc_info.value.context == "Ctx"
@@ -81,15 +82,18 @@ def test_shield_use_denies_execution():
 
 # --- Tests de Decoradores (Clase y Metodo) ---
 
+from core.lib.decorators import Get
+
 @Shield.register
 class ExampleController:
-    @Shield.need(name="example:read", type="endpoint", description="Read example")
+    @Shield.need(name="example:read", action="read", type="endpoint", description="Read example")
     def read(self):
         pass
 
 @Shield.register(context="CustomContext")
 class CustomContextController:
-    @Shield.need(name="custom:read", type="endpoint", description="Custom read")
+    @Get("/custom")
+    @Shield.need(name="custom:read", action="read", type="endpoint", description="Custom read")
     def read(self):
         pass
     
@@ -108,11 +112,24 @@ def test_shield_decorators_inject_metadata():
     assert perms[0]["name"] == "custom:read"
     assert perms[0]["context"] is None # hereda el de la clase en tiempo de escaneo
 
+    # Verification of dependency injection
+    deps = getattr(ExampleController.read, "__dependencies__")
+    assert len(deps) == 1
+    assert deps[0].__class__.__name__ == "Depends"
+
+    # Verification of integration with Core HTTP decorator (`@Get`)
+    route_def = getattr(CustomContextController.read, "__route_definition__")
+    assert route_def is not None
+    assert "dependencies" in route_def.kwargs
+    assert len(route_def.kwargs["dependencies"]) == 1
+    assert route_def.kwargs["dependencies"][0].__class__.__name__ == "Depends"
+
 # --- Tests de Shield ARG ---
 
 def test_shield_arg_descriptor():
     marker = Shield.arg(
         name="test:arg", 
+        action="read",
         type="argument", 
         description="Arg desc",
         default="DefaultValue",
@@ -138,15 +155,15 @@ from core.security.shield import Shield
 
 @Shield.register(context="ModuleA")
 class ModuleAController:
-    @Shield.need(name="modA:read", type="endpoint", description="Read A")
+    @Shield.need(name="modA:read", action="read", type="endpoint", description="Read A")
     def read(self): pass
 
 @Shield.register  # Tomara el contexto default del scan o fallback
 class ModuleBController:
-    @Shield.need(name="modB:read", type="endpoint", description="Read B")
+    @Shield.need(name="modB:read", action="read", type="endpoint", description="Read B")
     def read(self): pass
     
-    @Shield.need(name="custom:op", type="endpoint", description="C", context="OverrideCtx")
+    @Shield.need(name="custom:op", action="execute", type="endpoint", description="C", context="OverrideCtx")
     def op(self): pass
 '''
     p.write_text(content)
@@ -190,7 +207,7 @@ class ModuleBController:
     assert module_a_node.permissions[0].name == "modA:read"
 
 def test_clean_registry_empties_everything():
-    Shield.create("test", "t", "d", "c")
+    Shield.create("test", "create", "t", "d", "c")
     assert permission_registry.get_node("c") is not None
     permission_registry.clear()
     assert permission_registry.get_node("c") is None

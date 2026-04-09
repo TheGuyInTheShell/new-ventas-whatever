@@ -69,6 +69,7 @@ def _inspect_file(file_path: str, default_context: Optional[str]) -> None:
                                     
                                 definition = PermissionDefinition(
                                     name=p_data["name"],
+                                    action=p_data["action"],
                                     type=p_data["type"],
                                     description=p_data["description"],
                                     context=context,
