@@ -16,8 +16,8 @@ from core.events import ChannelEvent
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 from src.modules.example_permission.services import ExamplePermissionService
-from fastapi import HTTPException
-from core.security.shield.provider import ResolverProvider
+from fastapi import HTTPException, Request
+from core.security.shield.provider import ResolverProvider, BasicResolverProvider
 
 class DemoGuardResolver(ResolverProvider):
     def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool:
@@ -30,6 +30,13 @@ class DemoGuardResolver(ResolverProvider):
         
         # Comportamiento por defecto
         print(f"✅ [SHIELD-DEMO] Permitiendo acceso por defecto al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'")
+        return True
+
+
+class DemoBasicResolver(BasicResolverProvider):
+    def resolve(self, request: Request) -> bool:
+        # Comportamiento por defecto
+        print(f"✅ [SHIELD-DEMO] Permitiendo acceso por defecto al permiso")
         return True
 
 # Instalación temporal del resolver global a nivel de este archivo para la demo
@@ -119,3 +126,18 @@ class HealthController(Controller):
             Respuesta generada bajo la protección de un ResolverProvider abstracto.
         """
         return await self.ExamplePermissionService.perform_restricted_action()
+
+    @Get("/test-basic-shield")
+    @Shield.basic(
+        resolver=DemoBasicResolver()
+    )
+    async def test_basic_shield(self) -> Dict[str, str]:
+        """Retorna la versión actual de la API.
+
+        Returns:
+            Diccionario con información de versión.
+        """
+        return {
+            "api_version": "v1",
+            "app_version": "0.1.0",
+        }

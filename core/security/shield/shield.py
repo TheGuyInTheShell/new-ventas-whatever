@@ -6,7 +6,7 @@ from fastapi import Request, Depends, HTTPException
 
 from .types import PermissionDefinition, PermissionMeta
 from .registry import permission_registry
-from .provider import ResolverProvider, BasicProvider
+from .provider import ResolverProvider, BasicResolverProvider
 from .errors import ShieldPermissionError
 from .scanner import scan_permissions
 
@@ -120,7 +120,7 @@ class Shield:
         return decorator
 
     @staticmethod
-    def basic(resolver: BasicProvider) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def basic(resolver: BasicResolverProvider) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Decorador para endpoints que solo requieren validación a nivel petición (ej. API keys).
         """

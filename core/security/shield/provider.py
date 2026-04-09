@@ -21,7 +21,7 @@ class ResolverProvider(ABC):
         """
         pass
 
-class BasicProvider(ABC):
+class BasicResolverProvider(ABC):
     """
     Contrato abstracto simplificado que recibe unicamente la peticion.
     Ideal para validaciones de api keys u origin blocks a nivel primario.
