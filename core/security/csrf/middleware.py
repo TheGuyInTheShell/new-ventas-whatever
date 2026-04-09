@@ -57,7 +57,7 @@ class CSRFMiddleware:
             if match == Match.FULL:
                 endpoint = getattr(route, "endpoint", None)
                 break
-                
+                                
         # Si no es seguro, debemos revisar
         method = scope.get("method", "").upper()
         if method in ("POST", "PUT", "DELETE", "PATCH") and endpoint is not None:
@@ -90,20 +90,21 @@ class CSRFMiddleware:
                     while more_body:
                         message = await receive()
                         messages.append(message)
-                        body_bytes += message.get("body", b"")
                         more_body = message.get("more_body", False)
                         
-                    async def new_receive() -> dict:
-                        if messages:
-                            return messages.pop(0)
+                    # Un iterador de mensajes asíncronos para el middleware
+                    messages_for_middleware = list(messages)
+                    async def middleware_receive() -> dict:
+                        if messages_for_middleware:
+                            return messages_for_middleware.pop(0)
                         return {"type": "http.request", "body": b"", "more_body": False}
                         
-                    # Reconstruir el request base con el nuevo receive
-                    request = Request(scope, receive=new_receive)
+                    # Reconstruir el request base usando un receive exclusivo
+                    request = Request(scope, receive=middleware_receive)
                     
                     try:
                         form_data = await request.form()
-                        provided = form_data.get("csrf_token")
+                        provided = form_data.get("csrf_token") # type: ignore
                         if provided and provided == token:
                             is_valid = True
                     except Exception:
@@ -119,15 +120,21 @@ class CSRFMiddleware:
                         except Exception:
                             pass
                             
-                    # Si reconstruimos receive, reemplazamos el original para el futuro de la cadena
-                    receive = new_receive
+                    # Preparamos un iterador fresco para que la aplicación lo consuma normal
+                    messages_for_app = list(messages)
+                    async def app_receive() -> dict:
+                        if messages_for_app:
+                            return messages_for_app.pop(0)
+                        return {"type": "http.request", "body": b"", "more_body": False}
+                        
+                    receive = app_receive
                 
                 if not is_valid:
                     response = JSONResponse(
                         {"detail": "CSRF token missing or incorrect."}, 
                         status_code=403
                     )
-                    await response(scope, receive, send_wrapper)
+                    await response(scope, receive, send_wrapper) # type: ignore
                     return
                     
         await self.app(scope, receive, send_wrapper)

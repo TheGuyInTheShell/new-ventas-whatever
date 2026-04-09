@@ -8,6 +8,7 @@ from fastapi import Depends, Form as FastAPIForm
 from fastapi.responses import Response
 from fasthtml.common import *
 from typing import Annotated
+from core.security.csrf.csrf import CSRF
 
 # @Services(AuthService, UsersService)
 class SignPartial(Partial):
@@ -17,6 +18,7 @@ class SignPartial(Partial):
 
 
     @Post("/in", response_class=Response)
+    @CSRF(['form'])
     async def sign_in_partial(self, username: Annotated[str, FastAPIForm()], password: Annotated[str, FastAPIForm()], db: AsyncSession = Depends(get_async_db)) -> Response:
         
         # user = await self.AuthService.authenticade_user(db, username, password)
