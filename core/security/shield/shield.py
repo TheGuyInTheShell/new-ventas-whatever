@@ -6,7 +6,7 @@ from fastapi import Request, Depends, HTTPException
 
 from .types import PermissionDefinition, PermissionMeta
 from .registry import permission_registry
-from .provider import ResolverProvider
+from .provider import ResolverProvider, BasicProvider
 from .errors import ShieldPermissionError
 from .scanner import scan_permissions
 
@@ -120,7 +120,35 @@ class Shield:
         return decorator
 
     @staticmethod
-    def arg(name: str, action: str, type: str, description: str, default: T = None, context: Optional[str] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Any:
+    def basic(resolver: BasicProvider) -> Callable[[Callable[P, R]], Callable[P, R]]:
+        """
+        Decorador para endpoints que solo requieren validación a nivel petición (ej. API keys).
+        """
+        def decorator(func: Callable[P, R]) -> Callable[P, R]:
+            if not hasattr(func, "__dependencies__"):
+                setattr(func, "__dependencies__", [])
+                
+            async def basic_guard(request: Request) -> None:
+                is_async = inspect.iscoroutinefunction(resolver.resolve)
+                if is_async:
+                    res = await cast(Coroutine[Any, Any, bool], resolver.resolve(request))
+                else:
+                    res = cast(bool, resolver.resolve(request))
+                    
+                if not res:
+                    raise HTTPException(status_code=401, detail="Acceso denegado (Invalid/Missing Credentials)")
+
+            getattr(func, "__dependencies__").append(Depends(basic_guard))
+            
+            @wraps(func)
+            def wrapper(*args: Any, **kwargs: Any) -> R:
+                return func(*args, **kwargs) # type: ignore
+            return wrapper # type: ignore
+            
+        return decorator
+
+    @staticmethod
+    def arg(name: str, action: str, type: str, description: str, default: T, context: Optional[str] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Any:
         """
         Asigna el requerimiento de un permiso a un argumento especifico (simulado como marker/descriptor).
         Retorna la instancia del marker.

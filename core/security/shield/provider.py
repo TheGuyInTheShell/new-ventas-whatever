@@ -20,3 +20,16 @@ class ResolverProvider(ABC):
             context: Contexto del permiso (ej. 'UsersController')
         """
         pass
+
+class BasicProvider(ABC):
+    """
+    Contrato abstracto simplificado que recibe unicamente la peticion.
+    Ideal para validaciones de api keys u origin blocks a nivel primario.
+    """
+
+    @abstractmethod
+    def resolve(self, request: Any) -> bool | Coroutine[Any, Any, bool]:
+        """
+        Resuelve si la peticion es autorizada. Retorna True o False.
+        """
+        pass
