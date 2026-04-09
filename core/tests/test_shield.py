@@ -165,6 +165,12 @@ class ModuleBController:
     # El arbol reconstruido a nivel global (de root) deberia tener "AppBase", "ModuleA"
     assert "permissions" in latest_dict
     
+    import json
+    print("\n--- DICCIONARIO DE PERMISOS GENERADO ---")
+    print(json.dumps(latest_dict, indent=2, default=str))
+    print("----------------------------------------\n")
+
+    
     # Check "AppBase" via directly querying the index as well for sanity
     app_base_node = permission_registry.get_node("AppBase")
     assert app_base_node is not None

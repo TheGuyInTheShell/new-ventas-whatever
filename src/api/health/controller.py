@@ -13,8 +13,13 @@ from typing import Any, Dict
 from core.lib.decorators import Get
 from core.lib.register import Controller
 from core.events import ChannelEvent
+from core.security.shield import Shield
+from core.lib.decorators.services import Services
+from src.modules.example_permission.services import ExamplePermissionService
 
 
+@Shield.register(context="HealthModule")
+@Services(ExamplePermissionService)
 class HealthController(Controller):
     """Controller de health check para verificar el estado del servidor.
 
@@ -22,9 +27,17 @@ class HealthController(Controller):
         GET /            → Estado general del servidor
         GET /ping        → Respuesta simple de ping/pong
         GET /version     → Información de versión de la API
+        GET /restricted  → Endpoint invocando un servicio con chequeos Shield
     """
 
+    ExamplePermissionService: ExamplePermissionService
+
     @Get("/")
+    @Shield.need(
+        name="health:read",
+        type="endpoint",
+        description="Permite solicitar el estado general del servidor."
+    )
     async def health_check(self) -> Dict[str, Any]:
         """Retorna el estado general del servidor.
 
@@ -38,6 +51,11 @@ class HealthController(Controller):
         }
 
     @Get("/ping")
+    @Shield.need(
+        name="health:ping",
+        type="endpoint",
+        description="Permite enviar un ping general al servidor."
+    )
     async def ping(self) -> Dict[str, str]:
         """Endpoint simple de ping para verificar conectividad.
 
@@ -50,6 +68,11 @@ class HealthController(Controller):
         }
 
     @Get("/version")
+    @Shield.need(
+        name="health:version",
+        type="endpoint",
+        description="Endpoint de diagnóstico - leer versión"
+    )
     async def version(self) -> Dict[str, str]:
         """Retorna la versión actual de la API.
 
@@ -60,3 +83,17 @@ class HealthController(Controller):
             "api_version": "v1",
             "app_version": "0.1.0",
         }
+        
+    @Get("/restricted")
+    @Shield.need(
+        name="health:restricted:view",
+        type="endpoint",
+        description="Llamada a test protegido que invoca comprobaciones imperativas."
+    )
+    async def restricted(self) -> Dict[str, Any]:
+        """Llama a un servicio interno que hace una comprobación imperativa de Shield.
+        
+        Returns:
+            Respuesta generada bajo la protección de un ResolverProvider abstracto.
+        """
+        return await self.ExamplePermissionService.perform_restricted_action()
