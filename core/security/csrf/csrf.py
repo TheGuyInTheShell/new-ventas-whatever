@@ -1,14 +1,17 @@
 import functools
-import asyncio
+import inspect
 import secrets
 import hmac
 import hashlib
-from typing import Callable, Any, Optional, List, TypeVar, ParamSpec
+from typing import Callable, Any, Optional, List, TypeVar, ParamSpec, cast
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from core.lib.register.extension import Extension
 from .setting import CSRF_SECRET_KEY
 from .middleware import CSRFMiddleware
+
+from fastapi.templating import Jinja2Templates
+
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -80,7 +83,7 @@ def CSRF(
         # 1. Establecer metadata para CSRFCheck Middleware
         setattr(class_method, "__csrf_pattern__", {"sources": sources})
         
-        is_coroutine = asyncio.iscoroutinefunction(class_method)
+        is_coroutine = inspect.iscoroutinefunction(class_method)
 
         # 2. Establecer envoltura para CSRFJinja Injection
         if is_coroutine:
@@ -90,15 +93,15 @@ def CSRF(
                 
                 injectable = None
                 template_provider = None
-                request_obj = None
+                request_obj: Request | None = None
 
                 # Search request and templates in arguments
                 for arg in args:
                     if hasattr(arg, "templates"):
-                        template_provider = arg.templates
+                        template_provider = cast(Jinja2Templates, getattr(arg, "templates"))
                 
                 if "request" in kwargs:
-                    request_obj = kwargs["request"]
+                    request_obj = cast( Request, kwargs["request"])
                 else:
                     for arg in args:
                         if isinstance(arg, Request):
@@ -127,14 +130,14 @@ def CSRF(
 
                 injectable = None
                 template_provider = None
-                request_obj = None
+                request_obj: Request | None = None
 
                 for arg in args:
                     if hasattr(arg, "templates"):
-                        template_provider = arg.templates
+                        template_provider = cast(Jinja2Templates, getattr(arg, "templates"))
                 
                 if "request" in kwargs:
-                    request_obj = kwargs["request"]
+                    request_obj = cast(Request, kwargs["request"])
                 else:
                     for arg in args:
                         if isinstance(arg, Request):
