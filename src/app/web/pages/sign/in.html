@@ -1,4 +1,4 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
 {% block page %}
 
 <div class="min-h-screen flex items-center justify-center bg-base-200">
@@ -15,12 +15,14 @@
     </div>
 
     <form id="sign-in" hx-post="/partials/sign/in" hx-swap="innerHTML" hx-target="#notification">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="form-control mb-4">
         <label class="label">
           <span class="label-text font-semibold">Username</span>
           <span id="label-username" class="label-text-alt text-error font-semibold"></span>
         </label>
-        <label class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+        <label
+          class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
           <i data-lucide="user" class="w-4 h-4 opacity-70"></i>
           <input id="input-username" name="username" type="text" class="grow" placeholder="Username" required />
         </label>
@@ -31,13 +33,16 @@
           <span class="label-text font-semibold">Password</span>
           <span id="label-password" class="label-text-alt text-error font-semibold"></span>
         </label>
-        <label class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+        <label
+          class="input input-bordered flex items-center gap-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
           <i data-lucide="lock" class="w-4 h-4 opacity-70"></i>
           <input id="input-password" name="password" type="password" class="grow" placeholder="Password" required />
         </label>
       </div>
 
-      <button type="submit" class="btn btn-primary w-full text-white font-bold hover:scale-[1.02] active:scale-95 transition-transform">Sign in</button>
+      <button type="submit"
+        class="btn btn-primary w-full text-white font-bold hover:scale-[1.02] active:scale-95 transition-transform">Sign
+        in</button>
     </form>
   </div>
 </div>

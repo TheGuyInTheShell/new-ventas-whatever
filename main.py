@@ -29,6 +29,9 @@ app: FastAPI = FastAPI(
 # Initial load of extensions (e.g. Middlewares)
 load_extensions(app)
 
+from core.security.csrf.csrf import CSRFExtension
+CSRFExtension(app).extends()
+
 # ---------------------------------------------------------------------------
 # Proveedores de templates (Jinja2) por módulo
 # ---------------------------------------------------------------------------
