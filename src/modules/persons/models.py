@@ -2,7 +2,7 @@ from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from src.modules.business_entities.models import BusinessEntity
 
 if TYPE_CHECKING:
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 
-class Person(BaseAsync):
+class Person(BasicBaseAsync):
     __tablename__ = "persons"
     
     first_names: Mapped[str] = mapped_column(String(100), nullable=False)

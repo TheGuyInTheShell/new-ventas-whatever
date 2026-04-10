@@ -1,11 +1,11 @@
 from sqlalchemy import String, Integer, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from src.modules.values.models import Value
 
 
-class Balance(BaseAsync):
+class Balance(BasicBaseAsync):
     __tablename__ = "balances"
     
     type: Mapped[str] = mapped_column(String, nullable=False)

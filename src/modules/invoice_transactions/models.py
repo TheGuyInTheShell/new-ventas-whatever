@@ -2,14 +2,14 @@ from sqlalchemy import Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.invoices.models import Invoice
     from src.modules.transactions.models import Transaction
 
 
-class InvoiceTransaction(BaseAsync):
+class InvoiceTransaction(BasicBaseAsync):
     __tablename__ = "invoice_transactions"
 
     ref_invoice: Mapped[int] = mapped_column(

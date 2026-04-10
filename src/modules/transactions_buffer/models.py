@@ -2,7 +2,7 @@ from sqlalchemy import String, Integer, ForeignKey, Enum, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.users.models import User
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from src.modules.transactions_buffer.meta.models import MetaTransactionBuffer
 
 
-class TransactionBuffer(BaseAsync):
+class TransactionBuffer(BasicBaseAsync):
     __tablename__ = "transactions_buffer"
 
     quantity: Mapped[str] = mapped_column(String, nullable=True)

@@ -2,7 +2,7 @@ from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.invoices.meta.models import MetaInvoice
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ..invoice_business_entities.models import InvoiceBusinessEntity
 
 
-class Invoice(BaseAsync):
+class Invoice(BasicBaseAsync):
     __tablename__ = "invoices"
 
     context: Mapped[str] = mapped_column(String(100), nullable=True)

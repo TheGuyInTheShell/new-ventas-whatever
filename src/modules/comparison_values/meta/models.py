@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Integer, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.comparison_values.models import ComparisonValue
 
-class MetaComparisonValue(BaseAsync):
+class MetaComparisonValue(BasicBaseAsync):
     __tablename__ = "meta_comparison_values"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)

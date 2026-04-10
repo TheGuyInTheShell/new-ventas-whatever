@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import to_tsvector_ix
 
 from src.modules.roles.models import Role
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 
 class TSVector(types.TypeDecorator):
@@ -16,7 +16,7 @@ class TSVector(types.TypeDecorator):
     impl = TSVECTOR
 
 
-class User(BaseAsync):
+class User(BasicBaseAsync):
 
     __tablename__ = "users"
 

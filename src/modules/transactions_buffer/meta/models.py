@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Text, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.transactions_buffer.models import TransactionBuffer
 
 
-class MetaTransactionBuffer(BaseAsync):
+class MetaTransactionBuffer(BasicBaseAsync):
     __tablename__ = "meta_transactions_buffer"
 
     key: Mapped[str] = mapped_column(String(100), nullable=False)

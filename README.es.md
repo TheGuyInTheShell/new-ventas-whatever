@@ -580,7 +580,7 @@ El proyecto crea las tablas automáticamente al iniciar:
 ```python
 # En main.py
 BaseSync.metadata.create_all(engineSync)
-BaseAsync.metadata.create_all(engineSync)
+BasicBaseAsync.metadata.create_all(engineSync)
 ```
 
 Para migraciones más avanzadas, considera usar **Alembic**:

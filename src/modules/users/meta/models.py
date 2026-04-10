@@ -1,10 +1,10 @@
 from sqlalchemy import String, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from src.modules.users.models import User
 
-class MetaUsers(BaseAsync):
+class MetaUsers(BasicBaseAsync):
     __tablename__ = "meta_users"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)

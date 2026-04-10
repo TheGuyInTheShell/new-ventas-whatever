@@ -1,10 +1,10 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 
-class ImageFile(BaseAsync):
+class ImageFile(BasicBaseAsync):
 
     __tablename__ = "image_files"
 

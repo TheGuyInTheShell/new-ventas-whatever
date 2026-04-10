@@ -1,10 +1,10 @@
 from sqlalchemy import String, Text, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 
-class Options(BaseAsync):
+class Options(BasicBaseAsync):
     __tablename__ = "options"
     context: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)

@@ -1,9 +1,9 @@
 from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
-class RolePermission(BaseAsync):
+class RolePermission(BasicBaseAsync):
     __tablename__ = "role_permissions"
 
     role_id: Mapped[int] = mapped_column(

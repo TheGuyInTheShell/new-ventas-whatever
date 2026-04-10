@@ -1,11 +1,11 @@
 from sqlalchemy import String, Integer, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from src.modules.values.models import Value
 
 
-class MetaValue(BaseAsync):
+class MetaValue(BasicBaseAsync):
     """
     Flexible key-value metadata for values.
     Examples: year, month, promotion, category, etc.

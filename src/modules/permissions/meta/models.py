@@ -1,13 +1,13 @@
 from sqlalchemy import String, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from typing import TYPE_CHECKING
 
 from src.modules.permissions.models import Permission
 
 
-class MetaPermissions(BaseAsync):
+class MetaPermissions(BasicBaseAsync):
     __tablename__ = "meta_permissions"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)

@@ -2,14 +2,14 @@ from sqlalchemy import ForeignKey, Float, Integer, Index, UniqueConstraint, Stri
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.values.models import Value
     from src.modules.comparison_values.meta.models import MetaComparisonValue
 
 
-class ComparisonValue(BaseAsync):
+class ComparisonValue(BasicBaseAsync):
     """
     Represents a comparison ratio between two values.
     Example: 1 USD = 46.5 VES (quantity_from=1, quantity_to=46.5)

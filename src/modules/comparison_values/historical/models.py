@@ -1,10 +1,10 @@
 from sqlalchemy import Integer, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 from src.modules.values.models import Value
 
-class ComparisonValueHistorical(BaseAsync):
+class ComparisonValueHistorical(BasicBaseAsync):
     """
     Historical snapshot of comparison values for tracking changes over time.
     Same structure as ComparisonValue but for historical records.

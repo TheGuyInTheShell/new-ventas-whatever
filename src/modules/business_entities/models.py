@@ -2,14 +2,14 @@ from sqlalchemy import String, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.business_entities.meta.models import MetaBusinessEntity
     from src.modules.business_entities_groups.models import BusinessEntitiesGroup
 
 
-class BusinessEntity(BaseAsync):
+class BusinessEntity(BasicBaseAsync):
     __tablename__ = "business_entities"
     
     context: Mapped[str] = mapped_column(String(100), nullable=True)

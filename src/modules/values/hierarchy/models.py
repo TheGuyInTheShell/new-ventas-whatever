@@ -2,13 +2,13 @@ from sqlalchemy import Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.values.models import Value
 
 
-class ValuesHierarchy(BaseAsync):
+class ValuesHierarchy(BasicBaseAsync):
     __tablename__ = "values_hierarchy"
     
     ref_value_top: Mapped[int] = mapped_column(

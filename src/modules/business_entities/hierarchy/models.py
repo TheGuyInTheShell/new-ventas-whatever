@@ -2,13 +2,13 @@ from sqlalchemy import Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.business_entities.models import BusinessEntity
 
 
-class BusinessEntitiesHierarchy(BaseAsync):
+class BusinessEntitiesHierarchy(BasicBaseAsync):
     __tablename__ = "business_entities_hierarchy"
     
     ref_entity_top: Mapped[int] = mapped_column(

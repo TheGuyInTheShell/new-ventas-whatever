@@ -2,9 +2,9 @@ from sqlalchemy import ForeignKey, Integer, String, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, TYPE_CHECKING
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
-class Value(BaseAsync):
+class Value(BasicBaseAsync):
     """
     Represents a unit of value that can be compared with other values.
     Examples: Dollar (USD), Bitcoin (BTC), Hummer H2 (CAR) (Vehicle) 2016, etc.

@@ -1,10 +1,10 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 
-class Permission(BaseAsync):
+class Permission(BasicBaseAsync):
     __tablename__ = "permissions"
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     action: Mapped[str] = mapped_column(String(50), nullable=False)

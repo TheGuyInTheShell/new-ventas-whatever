@@ -3,10 +3,10 @@ from typing import List
 from sqlalchemy import ARRAY, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 
-class Role(BaseAsync):
+class Role(BasicBaseAsync):
     __tablename__ = "roles"
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)

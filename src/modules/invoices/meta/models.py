@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Text, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BaseAsync
+from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.invoices.models import Invoice
 
 
-class MetaInvoice(BaseAsync):
+class MetaInvoice(BasicBaseAsync):
     __tablename__ = "meta_invoices"
 
     key: Mapped[str] = mapped_column(String(100), nullable=False)

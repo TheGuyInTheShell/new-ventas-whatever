@@ -578,7 +578,7 @@ The project creates tables automatically upon startup:
 ```python
 # In main.py
 BaseSync.metadata.create_all(engineSync)
-BaseAsync.metadata.create_all(engineSync)
+BasicBaseAsync.metadata.create_all(engineSync)
 ```
 
 For more advanced migrations, consider using **Alembic**:
