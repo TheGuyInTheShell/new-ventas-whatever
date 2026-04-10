@@ -16,7 +16,7 @@ from core.events import ChannelEvent
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 from src.modules.example_permission.services import ExamplePermissionService
-from src.api.health.guards import DemoBasicResolver, DemoGuardResolver
+from .guards import DemoBasicResolver, DemoGuardResolver
 from core.lib.decorators.cache import cached
 
 @Shield.register(context="HealthModule")

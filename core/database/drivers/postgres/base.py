@@ -74,6 +74,33 @@ class VanillaBaseAsync(DeclarativeBase):
     pass
 
 
+class BasicAsync(DeclarativeBase):
+    uid: Mapped[str] = mapped_column(
+        String,
+        unique=True,
+        nullable=False,
+        index=True,
+        primary_key=True,
+        default=generate_uuid,
+    )
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True, index=True, nullable=False, autoincrement=True, unique=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, default=func.current_timestamp()
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, default=func.now(), onupdate=func.current_timestamp()
+    )
+
+    deleted_at: Mapped[datetime] = mapped_column(nullable=True)
+
+    is_deleted: Mapped[bool] = mapped_column(default=False)
+
+
 class BaseAsync(DeclarativeBase):
 
     uid: Mapped[str] = mapped_column(
