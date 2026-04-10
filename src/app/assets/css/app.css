@@ -1,23 +1,23 @@
 @import "tailwindcss";
 @plugin "daisyui";
 @import 'tailwind-animations';
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
 @source "../../web/**/*.html";
 @source "../../../admin/web/**/*.html";
 @source "../../../../node_modules/preline/dist/*.js";
 
 @theme {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --color-primary: #009485;
+  --font-sans: "Public Sans", "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --color-primary: #00C16A;
   --color-secondary: #8b5cf6;
   --color-accent: #22d3ee;
   --color-neutral: #a855f7;
   --color-base-100: #ffffff;
   --color-info: #4ade80;
-  --color-success: #448aff;
+  --color-success: #34D399;
   --color-warning: #ffa65c;
-  --color-error: #ff0000;
+  --color-error: #F87171;
 }
 
 @layer base {

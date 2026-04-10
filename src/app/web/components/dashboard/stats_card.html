@@ -1,0 +1,16 @@
+<div class="group bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-2xl hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+        <div class="p-2.5 rounded-full bg-primary/10 text-primary ring-4 ring-primary/5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+            <i data-lucide="{{ icon }}" class="size-5"></i>
+        </div>
+        {% if variation is defined %}
+        <div class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider {{ 'bg-success/20 text-success' if variation > 0 else 'bg-error/20 text-error' }}">
+            {{ '+' if variation > 0 }}{{ variation }}%
+        </div>
+        {% endif %}
+    </div>
+    <div>
+        <h3 class="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">{{ title }}</h3>
+        <p class="text-2xl font-bold text-neutral-900 dark:text-white">{{ value }}</p>
+    </div>
+</div>

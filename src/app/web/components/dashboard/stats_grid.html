@@ -1,0 +1,14 @@
+<div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+    {% with title="Customers", value=(800 + (range(1, 100) | random)), icon="users", variation=(range(-10, 20) | random) %}
+        {% include "components/dashboard/stats_card.html" %}
+    {% endwith %}
+    {% with title="Conversions", value="1,204", icon="chart-pie", variation=(range(-10, 20) | random) %}
+        {% include "components/dashboard/stats_card.html" %}
+    {% endwith %}
+    {% with title="Revenue", value="$524,000", icon="circle-dollar-sign", variation=(range(-10, 20) | random) %}
+        {% include "components/dashboard/stats_card.html" %}
+    {% endwith %}
+    {% with title="Orders", value=(100 + (range(1, 100) | random)), icon="shopping-cart", variation=(range(-10, 20) | random) %}
+        {% include "components/dashboard/stats_card.html" %}
+    {% endwith %}
+</div>

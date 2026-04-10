@@ -6,9 +6,10 @@
   _injectable.head.scripts | safe }} {{ _injectable.head.links | safe }}
 </head>
 
-<body {{ _injectable.body.attrs }}>
-  {{ _injectable.body.scripts_before | safe }} {% block page %}{% endblock %} {{
-  _injectable.body.scripts_after | safe }}
+<body {{ _injectable.body.attrs }} x-data>
+  {{ _injectable.body.scripts_before | safe }}
+  {% block page %}{% endblock %}
+  {{ _injectable.body.scripts_after | safe }}
 </body>
 
 </html>
