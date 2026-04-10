@@ -20,6 +20,9 @@
   --color-error: #F87171;
 }
 
+@variant is-drawer-open (.drawer:has(#my-drawer-4:checked) &);
+@variant is-drawer-close (.drawer:not(:has(#my-drawer-4:checked)) &);
+
 @layer base {
   body {
     @apply antialiased;

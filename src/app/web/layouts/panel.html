@@ -1,160 +1,23 @@
 {% extends "base.html" %}
 
 {% block page %}
-<div class="relative flex w-full min-h-svh bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans"
-    x-bind:class="$store.dashboard.sidebarOpen ? '' : 'overflow-hidden'">
-
-    <!-- Mobile Sidebar Backdrop -->
-    <div x-cloak x-show="$store.dashboard.sidebarOpen"
-        class="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-sm md:hidden"
-        x-on:click="$store.dashboard.sidebarOpen = false" x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"></div>
-
-    <!-- Sidebar Navigation -->
-    <aside x-cloak
-        class="fixed left-0 z-50 flex flex-col h-svh border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-all duration-300 ease-in-out md:sticky md:top-0"
-        x-bind:class="{
-               'w-64 translate-x-0': $store.dashboard.sidebarOpen && !$store.dashboard.sidebarCollapsed,
-               'w-20 translate-x-0': $store.dashboard.sidebarCollapsed && window.innerWidth >= 768,
-               '-translate-x-full md:translate-x-0': !$store.dashboard.sidebarOpen
-           }">
-
-        <!-- Sidebar Header (Teams Menu Style) -->
-        <div
-            class="flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0">
-            <div class="flex items-center gap-3 transition-opacity duration-300"
-                x-bind:class="$store.dashboard.sidebarCollapsed ? 'opacity-0 md:opacity-100' : 'opacity-100'">
-                <div
-                    class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
-                    <i data-lucide="layout-grid" class="size-5"></i>
-                </div>
-                <div class="flex flex-col overflow-hidden" x-show="!$store.dashboard.sidebarCollapsed">
-                    <span class="text-sm font-bold truncate">Acme Finance</span>
-                    <span
-                        class="text-[10px] text-neutral-500 font-medium uppercase tracking-wider truncate">Owner</span>
-                </div>
+<div class="drawer lg:drawer-open bg-white dark:bg-neutral-950 font-sans">
+    <input id="my-drawer-4" type="checkbox" class="drawer-toggle" checked />
+    
+    <div class="drawer-content flex flex-col min-h-svh">
+        <!-- Top Navbar -->
+        <nav class="navbar sticky top-0 z-30 w-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 md:px-6 h-16 shrink-0">
+            <div class="flex-none">
+                <label for="my-drawer-4" aria-label="toggle sidebar" class="btn btn-square btn-ghost text-neutral-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-5">
+                        <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M9 4v16"></path>
+                        <path d="M14 10l2 2l-2 2"></path>
+                    </svg>
+                </label>
             </div>
-            <button class="ml-auto md:hidden p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                x-on:click="$store.dashboard.sidebarOpen = false">
-                <i data-lucide="x" class="size-5"></i>
-            </button>
-        </div>
-
-        <!-- Sidebar Content -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
-
-            <!-- Quick Link Search (Nuxt UI style) -->
-            <div class="px-1" x-show="!$store.dashboard.sidebarCollapsed">
-                <button
-                    class="flex items-center w-full px-3 py-2 text-xs text-neutral-500 border border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
-                    <i data-lucide="search" class="size-4 mr-2"></i>
-                    <span>Search...</span>
-                    <span
-                        class="ml-auto text-[10px] bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600">⌘K</span>
-                </button>
-            </div>
-
-            <!-- Navigation Groups -->
-            <nav class="space-y-1">
-                <a href="/dashboard"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-primary/5 hover:text-primary group"
-                    x-bind:class="{ 'justify-center px-0': $store.dashboard.sidebarCollapsed }">
-                    <i data-lucide="house" class="size-5 shrink-0 transition-colors group-hover:text-primary"></i>
-                    <span x-show="!$store.dashboard.sidebarCollapsed"
-                        x-transition:enter="transition delay-150">Home</span>
-                </a>
-
-                <div class="pt-4" x-show="!$store.dashboard.sidebarCollapsed">
-                    <span
-                        class="px-3 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Management</span>
-                </div>
-
-                <div x-data="{ open: false }" class="space-y-1">
-                    <button x-on:click="open = !open"
-                        class="flex items-center w-full gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 group"
-                        x-bind:class="{ 'justify-center px-0': $store.dashboard.sidebarCollapsed }">
-                        <i data-lucide="users" class="size-5 shrink-0"></i>
-                        <span x-show="!$store.dashboard.sidebarCollapsed" class="flex-1 text-left">Customers</span>
-                        <i x-show="!$store.dashboard.sidebarCollapsed" data-lucide="chevron-down"
-                            class="size-4 transition-transform duration-200"
-                            x-bind:class="open ? 'rotate-180' : ''"></i>
-                    </button>
-                    <div x-show="open && !$store.dashboard.sidebarCollapsed" x-collapse class="pl-11 space-y-1">
-                        <a href="#" class="block text-xs text-neutral-500 hover:text-primary py-1">Contact List</a>
-                        <a href="#" class="block text-xs text-neutral-500 hover:text-primary py-1">Groups</a>
-                    </div>
-                </div>
-
-                <a href="#"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 group"
-                    x-bind:class="{ 'justify-center px-0': $store.dashboard.sidebarCollapsed }">
-                    <i data-lucide="inbox" class="size-5 shrink-0"></i>
-                    <span x-show="!$store.dashboard.sidebarCollapsed">Inbox</span>
-                    <span x-show="!$store.dashboard.sidebarCollapsed"
-                        class="ml-auto bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">4</span>
-                </a>
-            </nav>
-
-            <div class="pt-4" x-show="!$store.dashboard.sidebarCollapsed">
-                <span class="px-3 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Security</span>
-            </div>
-
-            <nav class="space-y-1">
-                <a href="#"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 group"
-                    x-bind:class="{ 'justify-center px-0': $store.dashboard.sidebarCollapsed }">
-                    <i data-lucide="shield-check" class="size-5 shrink-0"></i>
-                    <span x-show="!$store.dashboard.sidebarCollapsed">Permissions</span>
-                </a>
-                <a href="#"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 group"
-                    x-bind:class="{ 'justify-center px-0': $store.dashboard.sidebarCollapsed }">
-                    <i data-lucide="settings-2" class="size-5 shrink-0"></i>
-                    <span x-show="!$store.dashboard.sidebarCollapsed">Settings</span>
-                </a>
-            </nav>
-        </div>
-
-        <!-- Sidebar Footer (User Menu Style) -->
-        <div class="p-3 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
-            <button
-                class="flex items-center w-full gap-3 p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors overflow-hidden group">
-                <div class="relative shrink-0">
-                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
-                        class="w-8 h-8 rounded-full border border-white dark:border-neutral-900 shadow-sm"
-                        alt="User avatar">
-                    <div
-                        class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-white dark:border-neutral-900 shadow-xs">
-                    </div>
-                </div>
-                <div class="flex flex-col text-left overflow-hidden" x-show="!$store.dashboard.sidebarCollapsed">
-                    <span class="text-xs font-bold truncate">John Doe</span>
-                    <span class="text-[10px] text-neutral-500 truncate">john@financepro.com</span>
-                </div>
-                <i x-show="!$store.dashboard.sidebarCollapsed" data-lucide="chevrons-up-down"
-                    class="ml-auto size-4 text-neutral-400"></i>
-            </button>
-        </div>
-    </aside>
-
-    <!-- Content Area -->
-    <main class="flex-1 flex flex-col min-w-0 min-h-svh transition-all duration-300">
-
-        <!-- Header / Navbar -->
-        <header
-            class="sticky top-0 z-30 h-16 flex items-center justify-between px-4 md:px-6 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800">
-            <div class="flex items-center gap-4">
-                <button class="md:hidden p-2 text-neutral-500" x-on:click="$store.dashboard.sidebarOpen = true">
-                    <i data-lucide="menu" class="size-5"></i>
-                </button>
-                <button
-                    class="hidden md:flex p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                    x-on:click="$store.dashboard.toggleSidebar()">
-                    <i data-lucide="panel-left" class="size-5"></i>
-                </button>
-
+            
+            <div class="flex-1 px-4">
                 <nav class="hidden sm:flex items-center text-sm font-medium">
                     <span class="text-neutral-400">Dashboard</span>
                     <i data-lucide="chevron-right" class="size-4 mx-2 text-neutral-300"></i>
@@ -162,50 +25,129 @@
                 </nav>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex-none gap-2">
                 <div class="relative hidden sm:block">
-                    <input type="text" placeholder="Search..."
-                        class="w-64 h-9 pl-9 pr-4 text-xs bg-neutral-100 dark:bg-neutral-900 border-transparent focus:border-primary focus:ring-0 rounded-lg transition-all">
-                    <i data-lucide="search"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400"></i>
+                  <input type="text" placeholder="Search..." class="w-64 h-9 pl-9 pr-4 text-xs bg-neutral-100 dark:bg-neutral-900 border-transparent focus:border-primary focus:ring-0 rounded-lg transition-all">
+                  <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400"></i>
                 </div>
-
-                <button
-                    class="p-2.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors relative">
+                
+                <button class="p-2.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors relative">
                     <i data-lucide="bell" class="size-5"></i>
-                    <span
-                        class="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full ring-2 ring-white dark:ring-neutral-950"></span>
+                    <span class="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full ring-2 ring-white dark:ring-neutral-950"></span>
                 </button>
-
+                
                 <div class="h-6 w-px bg-neutral-200 dark:border-neutral-800 mx-1"></div>
-
-                <button
-                    class="p-2 md:p-1 flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors">
-                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
-                        class="w-8 h-8 rounded-lg shadow-sm">
+                
+                <button class="p-2 md:p-1 flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors">
+                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff" class="w-8 h-8 rounded-lg shadow-sm">
                     <i data-lucide="chevron-down" class="hidden md:block size-4 text-neutral-400"></i>
                 </button>
             </div>
-        </header>
+        </nav>
 
-        <!-- Main Content -->
-        <div id="main-content"
-            class="flex-1 relative scroll-smooth overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
+        <!-- Page Content -->
+        <main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto scroll-smooth">
             {% block content %}
             {% endblock %}
-        </div>
-    </main>
+        </main>
+    </div>
 
-    <!-- Right Sidebar / Notifications Slideover (Placeholder) -->
-    <div x-cloak x-show="$store.dashboard.notificationsOpen"
-        class="fixed inset-y-0 right-0 z-[60] w-full max-w-sm bg-white dark:bg-neutral-900 shadow-2xl border-l border-neutral-200 dark:border-neutral-800"
-        x-transition:enter="transition transform ease-out duration-300" x-transition:enter-start="translate-x-full"
-        x-transition:enter-end="translate-x-0" x-transition:leave="transition transform ease-in duration-200"
-        x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
-        <div class="flex items-center justify-between p-4 border-b dark:border-neutral-800">
-            <h2 class="font-bold">Notifications</h2>
-            <button x-on:click="$store.dashboard.notificationsOpen = false" class="p-2"><i data-lucide="x"
-                    class="size-5"></i></button>
+    <!-- Sidebar Drawer Side -->
+    <div class="drawer-side z-50 is-drawer-close:overflow-visible">
+        <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
+        
+        <div class="flex flex-col min-h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 ease-in-out is-drawer-close:w-14 is-drawer-open:w-64">
+            
+            <!-- Sidebar Header -->
+            <div class="flex items-center h-16 px-3 border-b border-neutral-200 dark:border-neutral-800 shrink-0 overflow-hidden">
+                <div class="flex items-center gap-3 w-full">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
+                        <i data-lucide="layout-grid" class="size-5"></i>
+                    </div>
+                    <div class="flex flex-col overflow-hidden is-drawer-close:hidden" x-transition>
+                        <span class="text-sm font-bold truncate text-neutral-900 dark:text-white">Acme Finance</span>
+                        <span class="text-[10px] text-neutral-500 font-medium uppercase tracking-wider truncate">Owner</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
+                
+                <!-- Quick Search (Mini state tooltip) -->
+                <div class="px-1">
+                    <button class="flex items-center w-full px-2 py-2 text-xs text-neutral-500 border border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Quick Search (⌘K)">
+                        <i data-lucide="search" class="size-4 shrink-0"></i>
+                        <span class="ml-2 is-drawer-close:hidden">Search...</span>
+                    </button>
+                </div>
+
+                <ul class="menu p-0 w-full gap-1">
+                    <li class="group">
+                        <a href="/dashboard" class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-primary/5 hover:text-primary is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Home">
+                            <i data-lucide="house" class="size-5 shrink-0 transition-colors group-hover:text-primary"></i>
+                            <span class="is-drawer-close:hidden font-medium">Home</span>
+                        </a>
+                    </li>
+
+                    <div class="pt-2 px-2 is-drawer-close:hidden">
+                        <span class="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Management</span>
+                    </div>
+
+                    <li>
+                        <details x-data="{ open: false }" @toggle="open = $event.target.open" class="group">
+                            <summary class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Customers">
+                                <i data-lucide="users" class="size-5 shrink-0"></i>
+                                <span class="flex-1 text-left is-drawer-close:hidden font-medium">Customers</span>
+                            </summary>
+                            <ul class="is-drawer-close:hidden mt-1 ml-4 border-l border-neutral-200 dark:border-neutral-800 pl-4 space-y-1">
+                                <li><a href="#" class="text-xs py-1.5 hover:text-primary">Contact List</a></li>
+                                <li><a href="#" class="text-xs py-1.5 hover:text-primary">Groups</a></li>
+                            </ul>
+                        </details>
+                    </li>
+
+                    <li>
+                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Inbox">
+                            <i data-lucide="inbox" class="size-5 shrink-0"></i>
+                            <span class="flex-1 is-drawer-close:hidden font-medium">Inbox</span>
+                            <span class="is-drawer-close:hidden bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">4</span>
+                        </a>
+                    </li>
+                    
+                    <div class="pt-2 px-2 is-drawer-close:hidden">
+                        <span class="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">System</span>
+                    </div>
+
+                    <li>
+                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Permissions">
+                            <i data-lucide="shield-check" class="size-5 shrink-0"></i>
+                            <span class="is-drawer-close:hidden font-medium">Permissions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Settings">
+                            <i data-lucide="settings-2" class="size-5 shrink-0"></i>
+                            <span class="is-drawer-close:hidden font-medium">Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="p-2 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
+                <button class="flex items-center w-full gap-3 p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors overflow-hidden group is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Profile: John Doe">
+                    <div class="relative shrink-0">
+                        <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff" 
+                             class="w-8 h-8 rounded-full border border-white dark:border-neutral-900 shadow-sm" alt="User avatar">
+                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-white dark:border-neutral-900 shadow-xs"></div>
+                    </div>
+                    <div class="flex flex-col text-left overflow-hidden is-drawer-close:hidden">
+                        <span class="text-xs font-bold truncate">John Doe</span>
+                        <span class="text-[10px] text-neutral-500 truncate">john@financepro.com</span>
+                    </div>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -225,23 +167,23 @@
     });
 </script>
 
-
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.store('dashboard', {
-            sidebarOpen: window.innerWidth >= 768,
-            sidebarCollapsed: false,
+            sidebarCollapsed: !document.getElementById('my-drawer-4').checked,
             notificationsOpen: false,
 
-            toggleSidebar() {
-                if (window.innerWidth < 768) {
-                    this.sidebarOpen = !this.sidebarOpen;
-                } else {
-                    this.sidebarCollapsed = !this.sidebarCollapsed;
-                }
+            syncState() {
+                this.sidebarCollapsed = !document.getElementById('my-drawer-4').checked;
             }
         })
     })
+    
+    // Sync checkbox changes with store if needed
+    document.getElementById('my-drawer-4').addEventListener('change', (e) => {
+        if (window.Alpine) {
+            Alpine.store('dashboard').syncState();
+        }
+    });
 </script>
-
 {% endblock %}
