@@ -16,32 +16,8 @@ from core.events import ChannelEvent
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 from src.modules.example_permission.services import ExamplePermissionService
-from fastapi import HTTPException, Request
-from core.security.shield.provider import ResolverProvider, BasicResolverProvider
-
-class DemoGuardResolver(ResolverProvider):
-    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool:
-        if name == "health:read":
-            print(f"✅ [SHIELD-DEMO] Permitiendo acceso al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'")
-            return True
-        elif name == "health:ping":
-            print(f"❌ [SHIELD-DEMO] Denegando acceso al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'. Retornando HTTP 401")
-            raise HTTPException(status_code=401, detail="Unauthorized - Requiere autenticación (Demo Shield Guard)")
-        
-        # Comportamiento por defecto
-        print(f"✅ [SHIELD-DEMO] Permitiendo acceso por defecto al permiso: '{name}' con action '{action}' y type '{type_str}' y context '{context}'")
-        return True
-
-
-class DemoBasicResolver(BasicResolverProvider):
-    def resolve(self, request: Request) -> bool:
-        # Comportamiento por defecto
-        print(f"✅ [SHIELD-DEMO] Permitiendo acceso por defecto al permiso")
-        return True
-
-# Instalación temporal del resolver global a nivel de este archivo para la demo
-Shield._global_resolver = DemoGuardResolver()
-
+from src.api.health.guards import DemoBasicResolver, DemoGuardResolver
+from core.lib.decorators.cache import cached
 
 @Shield.register(context="HealthModule")
 @Services(ExamplePermissionService)
@@ -59,10 +35,11 @@ class HealthController(Controller):
 
     @Get("/")
     @Shield.need(
-        name="health:read",
+        name="health",
         action="read",
         type="endpoint",
-        description="Permite solicitar el estado general del servidor."
+        description="Permite solicitar el estado general del servidor.",
+        resolver=DemoGuardResolver()
     )
     async def health_check(self) -> Dict[str, Any]:
         """Retorna el estado general del servidor.
@@ -78,10 +55,11 @@ class HealthController(Controller):
 
     @Get("/ping")
     @Shield.need(
-        name="health:ping",
+        name="ping",
         action="execute",
         type="endpoint",
-        description="Permite enviar un ping general al servidor."
+        description="Permite enviar un ping general al servidor.",
+        resolver=DemoGuardResolver()
     )
     async def ping(self) -> Dict[str, str]:
         """Endpoint simple de ping para verificar conectividad.
@@ -96,11 +74,13 @@ class HealthController(Controller):
 
     @Get("/version")
     @Shield.need(
-        name="health:version",
+        name="version",
         action="read",
         type="endpoint",
-        description="Endpoint de diagnóstico - leer versión"
+        description="Endpoint de diagnóstico - leer versión",
+        resolver=DemoGuardResolver()
     )
+    @cached(ttl=60, prefix="health")
     async def version(self) -> Dict[str, str]:
         """Retorna la versión actual de la API.
 
@@ -114,10 +94,11 @@ class HealthController(Controller):
         
     @Get("/restricted")
     @Shield.need(
-        name="health:restricted:view",
-        action="view",
+        name="restricted",
+        action="execute",
         type="endpoint",
-        description="Llamada a test protegido que invoca comprobaciones imperativas."
+        description="Llamada a test protegido que invoca comprobaciones imperativas.",
+        resolver=DemoGuardResolver()
     )
     async def restricted(self) -> Dict[str, Any]:
         """Llama a un servicio interno que hace una comprobación imperativa de Shield.

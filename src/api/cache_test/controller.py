@@ -12,7 +12,10 @@ from core.lib.decorators import Get
 from core.lib.register import Controller
 from core.lib.decorators.cache import cached
 from core.lib.dependencies.cache import CacheDep
+from core.security.shield import Shield
+from src.api.health.guards import DemoGuardResolver
 
+@Shield.register(context="CacheTestModule")
 class CacheTestController(Controller):
     """Controller para pruebas experimentales del proveedor de caché global.
     """
@@ -38,8 +41,15 @@ class CacheTestController(Controller):
 
 
     @Get("/decorator")
+    @Shield.need(
+        name="version",
+        action="read",
+        type="endpoint",
+        description="Endpoint de diagnóstico - leer versión",
+        resolver=DemoGuardResolver()
+    )
     @cached(ttl=60, prefix="test_decorator")
-    async def test_decorator_cache(self, request: Request) -> Dict[str, Any]:
+    async def test_decorator_cache(self) -> Dict[str, Any]:
         """Prueba de caché a través del decorador global.
 
         Debe cachear este JSON serializable entero y retornarlo sin recalculación en los próximos 60s.

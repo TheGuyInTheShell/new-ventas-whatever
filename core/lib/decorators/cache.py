@@ -24,6 +24,7 @@ Usage:
 
 import hashlib
 import json
+import inspect
 from functools import wraps
 from typing import Callable, Optional
 
@@ -48,10 +49,21 @@ def cached(
     """
 
     def decorator(func: Callable) -> Callable:
+        sig = inspect.signature(func)
+        needs_request = True
+        for param in sig.parameters.values():
+            if param.name == "request" or param.annotation is Request:
+                needs_request = False
+                break
+
         @wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> object:
-            # Resolve the Request object from the handler signature
             request: Optional[Request] = kwargs.get("request")  # type: ignore[assignment]
+            
+            if needs_request and "request" in kwargs:
+                # Remove dynamically injected request to avoid unexpected kwarg errors
+                kwargs.pop("request")
+
             if request is None:
                 for arg in args:
                     if isinstance(arg, Request):
@@ -93,6 +105,23 @@ def cached(
             result = await func(*args, **kwargs)
             await cache.set(cache_key, result, ttl)
             return result
+        
+        if needs_request:
+            params_list = list(sig.parameters.values())
+            insert_idx = len(params_list)
+            for i, p in enumerate(params_list):
+                if p.kind == inspect.Parameter.VAR_KEYWORD:
+                    insert_idx = i
+                    break
+            params_list.insert(
+                insert_idx, 
+                inspect.Parameter(
+                    "request", 
+                    inspect.Parameter.KEYWORD_ONLY, 
+                    annotation=Request
+                )
+            )
+            wrapper.__signature__ = sig.replace(parameters=params_list)  # type: ignore[attr-defined]
 
         return wrapper
 

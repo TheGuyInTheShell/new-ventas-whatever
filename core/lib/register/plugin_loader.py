@@ -79,6 +79,10 @@ async def plugin_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         else:
             plugin.init()
 
+    # Register injectable dependencies
+    from fastapi_injectable import register_app
+    await register_app(app)
+    
     # Pass control to FastAPI
     yield
 
