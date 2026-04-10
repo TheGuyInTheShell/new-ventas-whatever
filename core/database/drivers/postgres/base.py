@@ -102,7 +102,7 @@ class BasicBaseAsync(DeclarativeBase):
 
     @classmethod
     def apply_rls_and_indexes(cls) -> None:
-        async def create(model_cls: type[Self]):
+        def create(model_cls: type[Self]):
             try:
                 table_name = getattr(model_cls, "__tablename__", None)
                 if not table_name:
@@ -133,9 +133,10 @@ class BasicBaseAsync(DeclarativeBase):
                 sync_conn.commit()
                 sync_conn.close()
             except Exception as e:
-                print(f"[!] Warning: Could not apply RLS/Indexes for {model_cls.__name__}: {e}")
+                pass # Suppress warning spam when running alembic auto-generator
 
-        asyncio.ensure_future(create(cls))
+        import threading
+        threading.Thread(target=create, args=(cls,), daemon=True).start()
 
     def __init_subclass__(cls) -> None:
         cls.apply_rls_and_indexes()
@@ -433,33 +434,34 @@ class BaseAsync(DeclarativeBase):
     @classmethod
     def create_global_views(cls):
 
-        async def create(cls: type[Self]):
+        def create(model_cls: type[Self]):
             try:
                 sync_conn = SessionSync()
 
-                sync_conn.execute(text(generate_dll_view(cls.__tablename__, "true")))
+                sync_conn.execute(text(generate_dll_view(model_cls.__tablename__, "true")))
 
-                sync_conn.execute(text(generate_dll_view(cls.__tablename__, "false")))
+                sync_conn.execute(text(generate_dll_view(model_cls.__tablename__, "false")))
 
                 sync_conn.commit()
 
-                cls.deleted = create_view(
-                    name=f"{cls.__tablename__}_deleted",
-                    selectable=select(cls).where(cls.is_deleted == True),
+                model_cls.deleted = create_view(
+                    name=f"{model_cls.__tablename__}_deleted",
+                    selectable=select(model_cls).where(model_cls.is_deleted == True),
                     metadata=BaseAsync.metadata,
                 )
 
-                cls.exists = create_view(
-                    name=f"{cls.__tablename__}_exists",
-                    selectable=select(cls).where(cls.is_deleted == False),
+                model_cls.exists = create_view(
+                    name=f"{model_cls.__tablename__}_exists",
+                    selectable=select(model_cls).where(model_cls.is_deleted == False),
                     metadata=BaseAsync.metadata,
                 )
 
                 sync_conn.close()
             except Exception as e:
-                print(f"[!] Warning: Could not create views for {cls.__tablename__}: {e}")
+                pass
 
-        asyncio.ensure_future(create(cls))
+        import threading
+        threading.Thread(target=create, args=(cls,), daemon=True).start()
 
     def __init_subclass__(cls) -> None:
 
