@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
 @import 'tailwind-animations';
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -9,26 +11,72 @@
 
 @theme {
   --font-sans: "Public Sans", "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --color-primary: #00C16A;
-  --color-secondary: #8b5cf6;
-  --color-accent: #22d3ee;
-  --color-neutral: #a855f7;
-  --color-base-100: #ffffff;
-  --color-info: #4ade80;
-  --color-success: #34D399;
-  --color-warning: #ffa65c;
-  --color-error: #F87171;
+  
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-premium-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 15px 2px rgba(0, 193, 106, 0.15);
 }
 
 @variant is-drawer-open (.drawer:has(#my-drawer-4:checked) &);
 @variant is-drawer-close (.drawer:not(:has(#my-drawer-4:checked)) &);
 
+/* Override DaisyUI theme colors */
 @layer base {
+  [data-theme="light"], :root {
+    --color-primary: #00C16A;
+    --color-secondary: #8b5cf6;
+    --color-accent: #22d3ee;
+    --color-neutral: #1f2937;
+    --color-base-100: #ffffff;
+    --color-base-200: #f8fafc;
+    --color-base-300: #e2e8f0;
+    --color-base-content: #1e293b;
+    --color-info: #4ade80;
+    --color-success: #34D399;
+    --color-warning: #ffa65c;
+    --color-error: #F87171;
+  }
+  
+  [data-theme="dark"] {
+    --color-primary: #00C16A;
+    --color-secondary: #8b5cf6;
+    --color-accent: #22d3ee;
+    --color-base-content: #e2e8f0;
+  }
+
   body {
     @apply antialiased;
     font-family: var(--font-sans);
+    color: var(--color-base-content, #1e293b);
+  }
+
+  /* Force DaisyUI drawer to use grid (fixes flex-column stacking) */
+  .drawer {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  .drawer.lg\:drawer-open {
+    @media (min-width: 1024px) {
+      grid-template-columns: auto 1fr;
+
+      & > .drawer-side {
+        grid-column: 1;
+        grid-row: 1;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+
+      & > .drawer-content {
+        grid-column: 2;
+        grid-row: 1;
+      }
+    }
   }
 }
+
 
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
@@ -53,6 +101,39 @@
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@utility transition-premium {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility hover-lift {
+  @apply transition-premium;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-premium-hover);
+  }
+}
+
+@utility hover-glow {
+  @apply transition-premium;
+  &:hover {
+    box-shadow: var(--shadow-glow);
+    border-color: var(--color-primary);
+  }
+}
+
+@utility sidebar-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-premium;
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
+  &.active {
+    background: var(--color-primary);
+    color: white;
+    box-shadow: var(--shadow-glow);
+  }
 }
 
 @utility animate-fade-in {

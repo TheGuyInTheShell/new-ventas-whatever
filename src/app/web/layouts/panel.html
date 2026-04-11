@@ -1,82 +1,99 @@
 {% extends "base.html" %}
 
 {% block page %}
-<div class="drawer lg:drawer-open bg-white dark:bg-neutral-950 font-sans">
+<div class="drawer lg:drawer-open">
     <input id="my-drawer-4" type="checkbox" class="drawer-toggle" checked />
-    
-    <div class="drawer-content flex flex-col min-h-svh">
+
+    <div class="drawer-content flex flex-col min-h-screen bg-base-100">
         <!-- Top Navbar -->
-        <nav class="navbar sticky top-0 z-30 w-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 md:px-6 h-16 shrink-0">
+        <nav
+            class="navbar sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur-md border-b border-base-300 px-4 md:px-6 h-16 shrink-0">
             <div class="flex-none">
-                <label for="my-drawer-4" aria-label="toggle sidebar" class="btn btn-square btn-ghost text-neutral-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-5">
-                        <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+                <label for="my-drawer-4" aria-label="toggle sidebar"
+                    class="btn btn-square btn-ghost text-base-content/60 transition-premium hover:scale-110 active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round"
+                        stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="size-5">
+                        <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z">
+                        </path>
                         <path d="M9 4v16"></path>
                         <path d="M14 10l2 2l-2 2"></path>
                     </svg>
                 </label>
             </div>
-            
+
             <div class="flex-1 px-4">
                 <nav class="hidden sm:flex items-center text-sm font-medium">
-                    <span class="text-neutral-400">Dashboard</span>
-                    <i data-lucide="chevron-right" class="size-4 mx-2 text-neutral-300"></i>
-                    <span class="text-neutral-900 dark:text-white">Home</span>
+                    <span class="text-base-content/60">Dashboard</span>
+                    <i data-lucide="chevron-right" class="size-4 mx-2 text-base-content/30"></i>
+                    <span class="text-base-content font-bold">Home</span>
                 </nav>
             </div>
 
             <div class="flex-none gap-2">
                 <div class="relative hidden sm:block">
-                  <input type="text" placeholder="Search..." class="w-64 h-9 pl-9 pr-4 text-xs bg-neutral-100 dark:bg-neutral-900 border-transparent focus:border-primary focus:ring-0 rounded-lg transition-all">
-                  <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400"></i>
+                    <input type="text" placeholder="Search..."
+                        class="w-64 h-9 pl-9 pr-4 text-xs bg-base-200 border-transparent focus:border-primary focus:ring-0 rounded-lg transition-all text-base-content">
+                    <i data-lucide="search"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40"></i>
                 </div>
-                
-                <button class="p-2.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors relative">
+
+                <button
+                    class="p-2.5 text-base-content/60 hover:bg-base-200 rounded-lg transition-premium hover:scale-110 active:scale-95 relative">
                     <i data-lucide="bell" class="size-5"></i>
-                    <span class="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full ring-2 ring-white dark:ring-neutral-950"></span>
+                    <span
+                        class="absolute top-2 right-2.5 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-base-100 shadow-sm shadow-primary/40"></span>
                 </button>
-                
-                <div class="h-6 w-px bg-neutral-200 dark:border-neutral-800 mx-1"></div>
-                
-                <button class="p-2 md:p-1 flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors">
-                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff" class="w-8 h-8 rounded-lg shadow-sm">
-                    <i data-lucide="chevron-down" class="hidden md:block size-4 text-neutral-400"></i>
+
+                <div class="h-6 w-px bg-base-300 mx-1"></div>
+
+                <button
+                    class="p-2 md:p-1 flex items-center gap-2 hover:bg-base-200 rounded-lg transition-premium hover:shadow-sm">
+                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
+                        class="w-8 h-8 rounded-lg shadow-sm border border-base-300">
+                    <i data-lucide="chevron-down" class="hidden md:block size-4 text-base-content/40"></i>
                 </button>
             </div>
         </nav>
 
         <!-- Page Content -->
-        <main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto scroll-smooth">
-            {% block content %}
-            {% endblock %}
-        </main>
+        <div class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto scroll-smooth">
+            <main id="main-content">
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
     </div>
 
     <!-- Sidebar Drawer Side -->
     <div class="drawer-side z-50 is-drawer-close:overflow-visible">
         <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
-        
-        <div class="flex flex-col min-h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 ease-in-out is-drawer-close:w-14 is-drawer-open:w-64">
-            
+
+        <div
+            class="flex flex-col min-h-full bg-base-200 border-r border-base-300 transition-all duration-300 ease-in-out is-drawer-close:w-14 is-drawer-open:w-60">
+
             <!-- Sidebar Header -->
-            <div class="flex items-center h-16 px-3 border-b border-neutral-200 dark:border-neutral-800 shrink-0 overflow-hidden">
+            <div class="flex items-center h-16 px-3 border-b border-base-300 shrink-0 overflow-hidden">
                 <div class="flex items-center gap-3 w-full">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
+                    <div
+                        class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
                         <i data-lucide="layout-grid" class="size-5"></i>
                     </div>
                     <div class="flex flex-col overflow-hidden is-drawer-close:hidden" x-transition>
-                        <span class="text-sm font-bold truncate text-neutral-900 dark:text-white">Acme Finance</span>
-                        <span class="text-[10px] text-neutral-500 font-medium uppercase tracking-wider truncate">Owner</span>
+                        <span class="text-sm font-bold truncate text-base-content">Acme Finance</span>
+                        <span
+                            class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider truncate">Owner</span>
                     </div>
                 </div>
             </div>
 
             <!-- Sidebar Content -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
-                
+
                 <!-- Quick Search (Mini state tooltip) -->
                 <div class="px-1">
-                    <button class="flex items-center w-full px-2 py-2 text-xs text-neutral-500 border border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Quick Search (⌘K)">
+                    <button
+                        class="flex items-center w-full px-2 py-2 text-xs text-base-content/60 border border-base-300 rounded-lg hover:bg-base-300 transition-colors is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                        data-tip="Quick Search (⌘K)">
                         <i data-lucide="search" class="size-4 shrink-0"></i>
                         <span class="ml-2 is-drawer-close:hidden">Search...</span>
                     </button>
@@ -84,50 +101,69 @@
 
                 <ul class="menu p-0 w-full gap-1">
                     <li class="group">
-                        <a href="/dashboard" class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-primary/5 hover:text-primary is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Home">
-                            <i data-lucide="house" class="size-5 shrink-0 transition-colors group-hover:text-primary"></i>
+                        <a href="/dashboard"
+                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                            data-tip="Home">
+                            <i data-lucide="house" class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
                             <span class="is-drawer-close:hidden font-medium">Home</span>
                         </a>
                     </li>
 
                     <div class="pt-2 px-2 is-drawer-close:hidden">
-                        <span class="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Management</span>
+                        <span
+                            class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Management</span>
                     </div>
 
                     <li>
                         <details x-data="{ open: false }" @toggle="open = $event.target.open" class="group">
-                            <summary class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Customers">
-                                <i data-lucide="users" class="size-5 shrink-0"></i>
+                            <summary
+                                class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                                data-tip="Customers">
+                                <i data-lucide="users"
+                                    class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
                                 <span class="flex-1 text-left is-drawer-close:hidden font-medium">Customers</span>
                             </summary>
-                            <ul class="is-drawer-close:hidden mt-1 ml-4 border-l border-neutral-200 dark:border-neutral-800 pl-4 space-y-1">
-                                <li><a href="#" class="text-xs py-1.5 hover:text-primary">Contact List</a></li>
-                                <li><a href="#" class="text-xs py-1.5 hover:text-primary">Groups</a></li>
+                            <ul class="is-drawer-close:hidden mt-1 ml-4 border-l border-base-300 pl-4 space-y-1">
+                                <li><a href="#"
+                                        class="text-xs py-1.5 transition-premium hover:text-primary hover:translate-x-1 inline-block text-base-content/70">Contact
+                                        List</a></li>
+                                <li><a href="#"
+                                        class="text-xs py-1.5 transition-premium hover:text-primary hover:translate-x-1 inline-block text-base-content/70">Groups</a>
+                                </li>
                             </ul>
                         </details>
                     </li>
 
                     <li>
-                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Inbox">
-                            <i data-lucide="inbox" class="size-5 shrink-0"></i>
+                        <a href="#"
+                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                            data-tip="Inbox">
+                            <i data-lucide="inbox" class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
                             <span class="flex-1 is-drawer-close:hidden font-medium">Inbox</span>
-                            <span class="is-drawer-close:hidden bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">4</span>
+                            <span
+                                class="is-drawer-close:hidden bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-primary/30">4</span>
                         </a>
                     </li>
-                    
+
                     <div class="pt-2 px-2 is-drawer-close:hidden">
-                        <span class="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">System</span>
+                        <span class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">System</span>
                     </div>
 
                     <li>
-                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Permissions">
-                            <i data-lucide="shield-check" class="size-5 shrink-0"></i>
+                        <a href="#"
+                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                            data-tip="Permissions">
+                            <i data-lucide="shield-check"
+                                class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
                             <span class="is-drawer-close:hidden font-medium">Permissions</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Settings">
-                            <i data-lucide="settings-2" class="size-5 shrink-0"></i>
+                        <a href="#"
+                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                            data-tip="Settings">
+                            <i data-lucide="settings-2"
+                                class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
                             <span class="is-drawer-close:hidden font-medium">Settings</span>
                         </a>
                     </li>
@@ -135,16 +171,20 @@
             </div>
 
             <!-- Sidebar Footer -->
-            <div class="p-2 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
-                <button class="flex items-center w-full gap-3 p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors overflow-hidden group is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Profile: John Doe">
+            <div class="p-2 border-t border-base-300 shrink-0">
+                <button
+                    class="flex items-center w-full gap-3 p-1 rounded-xl hover:bg-base-300 transition-colors overflow-hidden group is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                    data-tip="Profile: John Doe">
                     <div class="relative shrink-0">
-                        <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff" 
-                             class="w-8 h-8 rounded-full border border-white dark:border-neutral-900 shadow-sm" alt="User avatar">
-                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-white dark:border-neutral-900 shadow-xs"></div>
+                        <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
+                            class="w-8 h-8 rounded-full border border-base-100 shadow-sm" alt="User avatar">
+                        <div
+                            class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-base-200 shadow-xs">
+                        </div>
                     </div>
                     <div class="flex flex-col text-left overflow-hidden is-drawer-close:hidden">
-                        <span class="text-xs font-bold truncate">John Doe</span>
-                        <span class="text-[10px] text-neutral-500 truncate">john@financepro.com</span>
+                        <span class="text-xs font-bold truncate text-base-content">John Doe</span>
+                        <span class="text-[10px] text-base-content/60 truncate">john@financepro.com</span>
                     </div>
                 </button>
             </div>
@@ -178,7 +218,7 @@
             }
         })
     })
-    
+
     // Sync checkbox changes with store if needed
     document.getElementById('my-drawer-4').addEventListener('change', (e) => {
         if (window.Alpine) {

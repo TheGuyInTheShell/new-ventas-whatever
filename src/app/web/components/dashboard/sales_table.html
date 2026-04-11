@@ -1,32 +1,41 @@
-<div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm overflow-hidden flex flex-col h-full">
-    <div class="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <h2 class="text-sm font-bold uppercase tracking-widest text-neutral-400">Recent Sales</h2>
+<div class="bg-base-100 border border-base-300 rounded-2xl shadow-sm overflow-hidden flex flex-col h-full">
+    <div class="p-4 border-b border-base-300 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/50">Recent Sales</h2>
         <button class="text-xs font-bold text-primary hover:underline">View All</button>
     </div>
     <div class="flex-1 min-h-0 overflow-x-auto">
         <table class="w-full text-left border-collapse">
-            <thead class="bg-neutral-50 dark:bg-neutral-800/50">
-                <tr class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                    <th class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800">ID</th>
-                    <th class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800">Date</th>
-                    <th class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800">Status</th>
-                    <th class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800">Email</th>
-                    <th class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 text-right">Amount</th>
+            <thead class="bg-base-200/50">
+                <tr class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">
+                    <th class="px-6 py-3 border-b border-base-300">ID</th>
+                    <th class="px-6 py-3 border-b border-base-300">Date</th>
+                    <th class="px-6 py-3 border-b border-base-300">Status</th>
+                    <th class="px-6 py-3 border-b border-base-300">Email</th>
+                    <th class="px-6 py-3 border-b border-base-300 text-right">Amount</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody class="divide-y divide-base-300">
                 {% for sale in sales %}
-                <tr class="text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors group">
-                    <td class="px-6 py-4 font-mono text-neutral-500">#{{ sale.id }}</td>
-                    <td class="px-6 py-4 font-medium">{{ sale.date }}</td>
+                <tr class="text-xs transition-premium hover:bg-base-200/50 group">
+                    <td class="px-6 py-4 font-mono text-base-content/60 group-hover:text-primary transition-colors">#{{ sale.id }}</td>
+                    <td class="px-6 py-4 font-bold text-base-content">{{ sale.date }}</td>
                     <td class="px-6 py-4">
-                        {% set status_color = { 'paid': 'success', 'failed': 'error', 'refunded': 'neutral' }[sale.status] %}
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ 'bg-success/20 text-success' if sale.status == 'paid' else ('bg-error/20 text-error' if sale.status == 'failed' else 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300') }}">
+                        {% if sale.status == 'paid' %}
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary ring-1 ring-primary/30">
                             {{ sale.status }}
                         </span>
+                        {% elif sale.status == 'failed' %}
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-error/10 text-error ring-1 ring-error/30">
+                            {{ sale.status }}
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-base-200 text-base-content/60 ring-1 ring-base-300">
+                            {{ sale.status }}
+                        </span>
+                        {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-neutral-500 truncate max-w-[150px]">{{ sale.email }}</td>
-                    <td class="px-6 py-4 text-right font-bold text-neutral-900 dark:text-white">{{ sale.amount }}</td>
+                    <td class="px-6 py-4 text-base-content/70 truncate max-w-[150px] group-hover:text-base-content transition-colors">{{ sale.email }}</td>
+                    <td class="px-6 py-4 text-right font-bold text-base-content group-hover:scale-110 transition-transform origin-right">{{ sale.amount }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

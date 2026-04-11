@@ -30,7 +30,7 @@ class Dashboard(Template):
         """
         return self.templates.TemplateResponse(
             request,
-            name="pages/dashboard/dashboard.html",
+            name="pages/dashboard/index.html",
             context={
                 "request": request,
             },
