@@ -4,6 +4,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator, List
+from core.events import ChannelEvent
 
 from fastapi import FastAPI
 
@@ -73,6 +74,8 @@ async def plugin_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     plugins = _load_plugins(app)
 
     # Execute startup logic
+    ChannelEvent().emit_to("app.init").run(app=app)
+
     for plugin in plugins:
         if inspect.iscoroutinefunction(plugin.init):
             await plugin.init()
@@ -83,10 +86,13 @@ async def plugin_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from fastapi_injectable import register_app
     await register_app(app)
     
-    # Pass control to FastAPI
+    # Pass control to FastAPI 
+    ChannelEvent().emit_to("app.ready").run(app=app)
+    
     yield
 
     # Execute shutdown logic
+    ChannelEvent().emit_to("app.shutdown").run(app=app)
     for plugin in plugins:
         if inspect.iscoroutinefunction(plugin.terminate):
             await plugin.terminate()

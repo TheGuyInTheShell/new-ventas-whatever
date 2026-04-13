@@ -1,6 +1,6 @@
-from typing import List, Callable, Tuple, Any
+from typing import List, Callable, Any, Dict
 from fastapi.routing import APIRoute, BaseRoute
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.exc import IntegrityError
 import hashlib
@@ -346,4 +346,132 @@ class PermissionsService(Service):
             await db.rollback()
         finally:
             await db.close()
+
+    def get_shield_sync_callback(self, sessionAsync: async_sessionmaker[AsyncSession]) -> Callable[[Dict[str, Any]], Any]:
+        """
+        Retorna la función callback que se debe proveer a Shield.scan.
+        Esta función lanzará la sincronización en un job paralelo (background task).
+        """
+        import asyncio
+        def callback(registry_dict: Dict[str, Any]):
+            # Lanzamos el proceso en el background
+            asyncio.create_task(self._process_shield_permissions(registry_dict, sessionAsync))
+        return callback
+
+    async def _process_shield_permissions(self, registry_dict: Dict[str, Any], sessionAsync: async_sessionmaker[AsyncSession]):
+        """
+        Procesa el diccionario de Shield en background, compara el hash y persiste
+        los permisos nuevos en la base de datos vinculándolos al rol owner.
+        """
+        db: AsyncSession = sessionAsync()
+        try:
+            # 1. Generar hash del registro
+            hash_string = json.dumps(registry_dict, sort_keys=True)
+            current_hash = hashlib.sha256(hash_string.encode()).hexdigest()
+            
+            context_name = "system_init"
+            option_name = "permissions_hash_shield"
+
+            # 2. Check for existing hash in database
+            query = await db.execute(
+                select(Options).where(
+                    Options.context == context_name,
+                    Options.name == option_name
+                )
+            )
+            option_record = query.scalar_one_or_none()
+
+            if option_record and option_record.value == current_hash:
+                print(f"[Shield Sync] No changes detected (Hash: {current_hash[:8]}...). Skipping sync.")
+                return
+
+            print(f"[Shield Sync] Changes detected. Syncing Shield permissions to DB...")
+
+            # 3. Extraer todos los permisos del árbol aplanando
+            all_permissions = []
+            def extract_permissions(nodes_list):
+                for node in nodes_list:
+                    all_permissions.extend(node.get("permissions", []))
+                    if "childs" in node:
+                        extract_permissions(node["childs"])
+            
+            extract_permissions(registry_dict.get("permissions", []))
+
+            if not all_permissions:
+                print("[Shield Sync] No permissions found in scan.")
+                return
+
+            route_map = {}
+            for p in all_permissions:
+                # Utilizamos el nombre definido en @Shield.need(name="...")
+                route_map[p["name"]] = p
+
+            route_names = list(route_map.keys())
+
+            # 4. Obtener permisos existentes
+            existing_perms_query = await db.execute(
+                select(Permission).where(Permission.name.in_(route_names))
+            )
+            existing_perms = {p.name: p for p in existing_perms_query.scalars().all()}
+
+            # 5. Crear los faltantes
+            new_permissions = []
+            for name, p_data in route_map.items():
+                if name not in existing_perms:
+                    new_perm = Permission(
+                        name=name,
+                        action=p_data.get("action", "UNKNOWN"),
+                        description=p_data.get("description", "Shield Protected Path"),
+                        type=p_data.get("type", "SHIELD"),
+                    )
+                    db.add(new_perm)
+                    new_permissions.append(new_perm)
+
+            if new_permissions:
+                print(f"[Shield Sync] Creating {len(new_permissions)} new permissions...")
+                await db.flush() # Flush to get IDs
+                for p in new_permissions:
+                    existing_perms[p.name] = p
+
+            # 6. Vincular los permisos al rol 'owner'
+            owner_query = await db.execute(select(Role).where(Role.name == "owner"))
+            owner_role = owner_query.scalar_one_or_none()
+
+            if owner_role:
+                all_permission_ids = [p.id for p in existing_perms.values()]
+                
+                existing_links_query = await db.execute(
+                    select(RolePermission.permission_id).where(
+                        RolePermission.role_id == owner_role.id,
+                        RolePermission.permission_id.in_(all_permission_ids)
+                    )
+                )
+                existing_link_ids = set(existing_links_query.scalars().all())
+
+                new_links = []
+                for p_id in all_permission_ids:
+                    if p_id not in existing_link_ids:
+                        new_links.append(RolePermission(role_id=owner_role.id, permission_id=p_id))
+                
+                if new_links:
+                    print(f"[Shield Sync] Linking {len(new_links)} new permissions to owner role...")
+                    db.add_all(new_links)
+
+            # 7. Actualizar o crear registro de Hash
+            if option_record:
+                option_record.value = current_hash
+            else:
+                db.add(Options(context=context_name, name=option_name, value=current_hash))
+
+            # 8. Guardar transacción
+            await db.commit()
+            print(f"[Shield Sync] Shield sync completed successfully.")
+
+        except Exception as e:
+            print(f"[Shield Sync] Critical error in _process_shield_permissions: {e}")
+            traceback.print_exc()
+            await db.rollback()
+        finally:
+            await db.close()
+
 
