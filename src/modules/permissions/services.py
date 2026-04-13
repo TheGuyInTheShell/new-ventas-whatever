@@ -1,3 +1,4 @@
+from fastapi import Depends
 from typing import List, Callable, Any, Dict
 from fastapi.routing import APIRoute, BaseRoute
 from sqlalchemy import select
@@ -9,7 +10,8 @@ import functools
 import traceback
 
 from core.lib.register.service import Service
-
+from core.database import get_async_db
+from fastapi_injectable import injectable
 from .models import Permission
 from .schemas import RQCreatePermission, RQBulkPermission, RSPermission, RSBulkPermissionResult
 from ..roles.models import Role
@@ -474,4 +476,42 @@ class PermissionsService(Service):
         finally:
             await db.close()
 
+    @injectable
+    async def get_permission(
+        self,
+        name: str,
+        context: str,
+        action: str,
+        type_str: str,
+        db: AsyncSession = Depends(get_async_db)
+    ):
+        try:
+            query = await db.execute(
+                select(Permission).where(
+                    Permission.name == name,
+                    Permission.context == context,
+                    Permission.action == action,
+                    Permission.type == type_str
+                )
+            )
+            return query.scalar_one_or_none()
+        finally:
+            await db.close()
 
+    @injectable
+    async def check_role_has_permission(
+        self,
+        role_id: int,
+        permission_id: int,
+        db: AsyncSession = Depends(get_async_db)
+    ) -> bool:
+        try:
+            query = await db.execute(
+                select(RolePermission).where(
+                    RolePermission.role_id == role_id,
+                    RolePermission.permission_id == permission_id
+                )
+            )
+            return query.scalar_one_or_none() is not None
+        finally:
+            await db.close()

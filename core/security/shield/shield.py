@@ -1,4 +1,4 @@
-from typing import Callable, Any, TypeVar, Optional, Tuple, Type, overload, Dict, cast, Coroutine, ParamSpec
+from typing import Callable, Any, TypeVar, Optional, Tuple, Type, List, Dict, cast, Coroutine, ParamSpec
 from functools import wraps
 import inspect
 
@@ -62,7 +62,7 @@ class Shield:
         return decorator
 
     @staticmethod
-    def need(name: str, action: str, type: str, context: Optional[str] = None, description: str = "", resolver: Optional[ResolverProvider] = None, meta: Tuple[Optional[str], Optional[str]] = (None, None)) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def need(name: str, action: str, type: str, context: Optional[str] = None, description: str = "", resolver: Optional[ResolverProvider] = None, meta: List[Tuple[Optional[str], Optional[str]]] = [(None, None)]) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Decorador para un endpoint/metodo. Asigna la necesidad de un permiso.
         """
@@ -76,7 +76,7 @@ class Shield:
                 "description": description,
                 "type": type,
                 "context": context,
-                "meta": PermissionMeta(key=meta[0], value=meta[1])
+                "meta": meta
             }
             getattr(func, "__shield_permissions__").append(p_data)
             

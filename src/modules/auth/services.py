@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 
 from ..users.models import User
-from core.services.init_subscriber import initialize_subscriber_role
 from core.lib.register.service import Service
 
 from .schemas import RQUser, RSUser
@@ -112,13 +111,13 @@ class AuthService(Service):
 
     async def create_user(self, db: AsyncSession, user_data: RQUser) -> dict | None:
         try:
-            subscriber_role = await initialize_subscriber_role(db)
+            
             user = await User(
                 username=user_data.username,
                 password=self.hash_context.hash(user_data.password),
                 email=user_data.email,
                 full_name=user_data.full_name,
-                role_ref=subscriber_role.id,
+                role_ref=1,
             ).save(db)
 
             return {

@@ -29,7 +29,7 @@ class PermissionDefinition:
             "type": self.type,
             "description": self.description,
             "context": self.context,
-            "meta": self.meta.to_dict(),
+            "meta": self.meta,
         }
 
 
