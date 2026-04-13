@@ -44,24 +44,20 @@ class Shield:
         scan_permissions(path, callback, default_context=context)
 
     @staticmethod
-    def register(cls_or_context: Any = None, *, context: Optional[str] = None) -> Any:
+    def register(cls_or_context: Optional[Any] = None, *, context: Optional[str] = None) -> Any:
         """
         Decorador de clase.
         Puede usarse como @Shield.register o @Shield.register(context="MyModule")
         """
         def decorator(cls: Type[Any]) -> Type[Any]:
             setattr(cls, "__shield_context_marker__", True)
-            ctx = context if context is not None else (cls_or_context if isinstance(cls_or_context, str) else None)
+            ctx = context if context is not None else (cls_or_context.__name__ if inspect.isclass(cls_or_context) else None)
             setattr(cls, "__shield_context__", ctx)
             return cls
 
-        if isinstance(cls_or_context, type):
-            # Used as @Shield.register
+        if inspect.isclass(cls_or_context) or isinstance(cls_or_context, type):
+            # Used as @Shield.register sin parenthesis
             return decorator(cls_or_context)
-        elif isinstance(cls_or_context, str):
-            # Used as @Shield.register("SomeContext")
-            context = cls_or_context
-            return decorator
             
         return decorator
 

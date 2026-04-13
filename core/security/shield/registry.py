@@ -50,6 +50,13 @@ class PermissionRegistry:
                 parent_node = self.get_node(parent_context, create_if_missing=True)
                 if parent_node is not None and context not in parent_node.childs:
                     parent_node.childs[context] = node
+                
+                # Asegurar que el padre maestro se amarre al root
+                if parent_node is not None and parent_context not in self._root.childs:
+                    # En una jerarquía infinita esto requeriría reconstruir todo el árbol,
+                    # pero Shield usa 1 nivel de parent_context proporcionado por el scanner.
+                    self._root.childs[parent_context] = parent_node
+
             elif parent_context is None:
                 # Si no hay un padre claro, se ata al root global inicialmente
                 if context not in self._root.childs:
