@@ -425,6 +425,7 @@ class PermissionsService(Service):
                         action=p_data.get("action", "UNKNOWN"),
                         description=p_data.get("description", "Shield Protected Path"),
                         type=p_data.get("type", "SHIELD"),
+                        context=p_data.get("context", "UNKNOWN"),
                     )
                     db.add(new_perm)
                     new_permissions.append(new_perm)
@@ -435,12 +436,39 @@ class PermissionsService(Service):
                 for p in new_permissions:
                     existing_perms[p.name] = p
 
-            # 6. Vincular los permisos al rol 'owner'
+            # 6. Vincular los permisos al rol 'owner' y manejar metadata
             owner_query = await db.execute(select(Role).where(Role.name == "owner"))
             owner_role = owner_query.scalar_one_or_none()
 
+            all_permission_ids = [p.id for p in existing_perms.values()]
+            
+            # Sync Metadata
+            for p_name, p_data in route_map.items():
+                perm = existing_perms.get(p_name)
+                if not perm or not p_data.get("meta"):
+                    continue
+                
+                for m_key, m_val in p_data["meta"]:
+                    str_val = json.dumps(m_val) if not isinstance(m_val, str) else m_val
+                    # Check if exists
+                    meta_check = await db.execute(
+                        select(MetaPermissions).where(
+                            MetaPermissions.key == m_key,
+                            MetaPermissions.ref_permission == perm.id
+                        )
+                    )
+                    existing_meta = meta_check.scalar_one_or_none()
+                    if existing_meta:
+                        if existing_meta.value != str_val:
+                            existing_meta.value = str_val
+                    else:
+                        db.add(MetaPermissions(
+                            key=m_key,
+                            value=str_val,
+                            ref_permission=perm.id
+                        ))
+
             if owner_role:
-                all_permission_ids = [p.id for p in existing_perms.values()]
                 
                 existing_links_query = await db.execute(
                     select(RolePermission.permission_id).where(
