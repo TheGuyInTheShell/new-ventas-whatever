@@ -33,20 +33,105 @@ In the HTML:
 
 ## Shield: Permission System
 
-Shield is a hierarchical, robust permission management system that controls access to various parts of the application.
+Shield is a hierarchical, high-performance permission management system designed for FastAPI applications. It provides a declarative way to define, discover, and enforce security policies at the class, method, or even argument level.
 
 ### Key Components
-- **Registry (`core/security/shield/registry.py`)**: A central store for all registered permissions in the system.
-- **Scanner (`core/security/shield/scanner.py`)**: Automatically scans designated modules (folders) to discover and register permission metadata.
-- **Provider (`core/security/shield/provider.py`)**: The engine that evaluates whether a particular user has the required permission to perform an action.
 
-### Hierarchical Permissions
-Shield allows for specialized permission strings (e.g., `finance.reports.view`) which can be grouped and managed as a hierarchy.
+- **Registry (`core/security/shield/registry.py`)**: A hierarchical singleton store that organizes permissions by context (modules or features).
+- **Scanner (`core/security/shield/scanner.py`)**: An automated discovery tool that scans directories for classes and methods decorated with Shield metadata during application startup.
+- **Provider (`core/security/shield/provider.py`)**: The resolution engine. It evaluates whether a user (via `Request`) satisfies a permission requirement using a customizable `ResolverProvider`.
+- **Facade (`core/security/shield/shield.py`)**: The primary entry point for developers, offering decorators and imperative utilities.
 
-### Guards and Protection
-Shield integrates with the FastAPI routing system to act as a "Guard". 
-- When an endpoint is protected by a Shield guard, the system verifies the user's role and permission set BEFORE the request reaches the controller.
-- It leverages the `fastapi-guard` extension to provide automated security checks.
+### Declarative Usage (Decorators)
+
+Shield encourages a declarative approach to security by using decorators on controllers.
+
+#### 1. Context Registration
+Use `@Shield.register` at the class level to establish a default context for all permissions within that class.
+
+```python
+@Shield.register(context="Finance")
+class FinanceTemplate(Template):
+    # All methods here default to the "Finance" context
+    ...
+```
+
+#### 2. Endpoint Protection
+Use `@Shield.need` to protect specific endpoints. Shield will automatically inject a FastAPI `Depends` guard that validates the permission before execution.
+
+```python
+@Shield.register(context="Portfolio")
+class PortfolioController:
+    @Get("/assets")
+    @Shield.need(name="Assets", action="view", type="READ", description="View user assets")
+    async def get_assets(self, request: Request):
+        return {"data": "..."}
+```
+
+#### 3. Basic Validation
+For general protection layer (like API Key or JWT validation without specific granular permissions), use `@Shield.basic`.
+
+```python
+@Shield.basic(resolver=MyApiKeyResolver())
+async def secure_endpoint(request: Request):
+    ...
+```
+
+### Imperative Usage and Manual Registration
+
+When decorators are not sufficient, Shield provides imperative methods for manual control.
+
+#### Manual Registration
+Permissions can be registered manually during application initialization.
+
+```python
+Shield.create(
+    name="Report", 
+    action="export", 
+    type="WRITE", 
+    description="Export financial reports", 
+    context="Finance"
+)
+```
+
+#### Imperative Permission Checks
+For logic-heavy permission checks within a function body, use `Shield.use`.
+
+```python
+def process_sensitive_data(provider: ResolverProvider):
+    # Check permission and execute callback if authorized
+    return Shield.use("Data", "access", "READ", "Core")(
+        provider, 
+        lambda: "Sensitive Data Content"
+    )
+```
+
+### Automated Discovery (Scanning)
+
+To avoid manual registration of every permission, use `Shield.scan` during the application's lifespan setup. This will recursively find all decorated classes and methods.
+
+```python
+# In main.py or lifespan
+Shield.scan(
+    path="src/api", 
+    callback=lambda registry_dict: print(f"Registered {len(registry_dict)} permissions"),
+    context="Global"
+)
+```
+
+---
+
+## Services Integration: PermissionsTree
+
+For high-level management and representation of the permission hierarchy, the application provides the `PermissionsTree` service (`core/services/permissions/__init__.py`). 
+
+This service can be used to:
+- Generate unique deterministic signatures for permissions (`get_sign`).
+- Retrieve all registered permissions in an ordered manner for UI or synchronization (`get_all`).
+- Facilitate the creation of hierarchical nodes for database persistence.
+
+Best practices suggest using `Shield` for runtime enforcement and `PermissionsTree` for administrative operations and persistence logic.
+
 
 ## Implementation Guidelines
 
