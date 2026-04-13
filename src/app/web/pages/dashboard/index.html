@@ -6,25 +6,28 @@
     showDateRange: false,
     dateRange: 'Oct 14, 2023 - Oct 28, 2023'
 }" class="flex flex-col gap-6 animate-fade-in">
-    
+
     <!-- Dashboard Navbar (Nuxt UI style) -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-base-300">
         <div>
             <h1 class="text-lg font-bold text-base-content">Home</h1>
         </div>
         <div class="flex items-center gap-2">
-            <button class="hidden lg:flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-base-200 hover:bg-base-300 rounded-lg border border-base-300 transition-premium hover:scale-105 active:scale-95 shadow-sm"
-                    hx-get="/partials/dashboard/stats/" 
-                    hx-target="#stats-grid" 
-                    hx-swap="outerHTML">
+            <button
+                class="hidden lg:flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-base-200 hover:bg-base-300 rounded-lg border border-base-300 transition-premium hover:scale-105 active:scale-95 shadow-sm"
+                hx-get="/partials/dashboard/stats/" hx-target="#stats-grid" hx-swap="outerHTML">
                 <i data-lucide="database-zap" class="size-4 text-base-content/50"></i>
                 <span>Refresh Stats</span>
             </button>
-            <button class="p-2 text-base-content/60 hover:bg-base-200 rounded-lg transition-premium hover:scale-110 active:scale-95 relative" x-on:click="$store.dashboard.notificationsOpen = true">
+            <button
+                class="p-2 text-base-content/60 hover:bg-base-200 rounded-lg transition-premium hover:scale-110 active:scale-95 relative"
+                x-on:click="$store.dashboard.notificationsOpen = true">
                 <i data-lucide="bell" class="size-4"></i>
-                <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-error rounded-full ring-2 ring-base-100 shadow-sm shadow-error/40"></span>
+                <span
+                    class="absolute top-2 right-2 w-1.5 h-1.5 bg-error rounded-full ring-2 ring-base-100 shadow-sm shadow-error/40"></span>
             </button>
-            <button class="flex items-center justify-center size-8 bg-primary text-white rounded-full shadow-lg shadow-primary/30 transition-premium hover:scale-110 active:scale-90">
+            <button
+                class="flex items-center justify-center size-8 bg-primary text-white rounded-full shadow-lg shadow-primary/30 transition-premium hover:scale-110 active:scale-90">
                 <i data-lucide="plus" class="size-4"></i>
             </button>
         </div>
@@ -33,29 +36,41 @@
     <!-- Dashboard Toolbar -->
     <div class="flex flex-wrap items-center gap-4">
         <div class="relative">
-            <button x-on:click="showDateRange = !showDateRange" 
-                    class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-base-100 border border-base-300 rounded-lg transition-premium hover:border-primary hover:shadow-glow shadow-sm">
+            <button x-on:click="showDateRange = !showDateRange"
+                class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-base-100 border border-base-300 rounded-lg transition-premium hover:border-primary hover:shadow-glow shadow-sm">
                 <i data-lucide="calendar" class="size-4 text-base-content/40"></i>
                 <span x-text="dateRange"></span>
                 <i data-lucide="chevron-down" class="size-3 text-base-content/40"></i>
             </button>
             <!-- Date Range Picker Mock Dropdown -->
             <div x-show="showDateRange" x-on:click.away="showDateRange = false" x-cloak
-                 class="absolute left-0 mt-2 z-20 w-64 p-4 bg-base-100 border border-base-300 rounded-xl shadow-xl">
+                class="absolute left-0 mt-2 z-20 w-64 p-4 bg-base-100 border border-base-300 rounded-xl shadow-xl">
                 <p class="text-xs text-base-content/50 mb-2">Select Range</p>
                 <div class="grid grid-cols-2 gap-2">
-                    <button class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Last 7 Days</button>
-                    <button class="p-2 bg-primary text-white rounded-lg text-xs font-bold transition-colors">Last 14 Days</button>
-                    <button class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Last 30 Days</button>
-                    <button class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Custom</button>
+                    <button
+                        class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Last
+                        7 Days</button>
+                    <button class="p-2 bg-primary text-white rounded-lg text-xs font-bold transition-colors">Last 14
+                        Days</button>
+                    <button
+                        class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Last
+                        30 Days</button>
+                    <button
+                        class="p-2 bg-base-200 rounded-lg text-xs font-bold hover:bg-primary hover:text-white transition-colors">Custom</button>
                 </div>
             </div>
         </div>
 
         <div class="flex bg-base-200 p-1 rounded-lg">
-            <button x-on:click="selectedPeriod = 'daily'" :class="selectedPeriod === 'daily' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'" class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Daily</button>
-            <button x-on:click="selectedPeriod = 'weekly'" :class="selectedPeriod === 'weekly' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'" class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Weekly</button>
-            <button x-on:click="selectedPeriod = 'monthly'" :class="selectedPeriod === 'monthly' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'" class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Monthly</button>
+            <button x-on:click="selectedPeriod = 'daily'"
+                :class="selectedPeriod === 'daily' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'"
+                class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Daily</button>
+            <button x-on:click="selectedPeriod = 'weekly'"
+                :class="selectedPeriod === 'weekly' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'"
+                class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Weekly</button>
+            <button x-on:click="selectedPeriod = 'monthly'"
+                :class="selectedPeriod === 'monthly' ? 'bg-base-100 shadow-sm text-primary' : 'text-base-content/50'"
+                class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-premium">Monthly</button>
         </div>
     </div>
 
@@ -67,23 +82,30 @@
         <div class="lg:col-span-2 bg-base-100 border border-base-300 p-6 rounded-2xl shadow-sm space-y-4 hover-glow">
             <div class="flex items-center justify-between">
                 <div>
-                   <p class="text-[10px] text-base-content/50 uppercase font-bold tracking-[0.2em] mb-1">Revenue</p>
-                   <p class="text-3xl font-bold text-base-content">$142,500</p>
+                    <p class="text-[10px] text-base-content/50 uppercase font-bold tracking-[0.2em] mb-1">Revenue</p>
+                    <p class="text-3xl font-bold text-base-content">$142,500</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="p-1 green-dot rounded-full bg-primary/20 animate-pulse"><div class="size-2 bg-primary rounded-full"></div></span>
-                    <span class="text-[10px] font-bold uppercase text-base-content/50 tracking-wider">Live tracking</span>
+                    <span class="p-1 green-dot rounded-full bg-primary/20 animate-pulse">
+                        <div class="size-2 bg-primary rounded-full"></div>
+                    </span>
+                    <span class="text-[10px] font-bold uppercase text-base-content/50 tracking-wider">Live
+                        tracking</span>
                 </div>
             </div>
-            
-            <div class="w-full aspect-21/9 min-h-[300px] flex items-center justify-center bg-base-200/50 rounded-xl relative overflow-hidden group">
+
+            <div
+                class="w-full aspect-21/9 min-h-[300px] flex items-center justify-center bg-base-200/50 rounded-xl relative overflow-hidden group">
                 <!-- Mock Chart Visualization -->
-                <div class="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-primary/10 to-transparent"></div>
+                <div class="absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-primary/10 to-transparent"></div>
                 <svg class="w-full h-full p-4" viewBox="0 0 100 40" preserveAspectRatio="none">
-                    <path d="M0,35 Q10,30 20,32 T40,20 T60,25 T80,10 L100,5" fill="none" stroke="var(--color-primary)" stroke-width="1" class="drop-shadow-lg shadow-primary"></path>
-                    <path d="M0,35 Q10,30 20,32 T40,20 T60,25 T80,10 L100,5 V40 H0 Z" fill="var(--color-primary)" fill-opacity="0.05"></path>
+                    <path d="M0,35 Q10,30 20,32 T40,20 T60,25 T80,10 L100,5" fill="none" stroke="var(--color-primary)"
+                        stroke-width="1" class="drop-shadow-lg shadow-primary"></path>
+                    <path d="M0,35 Q10,30 20,32 T40,20 T60,25 T80,10 L100,5 V40 H0 Z" fill="var(--color-primary)"
+                        fill-opacity="0.05"></path>
                 </svg>
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-800 text-white px-2 py-1 rounded text-[10px] font-bold">
+                <div
+                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-800 text-white px-2 py-1 rounded text-[10px] font-bold">
                     $12,450 at 09:42
                 </div>
             </div>
@@ -92,11 +114,13 @@
         <!-- Recent Sales Section -->
         <div class="flex flex-col gap-4">
             {% set sales = [
-                {'id': '4600', 'date': 'Today, 14:20', 'status': 'paid', 'email': 'john@example.com', 'amount': '$120.00'},
-                {'id': '4599', 'date': 'Today, 11:05', 'status': 'failed', 'email': 'mary@test.com', 'amount': '$250.00'},
-                {'id': '4598', 'date': 'Yesterday, 19:42', 'status': 'refunded', 'email': 'bob@cloud.io', 'amount': '$15.00'},
-                {'id': '4597', 'date': 'Yesterday, 16:30', 'status': 'paid', 'email': 'alice@wonder.land', 'amount': '$89.99'},
-                {'id': '4596', 'date': 'Oct 26, 09:12', 'status': 'paid', 'email': 'steve@jobs.com', 'amount': '$1,299.00'}
+            {'id': '4600', 'date': 'Today, 14:20', 'status': 'paid', 'email': 'john@example.com', 'amount': '$120.00'},
+            {'id': '4599', 'date': 'Today, 11:05', 'status': 'failed', 'email': 'mary@test.com', 'amount': '$250.00'},
+            {'id': '4598', 'date': 'Yesterday, 19:42', 'status': 'refunded', 'email': 'bob@cloud.io', 'amount':
+            '$15.00'},
+            {'id': '4597', 'date': 'Yesterday, 16:30', 'status': 'paid', 'email': 'alice@wonder.land', 'amount':
+            '$89.99'},
+            {'id': '4596', 'date': 'Oct 26, 09:12', 'status': 'paid', 'email': 'steve@jobs.com', 'amount': '$1,299.00'}
             ] %}
             {% include "components/dashboard/sales_table.html" %}
         </div>
