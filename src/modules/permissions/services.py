@@ -13,7 +13,7 @@ from core.lib.register.service import Service
 from core.database import get_async_db
 from fastapi_injectable import injectable
 from .models import Permission
-from .schemas import RQCreatePermission, RQBulkPermission, RSPermission, RSBulkPermissionResult
+from .schemas import CreatePermission, BulkPermission, PermissionResult, BulkPermissionResult
 from ..roles.models import Role
 from ..role_permissions.models import RolePermission
 from .meta.models import MetaPermissions
@@ -83,19 +83,16 @@ class PermissionsService(Service):
     async def create_permission(
         self,
         db: AsyncSession,
-        name: str,
-        action: str,
-        description: str,
-        type: str
+        create_permission: CreatePermission
     ) -> Permission:
         """
         Crea un solo permiso en la base de datos.
         """
         permission = Permission(
-            name=name,
-            action=action,
-            description=description,
-            type=type,
+            name=create_permission.name,
+            action=create_permission.action,
+            description=create_permission.description,
+            type=create_permission.type,
         )
         await permission.save(db)
         return permission
@@ -103,13 +100,13 @@ class PermissionsService(Service):
     async def create_bulk_permissions_with_roles(
         self,
         db: AsyncSession,
-        permissions_data: List[RQBulkPermission]
-    ) -> tuple[List[RSBulkPermissionResult], int, int]:
+        permissions_data: List[BulkPermission]
+    ) -> tuple[List[BulkPermissionResult], int, int]:
         """
         Crea múltiples permisos y los asigna a sus roles correspondientes.
         Handles existing permissions gracefully by updating them and ensuring role links.
         """
-        results: List[RSBulkPermissionResult] = []
+        results: List[BulkPermissionResult] = []
         success_count = 0
         error_count = 0
         
@@ -178,8 +175,8 @@ class PermissionsService(Service):
                         await role.update(db, role_id, {"permissions": list(current_perms)})
 
                 # Success
-                results.append(RSBulkPermissionResult(
-                    permission=RSPermission(
+                results.append(BulkPermissionResult(
+                    permission=PermissionResult(
                         id=permission.id,
                         uid=permission.uid,
                         type=permission.type,
@@ -197,8 +194,8 @@ class PermissionsService(Service):
             except Exception as e:
                 print(f"[Bulk Seeding] Error processing {perm_data.name}: {e}")
                 await db.rollback()
-                results.append(RSBulkPermissionResult(
-                    permission=RSPermission(
+                results.append(BulkPermissionResult(
+                    permission=PermissionResult(
                         id=0, uid="", type=perm_data.type, name=perm_data.name,
                         action=perm_data.action, description=perm_data.description, meta=perm_data.meta
                     ),

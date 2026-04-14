@@ -4,12 +4,13 @@ from typing import List
 from pydantic import BaseModel
 
 
-class RQPermission(BaseModel):
+class QueryPermission(BaseModel):
     name: str
-    description: str
+    type: str
+    context: str
 
 
-class RQCreatePermission(BaseModel):
+class CreatePermission(BaseModel):
     """Schema para crear un permiso individual"""
     name: str
     action: str
@@ -17,7 +18,7 @@ class RQCreatePermission(BaseModel):
     type: str
 
 
-class RQBulkPermission(BaseModel):
+class BulkPermission(BaseModel):
     """Schema para crear un permiso dentro de un bulk"""
     name: str
     action: str
@@ -27,12 +28,12 @@ class RQBulkPermission(BaseModel):
     role_id: int | str
 
 
-class RQBulkPermissions(BaseModel):
+class BulkPermissions(BaseModel):
     """Schema para crear múltiples permisos con sus roles asociados"""
-    permissions: List[RQBulkPermission]
+    permissions: List[BulkPermission]
 
 
-class RSPermission(BaseModel):
+class PermissionResult(BaseModel):
     uid: str
     id: int
     type: str
@@ -42,24 +43,24 @@ class RSPermission(BaseModel):
     meta: dict | list | None = None
 
 
-class RSBulkPermissionResult(BaseModel):
+class BulkPermissionResult(BaseModel):
     """Schema para el resultado de la creación de un permiso en bulk"""
-    permission: RSPermission
+    permission: PermissionResult
     role_id: int | str
     success: bool
     error: str | None = None
 
 
-class RSBulkPermissionsResponse(BaseModel):
+class BulkPermissionsResponse(BaseModel):
     """Schema para la respuesta de creación en bulk"""
-    created: List[RSBulkPermissionResult]
+    created: List[BulkPermissionResult]
     total: int
     success_count: int
     error_count: int
 
 
-class RSPermissionList(BaseModel):
-    data: list[RSPermission] | List = []
+class PermissionPaginated(BaseModel):
+    data: list[PermissionResult] | List = []
     total: int = 0
     page: int | None = 0
     page_size: int | None = 0
@@ -70,7 +71,7 @@ class RSPermissionList(BaseModel):
     prev_page: int | None = 0
 
 
-class RSUserMe(BaseModel):
+class UserMe(BaseModel):
     """Response schema for /users/me."""
     id: int | str
     uid: str
@@ -80,4 +81,4 @@ class RSUserMe(BaseModel):
     role: int | str
     role_name: str
     otp_enabled: bool = False
-    permissions: List[RSPermission] = []
+    permissions: List[PermissionResult] = []
