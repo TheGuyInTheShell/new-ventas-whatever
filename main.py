@@ -7,8 +7,8 @@ usando la librería de auto-registro.
 
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 
-from core.lib.consts.template import CONTEXT_INJECTABLE
 from core.lib.register.auto_router_api import auto_router_api
 from core.lib.register.auto_router_templates import auto_router_templates
 from core.lib.register.plugin_loader import plugin_lifespan
@@ -53,8 +53,6 @@ CSRFExtension(app).extends()
 # ---------------------------------------------------------------------------
 
 app_templates: Jinja2Templates = Jinja2Templates(directory="src/app/web")
-app_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
-app_templates.env.globals["STATIC_URL"] = "/app-static"
 
 
 # ---------------------------------------------------------------------------
@@ -101,3 +99,9 @@ auto_router_sockets(
     engineio_logger=True,
     allow_upgrades=True,
 )
+
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse("public/favicon.ico")

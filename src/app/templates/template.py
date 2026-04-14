@@ -5,7 +5,7 @@ Este módulo define las rutas de la página principal de la aplicación pública
 """
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 
 from core.lib.decorators import Get
 from core.lib.register import Template

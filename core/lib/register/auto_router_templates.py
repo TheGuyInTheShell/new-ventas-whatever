@@ -55,6 +55,8 @@ from core.lib.register.exceptions import (
     TemplateFileNotFoundWarning,
 )
 from core.lib.register.template import Template
+from core.config.settings import settings
+from core.lib.consts.template import CONTEXT_INJECTABLE
 
 
 # ---------------------------------------------------------------------------
@@ -448,5 +450,11 @@ def auto_router_templates(
                 f"routes={len(route_definitions)} "
                 f"module='{module_import_path}'"
             )
+
+
+    print("URL: ", settings.URL)
+    template_provider.env.globals["_injectable"] = CONTEXT_INJECTABLE
+    template_provider.env.globals["STATIC_URL"] = f"/{statics_prefix}"
+    template_provider.env.globals["URL"] = settings.URL
 
     return app

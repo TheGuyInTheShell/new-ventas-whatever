@@ -1,7 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+import os
+
+#get port from env uvicorn command
+PORT = os.getenv("PORT", 8000)
 
 class Settings(BaseSettings):
+
+    # URL Configuration
+    URL: str = f"http://localhost:{PORT}"
+
     # JWT Configuration
     JWT_KEY: str = "396d399d8f19cb5b4ad13b25187449b0c0e7447cf4b06545a7b9a75e8f7cf20c"
     JWT_ALG: str = "HS256"
