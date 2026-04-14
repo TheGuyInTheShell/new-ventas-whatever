@@ -34,13 +34,20 @@ class ShieldArgPlaceholder:
 class Shield:
     """Fachada estatica para el framework Shield."""
     
+    _resolvers: Dict[str, ResolverProvider] = {}
+    _path_resolvers: Dict[str, ResolverProvider] = {}
     _global_resolver: Optional[ResolverProvider] = None
     
     @classmethod
     def scan(cls, path: str, callback: Callable[[Dict[str, Any]], Any], context: Optional[str] = None, resolver: Optional[ResolverProvider] = None) -> None:
         """Escanea una carpeta recursivamente y expone el arbol de permisos al callback."""
         if resolver:
-            cls._global_resolver = resolver
+            # Map by path for runtime module-based resolution
+            cls._path_resolvers[path] = resolver
+            if context:
+                cls._resolvers[context] = resolver
+            else:
+                cls._global_resolver = resolver
         scan_permissions(path, callback, default_context=context)
 
     @staticmethod
@@ -51,7 +58,7 @@ class Shield:
         """
         def decorator(cls: Type[Any]) -> Type[Any]:
             setattr(cls, "__shield_context_marker__", True)
-            ctx = context if context is not None else (cls_or_context.__name__ if inspect.isclass(cls_or_context) else None)
+            ctx = context if context is not None else (cls.__name__)
             setattr(cls, "__shield_context__", ctx)
             return cls
 
@@ -84,18 +91,43 @@ class Shield:
                 setattr(func, "__dependencies__", [])
                 
             async def shield_guard(request: Request) -> None:
-                active_resolver = resolver or Shield._global_resolver
-                if active_resolver is None:
-                    return
-                
-                # Determine context: fallback to class or global
+                # 1. Fallback to discover context through class binding at runtime
                 actual_context = context
                 if actual_context is None:
-                    qualname_parts = func.__qualname__.split(".")
-                    if len(qualname_parts) > 1:
-                        actual_context = qualname_parts[-2]
-                    else:
-                        actual_context = "Global"
+                    try:
+                        cls_name = func.__qualname__.split(".")[0]
+                        if cls_name in func.__globals__:
+                            cls_obj = func.__globals__[cls_name]
+                            if hasattr(cls_obj, "__shield_context__"):
+                                actual_context = getattr(cls_obj, "__shield_context__")
+                    except Exception:
+                        pass
+                
+                # If still none, fallback
+                if actual_context is None:
+                    actual_context = "Global"
+
+                # 2. Pick explicit or context-mapped resolver
+                active_resolver = resolver
+                if not active_resolver:
+                    active_resolver = Shield._resolvers.get(actual_context)
+                
+                # 3. Path-based resolver (from scan origin)
+                if not active_resolver:
+                    module_name = func.__module__
+                    for scan_path, scan_resolver in Shield._path_resolvers.items():
+                        # normalize path to module prefix: "src/api" -> "src.api"
+                        prefix = scan_path.replace("\\", ".").replace("/", ".")
+                        if module_name.startswith(prefix):
+                            active_resolver = scan_resolver
+                            break
+
+                # 4. Global fallback
+                if not active_resolver:
+                    active_resolver = Shield._global_resolver
+                
+                if active_resolver is None:
+                    return
                 
                 is_async = inspect.iscoroutinefunction(active_resolver.resolve)
                 if is_async:
