@@ -10,6 +10,7 @@ class MetaValue(BasicBaseAsync):
     Flexible key-value metadata for values.
     Examples: year, month, promotion, category, etc.
     """
+
     __tablename__ = "meta_values"
 
     ref_value: Mapped[int] = mapped_column(
@@ -17,7 +18,7 @@ class MetaValue(BasicBaseAsync):
     )
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=True)
-    
+
     # Relationship back to Value
     value_obj: Mapped["Value"] = relationship("Value", back_populates="meta")
 

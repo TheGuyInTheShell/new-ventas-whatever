@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 class ValuesHierarchy(BasicBaseAsync):
     __tablename__ = "values_hierarchy"
-    
+
     ref_value_top: Mapped[int] = mapped_column(
         Integer, ForeignKey("values.id"), nullable=False
     )
@@ -20,4 +20,6 @@ class ValuesHierarchy(BasicBaseAsync):
 
     # Relationships
     value_top: Mapped["Value"] = relationship("Value", foreign_keys=[ref_value_top])
-    value_bottom: Mapped["Value"] = relationship("Value", foreign_keys=[ref_value_bottom])
+    value_bottom: Mapped["Value"] = relationship(
+        "Value", foreign_keys=[ref_value_bottom]
+    )

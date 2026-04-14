@@ -7,14 +7,23 @@ from core.database import BasicBaseAsync
 if TYPE_CHECKING:
     from src.modules.comparison_values.historical import ComparisonValueHistorical
 
+
 class MetaComparisonValuesHistorical(BasicBaseAsync):
     __tablename__ = "meta_comparison_values_historical"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)
-    ref_comparison_value_historical: Mapped[int] = mapped_column(Integer, ForeignKey("comparation_values_historical.id"), nullable=False)
-    comparison_value_historical: Mapped["ComparisonValueHistorical"] = relationship("ComparisonValueHistorical", foreign_keys=[ref_comparison_value_historical])
-
+    ref_comparison_value_historical: Mapped[int] = mapped_column(
+        Integer, ForeignKey("comparation_values_historical.id"), nullable=False
+    )
+    comparison_value_historical: Mapped["ComparisonValueHistorical"] = relationship(
+        "ComparisonValueHistorical", foreign_keys=[ref_comparison_value_historical]
+    )
 
     __table_args__ = (
-        Index("idx_values_meta_ref_comparison_value_historical", "key", "ref_comparison_value_historical", unique=True),
+        Index(
+            "idx_comparison_values_historical_meta_ref_comparison_value_historical",
+            "key",
+            "ref_comparison_value_historical",
+            unique=True,
+        ),
     )

@@ -4,16 +4,18 @@ from typing import List, TYPE_CHECKING
 
 from core.database import BasicBaseAsync
 
+
 class Value(BasicBaseAsync):
     """
     Represents a unit of value that can be compared with other values.
     Examples: Dollar (USD), Bitcoin (BTC), Hummer H2 (CAR) (Vehicle) 2016, etc.
     """
+
     if TYPE_CHECKING:
-        from src.modules.comparison_values.models import ComparisonValue
-        from src.modules.values.meta.models import MetaValue
-        from src.modules.balances.models import Balance
-        from src.modules.values.schemas import RQValueQuery
+        from app.modules.comparison_values.models import ComparisonValue
+        from app.modules.values.meta.models import MetaValue
+        from app.modules.balances.models import Balance
+        from app.modules.values.schemas import RQValueQuery
         from sqlalchemy.ext.asyncio import AsyncSession
     __tablename__ = "values"
 
@@ -53,9 +55,10 @@ class Value(BasicBaseAsync):
         Index("ix_values_name_context", "name", "context"),
         Index("ix_values_name_type", "name", "type"),
         Index("ix_values_name_context_type", "name", "context", "type"),
-        UniqueConstraint("name", "context", "type", name="uix_values_name_context_type"),
+        UniqueConstraint(
+            "name", "context", "type", name="uix_values_name_context_type"
+        ),
     )
-
 
     @classmethod
     async def query(cls, db: "AsyncSession", q: "RQValueQuery"):
@@ -71,7 +74,7 @@ class Value(BasicBaseAsync):
         """
         from sqlalchemy import select, func, desc as sa_desc
         from sqlalchemy.orm import selectinload
-        from src.modules.comparison_values.models import ComparisonValue
+        from app.modules.comparison_values.models import ComparisonValue
 
         # ---- base query ----
         stmt = select(cls)
@@ -100,15 +103,13 @@ class Value(BasicBaseAsync):
             # If comparison_to_id is provided, only return values that have a comparison to that ID
             if q.comparison_to_id is not None:
                 stmt = stmt.join(
-                    ComparisonValue, 
-                    (cls.id == ComparisonValue.value_from) & 
-                    (ComparisonValue.value_to == q.comparison_to_id) &
-                    (ComparisonValue.is_deleted == False)
+                    ComparisonValue,
+                    (cls.id == ComparisonValue.value_from)
+                    & (ComparisonValue.value_to == q.comparison_to_id)
+                    & (ComparisonValue.is_deleted == False),
                 )
             else:
-                stmt = stmt.join(
-                    ComparisonValue, cls.id == ComparisonValue.value_from
-                )
+                stmt = stmt.join(ComparisonValue, cls.id == ComparisonValue.value_from)
 
         # ---- count (before options & pagination) ----
         # Use subquery to correctly count rows with joins/filters
@@ -120,23 +121,25 @@ class Value(BasicBaseAsync):
             # eager-load properties accessed in comparison_to_response
             # If a specific target is requested, only load that comparison
             if q.comparison_to_id is not None:
-                comp_loader = selectinload(cls.comparisons_from.and_(
-                    ComparisonValue.value_to == q.comparison_to_id,
-                    ComparisonValue.is_deleted == False
-                ))
+                comp_loader = selectinload(
+                    cls.comparisons_from.and_(
+                        ComparisonValue.value_to == q.comparison_to_id,
+                        ComparisonValue.is_deleted == False,
+                    )
+                )
             else:
                 comp_loader = selectinload(cls.comparisons_from)
-            
+
             stmt = stmt.options(
                 comp_loader.selectinload(ComparisonValue.source_value),
                 comp_loader.selectinload(ComparisonValue.target_value),
             )
             if q.comparison_meta:
-                 stmt = stmt.options(comp_loader.selectinload(ComparisonValue.meta))
+                stmt = stmt.options(comp_loader.selectinload(ComparisonValue.meta))
 
         if q.meta:
             stmt = stmt.options(selectinload(cls.meta))
-            
+
         if q.balances:
             stmt = stmt.options(selectinload(cls.balances))
 
@@ -160,9 +163,11 @@ class Value(BasicBaseAsync):
 
         # ---- post-load balance type filter ----
         # Filter in Python to avoid unreliable ORM selectinload.and_() syntax
-        if q.balances and getattr(q, 'balance_type', None):
+        if q.balances and getattr(q, "balance_type", None):
             for item in items:
                 if item.balances is not None:
-                    item.balances = [b for b in item.balances if b.type == q.balance_type]
+                    item.balances = [
+                        b for b in item.balances if b.type == q.balance_type
+                    ]
 
         return list(items), int(total)

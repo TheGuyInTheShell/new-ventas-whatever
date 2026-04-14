@@ -11,15 +11,16 @@ if TYPE_CHECKING:
 
 class BusinessEntity(BasicBaseAsync):
     __tablename__ = "business_entities"
-    
+
     context: Mapped[str] = mapped_column(String(100), nullable=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(100), nullable=True)
     metadata_info: Mapped[dict] = mapped_column("metadata", JSON, nullable=True)
-    meta: Mapped[list["MetaBusinessEntity"]] = relationship("MetaBusinessEntity", back_populates="business_entity")
-    business_entities_groups: Mapped[list["BusinessEntitiesGroup"]] = relationship(
-        "BusinessEntitiesGroup", 
-        secondary="business_entities_groups_connections", 
-        back_populates="business_entities"
+    meta: Mapped[list["MetaBusinessEntity"]] = relationship(
+        "MetaBusinessEntity", back_populates="business_entity"
     )
-
+    business_entities_groups: Mapped[list["BusinessEntitiesGroup"]] = relationship(
+        "BusinessEntitiesGroup",
+        secondary="business_entities_groups_connections",
+        back_populates="business_entities",
+    )
