@@ -1,12 +1,11 @@
-from typing import List, Tuple, Optional, Any
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from typing import Optional, Any
 
 from core.lib.decorators import Services
 from src.modules.permissions.services import PermissionsService
 from src.modules.auth.services import AuthService
 from core.security.shield.provider import ResolverProvider
 from fastapi import HTTPException, Request
-
+from core.config.settings import settings
 
 @Services(PermissionsService, AuthService)
 class AuthGuard(ResolverProvider):
@@ -15,6 +14,9 @@ class AuthGuard(ResolverProvider):
 
     async def resolve(self, name: str, type_str: str, action: str, context: str, request: Optional[Request] = None, **kwargs: Any):
         try:
+            if settings.MODE == "DEVELOPMENT":
+                return True
+            
             if not request:
                 raise HTTPException(status_code=401, detail="Request context is missing")
             
