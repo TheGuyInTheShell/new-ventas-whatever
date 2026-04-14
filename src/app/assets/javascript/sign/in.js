@@ -1,21 +1,33 @@
 /**
- * App Module - JavaScript Entry Point
+ * @fileoverview Sign-In Module.
  *
- * Import your CSS here so Rolldown bundles it via PostCSS (Tailwind).
- * Add any app-level JS imports below.
+ * This module manages the client-side logic for the authentication page,
+ * including loader state management via Alpine.js and form lifecycle
+ * interception using HTMX event listeners.
  */
 
-import Alpine from "alpinejs"
-import mask from '@alpinejs/mask'
-import focus from '@alpinejs/focus'
-import collapse from '@alpinejs/collapse'
-import "htmx.org"
+import Alpine from "alpinejs";
+import mask from '@alpinejs/mask';
+import focus from '@alpinejs/focus';
+import collapse from '@alpinejs/collapse';
+import "htmx.org";
 
-Alpine.plugin(mask)
-Alpine.plugin(focus)
-Alpine.plugin(collapse)
+// Register Alpine.js plugins
+Alpine.plugin(mask);
+Alpine.plugin(focus);
+Alpine.plugin(collapse);
 
+/**
+ * Initializes Alpine.js data components for the sign-in page.
+ */
 document.addEventListener('alpine:init', () => {
+    /**
+     * Spinner component to manage loading state.
+     * @typedef {Object} SpinnerComponent
+     * @property {boolean} loading - Whether the spinner should be visible.
+     * @property {function} show - Sets loading to true.
+     * @property {function} hide - Sets loading to false.
+     */
     Alpine.data('spinner', () => ({
         loading: false,
         show() {
@@ -27,41 +39,54 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
+/**
+ * Attaches event listeners to the sign-in form for HTMX request lifecycle management.
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    const spinner = document.getElementById('spinner');
-    const form = document.getElementById("sign-in");
+    const spinnerElement = document.getElementById('spinner');
+    const signInForm = document.getElementById("sign-in");
 
-    if (form && spinner) {
-        form.addEventListener('htmx:beforeRequest', function (event) {
-            const spinnerData = Alpine.$data(spinner);
+    if (signInForm && spinnerElement) {
+        /**
+         * Intercepts HTMX request before it is sent.
+         * Shows the spinner and clears previous notifications.
+         */
+        signInForm.addEventListener('htmx:beforeRequest', function (event) {
+            // @ts-ignore - Accessing Alpine data context
+            const spinnerData = Alpine.$data(spinnerElement);
             if (spinnerData) {
                 spinnerData.show();
             }
 
-            // Clear previous notification if it's there (keep the spinner element)
-            const notification = document.getElementById('notification');
-            if (notification) {
-                Array.from(notification.children).forEach(child => {
+            // Clear previous notification while preserving the spinner structure
+            const notificationArea = document.getElementById('notification');
+            if (notificationArea) {
+                Array.from(notificationArea.children).forEach(child => {
                     if (child.id !== 'spinner') {
                         child.remove();
                     }
                 });
             }
 
-            // Wait until HTMX fires the request
             return true;
         });
 
-        form.addEventListener('htmx:afterOnLoad', function (event) {
-            // Fake small delay to show off the loader animation smoothly
+        /**
+         * Cleans up after HTMX request completes.
+         * Hides the spinner and handles redirection on success.
+         */
+        signInForm.addEventListener('htmx:afterOnLoad', function (event) {
+            // Add a small delay for a smoother animation transition
             setTimeout(() => {
-                const spinnerData = Alpine.$data(spinner);
+                // @ts-ignore - Accessing Alpine data context
+                const spinnerData = Alpine.$data(spinnerElement);
                 if (spinnerData) {
                     spinnerData.hide();
                 }
 
-                const target = document.getElementById("notification");
-                if (target && target.querySelector('.success-msg')) {
+                const notificationArea = document.getElementById("notification");
+                // Check if the response contains a success message class
+                if (notificationArea && notificationArea.querySelector('.success-msg')) {
                     setTimeout(() => {
                         window.location.replace("/dashboard");
                     }, 1000);
@@ -71,4 +96,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Start the Alpine.js framework
 Alpine.start();

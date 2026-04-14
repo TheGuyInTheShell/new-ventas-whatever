@@ -36,6 +36,7 @@ class SettingsTemplate(Template):
 
     @Get("/fiat", response_class=HTMLResponse)
     @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
+    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
     @enqueue_js(js_tag=str(Script(src="/app-static/javascript/store/fiatStore.js", type="module", defer=True)), position=Site.HEAD)
     @CSRF()
     async def fiat(self, request: Request) -> HTMLResponse:
