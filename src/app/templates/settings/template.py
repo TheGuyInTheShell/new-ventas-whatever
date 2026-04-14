@@ -6,13 +6,32 @@ from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.csrf.csrf import CSRF
+from core.security.shield import Shield
 
+
+@Shield.register(context="WEB")
 class SettingsTemplate(Template):
     """Controlador de templates para Settings."""
 
     @Get("/", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="settings",
+        action="read",
+        type="template",
+        description="view settings",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def settings_index(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
@@ -24,8 +43,24 @@ class SettingsTemplate(Template):
         )
 
     @Get("/profile", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="profile",
+        action="read",
+        type="template",
+        description="view profile",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def profile(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
@@ -35,10 +70,42 @@ class SettingsTemplate(Template):
         )
 
     @Get("/fiat", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/store/fiatStore.js", type="module", defer=True)), position=Site.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/settings/fiat.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="fiat",
+        action="read",
+        type="template",
+        description="view fiat",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(
+                src="/app-static/javascript/store/fiatStore.js",
+                type="module",
+                defer=True,
+            )
+        ),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(
+                src="/app-static/javascript/settings/fiat.js", type="module", defer=True
+            )
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def fiat(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
@@ -48,8 +115,24 @@ class SettingsTemplate(Template):
         )
 
     @Get("/members", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="members",
+        action="read",
+        type="template",
+        description="view members",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def members(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
@@ -59,8 +142,24 @@ class SettingsTemplate(Template):
         )
 
     @Get("/notifications", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="notifications",
+        action="read",
+        type="template",
+        description="view notifications",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def notifications(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
@@ -70,8 +169,24 @@ class SettingsTemplate(Template):
         )
 
     @Get("/security", response_class=HTMLResponse)
-    @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
-    @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
+    @Shield.need(
+        name="security",
+        action="read",
+        type="template",
+        description="view security",
+    )
+    @enqueue_css(
+        css_tag=str(
+            Style(href="/app-static/css/app.css", type="text/css", media="all")
+        ),
+        position=CssSite.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
+        ),
+        position=Site.HEAD,
+    )
     @CSRF()
     async def security(self, request: Request) -> HTMLResponse:
         return self.templates.TemplateResponse(
