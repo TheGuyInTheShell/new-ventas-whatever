@@ -11,11 +11,19 @@ from core.lib.decorators import Get
 from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
+from core.security.shield import Shield
 
+@Shield.register(context="Dashboard")
 class Dashboard(Template):
     """Controlador de templates para la sección dashboard de la aplicación."""
 
     @Get("/", response_class=HTMLResponse)
+    @Shield.need(
+        name="dashboard",
+        action="read",
+        type="template",
+        description="Permite acceder al dashboard.",
+    )
     @enqueue_css(css_tag=str(Style(href="/app-static/css/app.css", type="text/css", media="all")), position=CssSite.HEAD)
     @enqueue_js(js_tag=str(Script(src="/app-static/javascript/icons.js", type="module", defer=True)), position=Site.HEAD)
     @enqueue_js(js_tag=str(Script(src="/app-static/javascript/index.js", type="module", defer=True)), position=Site.BODY_AFTER)

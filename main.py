@@ -41,6 +41,13 @@ def init_shield_permissions(app: FastAPI):
         context="API",
         resolver=AuthGuard()
     )
+    Shield.scan(
+        path="src/app", 
+        callback=perm_service.get_shield_sync_callback(sessionAsync=SessionAsync),
+        context="WEB",
+        resolver=AuthGuard()
+    )
+
 
 # Initial load of extensions (e.g. Middlewares)
 load_extensions(app)
