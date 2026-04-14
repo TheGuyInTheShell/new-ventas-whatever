@@ -1,8 +1,11 @@
 from sqlalchemy import String, Integer, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 
 from core.database import BasicBaseAsync
-from src.modules.values.models import Value
+
+if TYPE_CHECKING:
+    from src.modules.values.models import Value
 
 
 class Balance(BasicBaseAsync):

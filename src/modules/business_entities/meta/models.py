@@ -7,6 +7,7 @@ from core.database import BasicBaseAsync
 if TYPE_CHECKING:
     from src.modules.business_entities.models import BusinessEntity
 
+
 class MetaBusinessEntity(BasicBaseAsync):
     __tablename__ = "meta_business_entities"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -17,4 +18,3 @@ class MetaBusinessEntity(BasicBaseAsync):
     __table_args__ = (
         Index("idx_values_meta_ref_business_entity", "key", "ref_business_entity", unique=True),
     )
-    

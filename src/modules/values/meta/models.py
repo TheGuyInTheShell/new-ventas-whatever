@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
 from sqlalchemy import String, Integer, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import BasicBaseAsync
-from src.modules.values.models import Value
+
+if TYPE_CHECKING:
+    from src.modules.values.models import Value
 
 
 class MetaValue(BasicBaseAsync):

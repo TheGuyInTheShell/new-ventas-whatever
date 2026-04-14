@@ -1,14 +1,15 @@
 from sqlalchemy import String, Integer, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from core.database import BasicBaseAsync
 from typing import TYPE_CHECKING
 
+from core.database import BasicBaseAsync
 
-class BusinessEntitiesGroupConnection(BasicBaseAsync):
+if TYPE_CHECKING:
     from src.modules.business_entities_groups.models import BusinessEntitiesGroup
     from src.modules.business_entities.models import BusinessEntity
 
+
+class BusinessEntitiesGroupConnection(BasicBaseAsync):
     __tablename__ = "business_entities_groups_connections"
 
     ref_business_entities_group: Mapped[int] = mapped_column(

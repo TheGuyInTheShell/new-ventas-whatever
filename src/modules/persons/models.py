@@ -3,11 +3,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
 from core.database import BasicBaseAsync
-from src.modules.business_entities.models import BusinessEntity
 
 if TYPE_CHECKING:
+    from src.modules.business_entities.models import BusinessEntity
     from src.modules.persons.meta.models import MetaPerson
-
 
 
 class Person(BasicBaseAsync):
@@ -26,4 +25,3 @@ class Person(BasicBaseAsync):
     business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity")
 
     meta: Mapped[list["MetaPerson"]] = relationship("MetaPerson", back_populates="person")
-

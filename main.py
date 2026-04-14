@@ -33,19 +33,19 @@ def init_shield_permissions(app: FastAPI):
     from core.database import SessionAsync
     from src.modules.permissions.services import PermissionsService
     from src.modules.auth.guards import AuthGuard
-    
+
     perm_service = PermissionsService()
     Shield.scan(
-        path="src/api", 
+        path="src/api",
         callback=perm_service.get_shield_sync_callback(sessionAsync=SessionAsync),
         context="API",
-        resolver=AuthGuard()
+        resolver=AuthGuard(),
     )
     Shield.scan(
-        path="src/app", 
+        path="src/app",
         callback=perm_service.get_shield_sync_callback(sessionAsync=SessionAsync),
         context="WEB",
-        resolver=AuthGuard()
+        resolver=AuthGuard(),
     )
 
 
@@ -53,6 +53,7 @@ def init_shield_permissions(app: FastAPI):
 load_extensions(app)
 
 from core.security.csrf.csrf import CSRFExtension
+
 CSRFExtension(app).extends()
 
 # ---------------------------------------------------------------------------
@@ -106,7 +107,6 @@ auto_router_sockets(
     engineio_logger=True,
     allow_upgrades=True,
 )
-
 
 
 @app.get("/favicon.ico")

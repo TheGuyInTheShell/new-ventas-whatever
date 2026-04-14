@@ -7,6 +7,7 @@ from core.database import BasicBaseAsync
 if TYPE_CHECKING:
     from src.modules.comparison_values.models import ComparisonValue
 
+
 class MetaComparisonValue(BasicBaseAsync):
     __tablename__ = "meta_comparison_values"
     key: Mapped[str] = mapped_column(String(100), nullable=False)

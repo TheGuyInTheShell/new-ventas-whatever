@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
-    from src.modules.comparison_values.historical import ComparisonValueHistorical
+    from src.modules.comparison_values.historical.models import ComparisonValueHistorical
 
 
 class MetaComparisonValuesHistorical(BasicBaseAsync):

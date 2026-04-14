@@ -5,7 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
-    from ..models import Transaction
+    from src.modules.transactions.models import Transaction
+
 
 class MetaTransaction(BasicBaseAsync):
     __tablename__ = "meta_transactions"

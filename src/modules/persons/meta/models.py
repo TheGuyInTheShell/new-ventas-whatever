@@ -7,6 +7,7 @@ from core.database import BasicBaseAsync
 if TYPE_CHECKING:
     from src.modules.persons.models import Person
 
+
 class MetaPerson(BasicBaseAsync):
     __tablename__ = "meta_persons"
     key: Mapped[str] = mapped_column(String(100), nullable=False)

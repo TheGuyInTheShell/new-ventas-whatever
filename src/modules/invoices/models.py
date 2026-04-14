@@ -6,8 +6,8 @@ from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.invoices.meta.models import MetaInvoice
-    from ..invoice_transactions.models import InvoiceTransaction
-    from ..invoice_business_entities.models import InvoiceBusinessEntity
+    from src.modules.invoice_transactions.models import InvoiceTransaction
+    from src.modules.invoice_business_entities.models import InvoiceBusinessEntity
 
 
 class Invoice(BasicBaseAsync):
