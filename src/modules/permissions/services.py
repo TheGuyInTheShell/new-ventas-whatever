@@ -166,29 +166,8 @@ class PermissionsService(Service):
                         # Already linked, ignore
 
                 # 3. Update MetaPermissions (EAV)
-                current_meta = {}
-                if perm_data.meta and isinstance(perm_data.meta, dict):
-                    # Fetch existing meta
-                    meta_query = await db.execute(
-                        select(MetaPermissions).where(MetaPermissions.ref_permission == permission_id)
-                    )
-                    existing_metas = {m.key: m for m in meta_query.scalars().all()}
-
-                    for key, value in perm_data.meta.items():
-                        str_value = str(value)
-                        if key in existing_metas:
-                            if existing_metas[key].value != str_value:
-                                existing_metas[key].value = str_value
-                                await db.commit()
-                        else:
-                            new_meta = MetaPermissions(
-                                key=key,
-                                value=str_value,
-                                ref_permission=permission_id
-                            )
-                            db.add(new_meta)
-                            await db.commit()
-                        current_meta[key] = value
+                current_meta = await self._sync_permission_metadata(db, permission_id, perm_data.meta)
+                await db.commit()
 
                 # 4. Sync the Role's permissions array (redundancy)
                 role = await Role.find_one(db, role_id)
@@ -230,6 +209,62 @@ class PermissionsService(Service):
                 error_count += 1
         
         return results, success_count, error_count
+
+    async def _sync_permission_metadata(
+        self,
+        db: AsyncSession,
+        permission_id: int,
+        meta: dict | list | None
+    ) -> Dict[str, Any]:
+        """
+        Sincroniza la metadata de un permiso (EAV).
+        Actualiza valores existentes o crea nuevos según sea necesario.
+        """
+        if not meta:
+            return {}
+
+        # Normalizar meta a un diccionario para procesamiento uniforme
+        meta_dict = {}
+        if isinstance(meta, dict):
+            meta_dict = meta
+        elif isinstance(meta, list):
+            # Algunos formatos pueden venir como lista de tuplas/listas [key, value]
+            for item in meta:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    meta_dict[item[0]] = item[1]
+        
+        if not meta_dict:
+            return {}
+
+        # 1. Obtener metadata existente para este permiso
+        meta_query = await db.execute(
+            select(MetaPermissions).where(MetaPermissions.ref_permission == permission_id)
+        )
+        existing_metas = {m.key: m for m in meta_query.scalars().all()}
+
+        processed_meta = {}
+        # 2. Sincronizar claves
+        for key, value in meta_dict.items():
+            if key is None:
+                continue
+            
+            # Serializar valor a string (consistente con el modelo EAV)
+            str_value = json.dumps(value) if not isinstance(value, str) else value
+            
+            if key in existing_metas:
+                if existing_metas[key].value != str_value:
+                    existing_metas[key].value = str_value
+            else:
+                new_meta = MetaPermissions(
+                    key=key,
+                    value=str_value,
+                    ref_permission=permission_id
+                )
+                db.add(new_meta)
+            
+            processed_meta[key] = value
+            
+        return processed_meta
 
     def _collect_api_routes(self, routes: List[BaseRoute]) -> List[APIRoute]:
         """Recursively collect all APIRoute instances including from nested routers."""
@@ -436,38 +471,18 @@ class PermissionsService(Service):
                 for p in new_permissions:
                     existing_perms[p.name] = p
 
-            # 6. Vincular los permisos al rol 'owner' y manejar metadata
+            # 6. Sincronizar Metadata (EAV)
+            for p_name, p_data in route_map.items():
+                perm = existing_perms.get(p_name)
+                if perm and p_data.get("meta"):
+                    await self._sync_permission_metadata(db, perm.id, p_data["meta"])
+
+            # 7. Vincular los permisos al rol 'owner'
             owner_query = await db.execute(select(Role).where(Role.name == "owner"))
             owner_role = owner_query.scalar_one_or_none()
 
             all_permission_ids = [p.id for p in existing_perms.values()]
             
-            # Sync Metadata
-            for p_name, p_data in route_map.items():
-                perm = existing_perms.get(p_name)
-                if not perm or not p_data.get("meta"):
-                    continue
-                
-                for m_key, m_val in p_data["meta"]:
-                    str_val = json.dumps(m_val) if not isinstance(m_val, str) else m_val
-                    # Check if exists
-                    meta_check = await db.execute(
-                        select(MetaPermissions).where(
-                            MetaPermissions.key == m_key,
-                            MetaPermissions.ref_permission == perm.id
-                        )
-                    )
-                    existing_meta = meta_check.scalar_one_or_none()
-                    if existing_meta:
-                        if existing_meta.value != str_val:
-                            existing_meta.value = str_val
-                    else:
-                        db.add(MetaPermissions(
-                            key=m_key,
-                            value=str_val,
-                            ref_permission=perm.id
-                        ))
-
             if owner_role:
                 
                 existing_links_query = await db.execute(
@@ -487,13 +502,13 @@ class PermissionsService(Service):
                     print(f"[Shield Sync] Linking {len(new_links)} new permissions to owner role...")
                     db.add_all(new_links)
 
-            # 7. Actualizar o crear registro de Hash
+            # 8. Actualizar o crear registro de Hash
             if option_record:
                 option_record.value = current_hash
             else:
                 db.add(Options(context=context_name, name=option_name, value=current_hash))
 
-            # 8. Guardar transacción
+            # 9. Guardar transacción
             await db.commit()
             print(f"[Shield Sync] Shield sync completed successfully.")
 
