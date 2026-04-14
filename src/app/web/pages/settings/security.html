@@ -1,0 +1,63 @@
+{% extends "pages/settings/layout.html" %}
+
+{% block settings_content %}
+<div x-data="{
+    password: {
+        current: '',
+        new: ''
+    },
+    error: '',
+    onSubmit() {
+        if (this.password.current === this.password.new) {
+            this.error = 'Passwords must be different';
+            return;
+        }
+        if (this.password.current.length < 8 || this.password.new.length < 8) {
+            this.error = 'Must be at least 8 characters';
+            return;
+        }
+        this.error = '';
+        alert('Password updated successfully');
+        this.password.current = '';
+        this.password.new = '';
+    }
+}">
+
+    <!-- Password Card -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
+        <div class="card-body p-6">
+            <h2 class="card-title text-base">Password</h2>
+            <p class="text-xs text-base-content/60 mb-4">Confirm your current password before setting a new one.</p>
+
+            <form @submit.prevent="onSubmit" class="flex flex-col gap-4 max-w-xs">
+                
+                <div class="form-control w-full">
+                    <input type="password" x-model="password.current" placeholder="Current password" class="input input-bordered input-sm w-full" required />
+                </div>
+                
+                <div class="form-control w-full">
+                    <input type="password" x-model="password.new" placeholder="New password" class="input input-bordered input-sm w-full" required />
+                </div>
+
+                <div x-show="error" class="text-error text-xs font-medium" x-text="error" x-transition></div>
+
+                <button type="submit" class="btn btn-neutral btn-sm w-fit mt-2">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Account Danger Zone Card -->
+    <div class="card border border-error/30 shadow-sm bg-gradient-to-tl from-error/5 from-5% to-base-100">
+        <div class="card-body p-6">
+            <h2 class="card-title text-base text-error">Account</h2>
+            <p class="text-xs text-base-content/80 mt-1">
+                No longer want to use our service? You can delete your account here. This action is not reversible. All information related to this account will be deleted permanently.
+            </p>
+            <div class="card-actions justify-start mt-4">
+                <button class="btn btn-error btn-sm">Delete account</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "pages/settings/layout.html" %}
+
+{% block settings_content %}
+<div x-data="fiatConfig" class="relative">
+
+    <!-- Global Loading Overlay -->
+    <div x-show="storeContext.loading" class="absolute inset-0 z-50 flex items-center justify-center bg-base-100/50 backdrop-blur-sm rounded-xl">
+        <div class="flex flex-col items-center gap-3">
+            <span class="loading loading-spinner text-primary loading-lg"></span>
+            <span class="text-sm font-medium">Loading data...</span>
+        </div>
+    </div>
+
+    <!-- Fiat Configuration -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="card-title text-base">Fiat Configuration</h2>
+            <p class="text-xs text-base-content/60">Manage global currency settings.</p>
+
+            <div class="space-y-4 mt-4">
+                <template x-for="fiat in fiats" :key="fiat.id">
+                    <div class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full" :class="fiat.id === mainFiatId ? 'bg-primary/20 text-primary' : 'bg-base-300 text-base-content/50'">
+                                <i :data-lucide="fiat.id === mainFiatId ? 'star' : 'coins'" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm" x-text="fiat.name"></div>
+                                <div class="text-xs text-base-content/50" x-text="fiat.expression"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <!-- Rate Editor (only for non-main) -->
+                            <template x-if="fiat.id !== mainFiatId && mainFiatId">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-base-content/50">1 <span x-text="getFiatExpression(mainFiatId)"></span> =</span>
+                                    <input type="number" class="input input-bordered input-sm w-24" placeholder="Rate" 
+                                           x-model="exchangeRates[fiat.id]"
+                                           @blur="onSetRate(fiat.id, $event.target.value)" />
+                                    <span class="text-sm text-base-content/50" x-text="fiat.expression"></span>
+                                </div>
+                            </template>
+
+                            <template x-if="fiat.id !== mainFiatId">
+                                <button class="btn btn-xs btn-outline" @click="onSetMainFiat(fiat.id)">Set Main</button>
+                            </template>
+                            <template x-if="fiat.id === mainFiatId">
+                                <div class="badge badge-primary badge-outline text-xs">Main Currency</div>
+                            </template>
+
+                            <button class="btn btn-ghost btn-xs text-error" @click="onDeleteFiat(fiat.id)">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="fiats.length === 0" class="text-center text-base-content/50 py-4 text-sm">
+                    No currencies added yet.
+                </div>
+            </div>
+
+            <div class="divider my-6"></div>
+
+            <h4 class="font-medium text-sm mb-3">Add New Currency</h4>
+            <div class="flex gap-2 items-end">
+                <div class="form-control grow">
+                    <label class="label"><span class="label-text">Name</span></label>
+                    <input type="text" x-model="newFiat.name" placeholder="Dollar" class="input input-bordered input-sm w-full" />
+                </div>
+                <div class="form-control grow">
+                    <label class="label"><span class="label-text">Expression</span></label>
+                    <input type="text" x-model="newFiat.expression" placeholder="USD" class="input input-bordered input-sm w-full" />
+                </div>
+                <button class="btn btn-primary btn-sm" :class="{'btn-disabled': !newFiat.name || !newFiat.expression}" @click="onAddFiat" :disabled="isAddingFiat">
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Comparisons -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="card-title text-base">Custom Comparisons</h2>
+            <p class="text-xs text-base-content/60">Define exchange rates between any two currencies.</p>
+
+            <div class="space-y-3 mt-4">
+                <template x-for="comp in customComparisons" :key="comp.id">
+                    <div class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full bg-info/20 text-info">
+                                <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">
+                                    <span x-text="getFiatName(comp.value_from)"></span>
+                                    <span class="text-base-content/40 mx-1">→</span>
+                                    <span x-text="getFiatName(comp.value_to)"></span>
+                                </div>
+                                <div class="text-xs text-base-content/50">
+                                    <span x-text="getFiatExpression(comp.value_from)"></span> → <span x-text="getFiatExpression(comp.value_to)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button class="btn btn-ghost btn-xs text-error" @click="onDeleteComparison(comp.id)">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="customComparisons.length === 0" class="text-center text-base-content/50 py-4 text-sm">
+                    No custom comparisons yet.
+                </div>
+            </div>
+
+            <div class="divider my-6"></div>
+
+            <h4 class="font-medium text-sm mb-3">Add Custom Comparison</h4>
+            <div class="flex gap-2 items-end flex-wrap">
+                <div class="form-control grow">
+                    <label class="label"><span class="label-text text-xs">From Currency</span></label>
+                    <select x-model="newComparison.fromId" class="select select-bordered select-sm w-full">
+                        <option value="null" disabled>Select...</option>
+                        <template x-for="f in fiats" :key="f.id">
+                            <option :value="f.id" x-text="f.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="form-control grow">
+                    <label class="label"><span class="label-text text-xs">To Currency</span></label>
+                    <select x-model="newComparison.toId" class="select select-bordered select-sm w-full">
+                        <option value="null" disabled>Select...</option>
+                        <template x-for="f in fiats" :key="f.id">
+                            <option :value="f.id" x-text="f.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="form-control grow">
+                    <label class="label"><span class="label-text text-xs">Rate (1 From = X To)</span></label>
+                    <input type="number" x-model="newComparison.rate" placeholder="Rate" class="input input-bordered input-sm w-full" />
+                </div>
+                <button class="btn btn-primary btn-sm" @click="onAddComparison" :disabled="!newComparison.fromId || !newComparison.toId || !newComparison.rate">
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('htmx:afterSettle', () => {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    });
+</script>
+{% endblock %}

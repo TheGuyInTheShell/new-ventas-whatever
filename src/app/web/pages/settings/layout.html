@@ -1,0 +1,45 @@
+{% extends "layouts/panel.html" %}
+
+{% block content %}
+<div class="flex flex-col h-full">
+    <!-- Header mirroring UDashboardNavbar -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+        <h1 class="text-xl font-bold">Settings</h1>
+        <div class="flex items-center gap-2">
+            <!-- Documentation link simulation -->
+            <a href="https://ui.nuxt.com/docs/getting-started/installation/nuxt" target="_blank"
+                class="btn btn-ghost btn-sm text-base-content/70 hover:text-primary">
+                <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+                Documentation
+            </a>
+        </div>
+    </div>
+
+    <!-- Toolbar mimicking UDashboardToolbar & UNavigationMenu -->
+    <div class="px-4 py-2 border-b border-base-300 bg-base-100 flex items-center gap-4 overflow-x-auto">
+        <a href="/settings/profile" class="btn btn-sm btn-ghost hover:bg-base-200">
+            <i data-lucide="user" class="w-4 h-4 mr-1"></i> Profile
+        </a>
+        <a href="/settings/fiat" class="btn btn-sm btn-ghost hover:bg-base-200">
+            <i data-lucide="coins" class="w-4 h-4 mr-1"></i> Fiat
+        </a>
+        <a href="/settings/members" class="btn btn-sm btn-ghost hover:bg-base-200">
+            <i data-lucide="users" class="w-4 h-4 mr-1"></i> Members
+        </a>
+        <a href="/settings/notifications" class="btn btn-sm btn-ghost hover:bg-base-200">
+            <i data-lucide="bell" class="w-4 h-4 mr-1"></i> Notifications
+        </a>
+        <a href="/settings/security" class="btn btn-sm btn-ghost hover:bg-base-200">
+            <i data-lucide="shield" class="w-4 h-4 mr-1"></i> Security
+        </a>
+    </div>
+
+    <!-- Body simulating UDashboardPanel body -->
+    <div class="flex-1 p-4 lg:py-12 overflow-y-auto">
+        <div class="flex flex-col gap-4 sm:gap-6 lg:gap-12 w-full lg:max-w-2xl mx-auto">
+            {% block settings_content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

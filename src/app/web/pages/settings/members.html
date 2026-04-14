@@ -1,0 +1,79 @@
+{% extends "pages/settings/layout.html" %}
+
+{% block settings_content %}
+<div x-data="{
+    q: '',
+    members: [],
+    loading: true,
+    async init() {
+        // Stub implementation simulating API fetch
+        this.members = [
+            { id: 1, name: 'Alice Smith', username: 'alicesmith', email: 'alice@example.com' },
+            { id: 2, name: 'Bob Jones', username: 'bobjones', email: 'bob@example.com' }
+        ];
+        this.loading = false;
+    },
+    get filteredMembers() {
+        if (!this.q) return this.members;
+        const re = new RegExp(this.q, 'i');
+        return this.members.filter(m => m.name.match(re) || m.username.match(re));
+    }
+}">
+    <!-- Top Card -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm mb-4">
+        <div class="card-body p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="card-title text-base">Members</h2>
+                <p class="text-xs text-base-content/60">Invite new members by email address.</p>
+            </div>
+            <button class="btn btn-neutral btn-sm w-fit shrink-0 mt-4 sm:mt-0">Invite people</button>
+        </div>
+    </div>
+
+    <!-- Main List Card -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-base-300">
+            <div class="relative w-full">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-base-content/40"></i>
+                <input type="text" x-model="q" class="input input-sm input-bordered w-full pl-9" placeholder="Search members" autofocus />
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-if="loading">
+                        <tr><td colspan="3" class="text-center py-4">Loading...</td></tr>
+                    </template>
+                    <template x-if="!loading && filteredMembers.length === 0">
+                        <tr><td colspan="3" class="text-center py-4 text-base-content/50">No members found</td></tr>
+                    </template>
+                    <template x-for="member in filteredMembers" :key="member.id">
+                        <tr class="hover">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary text-primary-content rounded-full w-8">
+                                            <span x-text="member.name.charAt(0)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="font-bold text-sm" x-text="member.name"></div>
+                                </div>
+                            </td>
+                            <td class="text-xs text-base-content/60" x-text="member.username"></td>
+                            <td class="text-xs text-base-content/60" x-text="member.email"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
