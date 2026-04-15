@@ -1,7 +1,9 @@
 @import "tailwindcss";
+
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark;
 }
+
 @import 'tailwind-animations';
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -11,7 +13,7 @@
 
 @theme {
   --font-sans: "Public Sans", "Outfit", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  
+
   --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-premium-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-glow: 0 0 15px 2px rgba(0, 193, 106, 0.15);
@@ -22,25 +24,30 @@
 
 /* Override DaisyUI theme colors */
 @layer base {
-  [data-theme="light"], :root {
-    --color-primary: #00C16A;
-    --color-secondary: #8b5cf6;
-    --color-accent: #22d3ee;
+
+  [data-theme="light"],
+  :root {
+    --color-primary: #130fff;
+    --color-secondary: #00FAAF;
+    --color-accent: #FAE900;
     --color-neutral: #1f2937;
     --color-base-100: #ffffff;
     --color-base-200: #f8fafc;
     --color-base-300: #e2e8f0;
     --color-base-content: #1e293b;
-    --color-info: #4ade80;
-    --color-success: #34D399;
-    --color-warning: #ffa65c;
-    --color-error: #F87171;
+    --color-info: #3CF509;
+    --color-success: #3CF509;
+    --color-warning: #F4A530;
+    --color-error: #FA3600;
   }
-  
+
   [data-theme="dark"] {
-    --color-primary: #00C16A;
-    --color-secondary: #8b5cf6;
-    --color-accent: #22d3ee;
+    --color-primary: #130fff;
+    --color-secondary: #00FAAF;
+    --color-accent: #FAE900;
+    --color-base-100: #1d232a;
+    --color-base-200: #191e24;
+    --color-base-300: #15191e;
     --color-base-content: #e2e8f0;
   }
 
@@ -61,7 +68,7 @@
     @media (min-width: 1024px) {
       grid-template-columns: auto 1fr;
 
-      & > .drawer-side {
+      &>.drawer-side {
         grid-column: 1;
         grid-row: 1;
         position: sticky;
@@ -69,7 +76,7 @@
         height: 100vh;
       }
 
-      & > .drawer-content {
+      &>.drawer-content {
         grid-column: 2;
         grid-row: 1;
       }
@@ -107,28 +114,16 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@utility hover-lift {
-  @apply transition-premium;
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-premium-hover);
-  }
-}
 
-@utility hover-glow {
-  @apply transition-premium;
-  &:hover {
-    box-shadow: var(--shadow-glow);
-    border-color: var(--color-primary);
-  }
-}
 
 @utility sidebar-item {
   @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-premium;
+
   &:hover {
     background: color-mix(in srgb, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
   }
+
   &.active {
     background: var(--color-primary);
     color: white;
@@ -140,6 +135,15 @@
   animation: fadeIn 0.5s ease-out forwards;
 }
 
+@layer components {
+
+  @variant dark {
+    html:has(:hover) #selector {
+      background-color: inherit;
+    }
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -149,5 +153,13 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.card,
+.drawer {
+  &:has(>input:is(input[type=checkbox], input[type=radio])) {
+    cursor: auto !important;
+    user-select: none !important;
   }
 }
