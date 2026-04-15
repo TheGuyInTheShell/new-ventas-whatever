@@ -1,4 +1,4 @@
-{% extends "pages/settings/layout.html" %}
+{% extends "layouts/settings.html" %}
 
 {% block settings_content %}
 <div x-data="{
@@ -35,7 +35,8 @@
         <div class="p-4 border-b border-base-300">
             <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-base-content/40"></i>
-                <input type="text" x-model="q" class="input input-sm input-bordered w-full pl-9" placeholder="Search members" autofocus />
+                <input type="text" x-model="q" class="input input-sm input-bordered w-full pl-9"
+                    placeholder="Search members" autofocus />
             </div>
         </div>
 
@@ -50,10 +51,14 @@
                 </thead>
                 <tbody>
                     <template x-if="loading">
-                        <tr><td colspan="3" class="text-center py-4">Loading...</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center py-4">Loading...</td>
+                        </tr>
                     </template>
                     <template x-if="!loading && filteredMembers.length === 0">
-                        <tr><td colspan="3" class="text-center py-4 text-base-content/50">No members found</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-base-content/50">No members found</td>
+                        </tr>
                     </template>
                     <template x-for="member in filteredMembers" :key="member.id">
                         <tr class="hover">

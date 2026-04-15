@@ -1,10 +1,11 @@
-{% extends "pages/settings/layout.html" %}
+{% extends "layouts/settings.html" %}
 
 {% block settings_content %}
 <div x-data="fiatConfig" class="relative">
 
     <!-- Global Loading Overlay -->
-    <div x-show="storeContext.loading" class="absolute inset-0 z-50 flex items-center justify-center bg-base-100/50 backdrop-blur-sm rounded-xl">
+    <div x-show="storeContext.loading"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-base-100/50 backdrop-blur-sm rounded-xl">
         <div class="flex flex-col items-center gap-3">
             <span class="loading loading-spinner text-primary loading-lg"></span>
             <span class="text-sm font-medium">Loading data...</span>
@@ -19,9 +20,11 @@
 
             <div class="space-y-4 mt-4">
                 <template x-for="fiat in fiats" :key="fiat.id">
-                    <div class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
+                    <div
+                        class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
                         <div class="flex items-center gap-3">
-                            <div class="p-2 rounded-full" :class="fiat.id === mainFiatId ? 'bg-primary/20 text-primary' : 'bg-base-300 text-base-content/50'">
+                            <div class="p-2 rounded-full"
+                                :class="fiat.id === mainFiatId ? 'bg-primary/20 text-primary' : 'bg-base-300 text-base-content/50'">
                                 <i :data-lucide="fiat.id === mainFiatId ? 'star' : 'coins'" class="w-5 h-5"></i>
                             </div>
                             <div>
@@ -34,10 +37,11 @@
                             <!-- Rate Editor (only for non-main) -->
                             <template x-if="fiat.id !== mainFiatId && mainFiatId">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm text-base-content/50">1 <span x-text="getFiatExpression(mainFiatId)"></span> =</span>
-                                    <input type="number" class="input input-bordered input-sm w-24" placeholder="Rate" 
-                                           x-model="exchangeRates[fiat.id]"
-                                           @blur="onSetRate(fiat.id, $event.target.value)" />
+                                    <span class="text-sm text-base-content/50">1 <span
+                                            x-text="getFiatExpression(mainFiatId)"></span> =</span>
+                                    <input type="number" class="input input-bordered input-sm w-24" placeholder="Rate"
+                                        x-model="exchangeRates[fiat.id]"
+                                        @blur="onSetRate(fiat.id, $event.target.value)" />
                                     <span class="text-sm text-base-content/50" x-text="fiat.expression"></span>
                                 </div>
                             </template>
@@ -67,13 +71,16 @@
             <div class="flex gap-2 items-end">
                 <div class="form-control grow">
                     <label class="label"><span class="label-text">Name</span></label>
-                    <input type="text" x-model="newFiat.name" placeholder="Dollar" class="input input-bordered input-sm w-full" />
+                    <input type="text" x-model="newFiat.name" placeholder="Dollar"
+                        class="input input-bordered input-sm w-full" />
                 </div>
                 <div class="form-control grow">
                     <label class="label"><span class="label-text">Expression</span></label>
-                    <input type="text" x-model="newFiat.expression" placeholder="USD" class="input input-bordered input-sm w-full" />
+                    <input type="text" x-model="newFiat.expression" placeholder="USD"
+                        class="input input-bordered input-sm w-full" />
                 </div>
-                <button class="btn btn-primary btn-sm" :class="{'btn-disabled': !newFiat.name || !newFiat.expression}" @click="onAddFiat" :disabled="isAddingFiat">
+                <button class="btn btn-primary btn-sm" :class="{'btn-disabled': !newFiat.name || !newFiat.expression}"
+                    @click="onAddFiat" :disabled="isAddingFiat">
                     Add
                 </button>
             </div>
@@ -88,7 +95,8 @@
 
             <div class="space-y-3 mt-4">
                 <template x-for="comp in customComparisons" :key="comp.id">
-                    <div class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
+                    <div
+                        class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
                         <div class="flex items-center gap-3">
                             <div class="p-2 rounded-full bg-info/20 text-info">
                                 <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
@@ -100,7 +108,8 @@
                                     <span x-text="getFiatName(comp.value_to)"></span>
                                 </div>
                                 <div class="text-xs text-base-content/50">
-                                    <span x-text="getFiatExpression(comp.value_from)"></span> → <span x-text="getFiatExpression(comp.value_to)"></span>
+                                    <span x-text="getFiatExpression(comp.value_from)"></span> → <span
+                                        x-text="getFiatExpression(comp.value_to)"></span>
                                 </div>
                             </div>
                         </div>
@@ -142,9 +151,11 @@
                 </div>
                 <div class="form-control grow">
                     <label class="label"><span class="label-text text-xs">Rate (1 From = X To)</span></label>
-                    <input type="number" x-model="newComparison.rate" placeholder="Rate" class="input input-bordered input-sm w-full" />
+                    <input type="number" x-model="newComparison.rate" placeholder="Rate"
+                        class="input input-bordered input-sm w-full" />
                 </div>
-                <button class="btn btn-primary btn-sm" @click="onAddComparison" :disabled="!newComparison.fromId || !newComparison.toId || !newComparison.rate">
+                <button class="btn btn-primary btn-sm" @click="onAddComparison"
+                    :disabled="!newComparison.fromId || !newComparison.toId || !newComparison.rate">
                     Add
                 </button>
             </div>

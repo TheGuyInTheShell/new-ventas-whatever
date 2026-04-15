@@ -1,4 +1,4 @@
-{% extends "pages/settings/layout.html" %}
+{% extends "layouts/settings.html" %}
 
 {% block settings_content %}
 <div x-data="{
@@ -36,14 +36,16 @@
         <!-- Main fields PageCard -->
         <div class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body p-4 space-y-4">
-                
+
                 <!-- Name Field -->
                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div class="max-w-xs">
                         <label class="label p-0"><span class="label-text font-medium text-sm">Name</span></label>
-                        <p class="text-xs text-base-content/60 mt-1">Will appear on receipts, invoices, and other communication.</p>
+                        <p class="text-xs text-base-content/60 mt-1">Will appear on receipts, invoices, and other
+                            communication.</p>
                     </div>
-                    <input type="text" x-model="profile.name" class="input input-bordered input-sm w-full sm:w-64" required />
+                    <input type="text" x-model="profile.name" class="input input-bordered input-sm w-full sm:w-64"
+                        required />
                 </div>
                 <div class="divider my-0"></div>
 
@@ -51,9 +53,11 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div class="max-w-xs">
                         <label class="label p-0"><span class="label-text font-medium text-sm">Email</span></label>
-                        <p class="text-xs text-base-content/60 mt-1">Used to sign in, for email receipts and product updates.</p>
+                        <p class="text-xs text-base-content/60 mt-1">Used to sign in, for email receipts and product
+                            updates.</p>
                     </div>
-                    <input type="email" x-model="profile.email" class="input input-bordered input-sm w-full sm:w-64" required />
+                    <input type="email" x-model="profile.email" class="input input-bordered input-sm w-full sm:w-64"
+                        required />
                 </div>
                 <div class="divider my-0"></div>
 
@@ -61,9 +65,11 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div class="max-w-xs">
                         <label class="label p-0"><span class="label-text font-medium text-sm">Username</span></label>
-                        <p class="text-xs text-base-content/60 mt-1">Your unique username for logging in and your profile URL.</p>
+                        <p class="text-xs text-base-content/60 mt-1">Your unique username for logging in and your
+                            profile URL.</p>
                     </div>
-                    <input type="text" x-model="profile.username" class="input input-bordered input-sm w-full sm:w-64" required />
+                    <input type="text" x-model="profile.username" class="input input-bordered input-sm w-full sm:w-64"
+                        required />
                 </div>
                 <div class="divider my-0"></div>
 
@@ -80,12 +86,15 @@
                                     <img :src="profile.avatar" alt="Avatar" />
                                 </template>
                                 <template x-if="!profile.avatar">
-                                    <div class="bg-base-200 w-full h-full flex items-center justify-center text-xl text-base-content/30 uppercase" x-text="profile.name.charAt(0)"></div>
+                                    <div class="bg-base-200 w-full h-full flex items-center justify-center text-xl text-base-content/30 uppercase"
+                                        x-text="profile.name.charAt(0)"></div>
                                 </template>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-neutral btn-sm" @click="$refs.fileInput.click()">Choose</button>
-                        <input x-ref="fileInput" type="file" class="hidden" accept=".jpg, .jpeg, .png, .gif" @change="onFileChange" />
+                        <button type="button" class="btn btn-neutral btn-sm"
+                            @click="$refs.fileInput.click()">Choose</button>
+                        <input x-ref="fileInput" type="file" class="hidden" accept=".jpg, .jpeg, .png, .gif"
+                            @change="onFileChange" />
                     </div>
                 </div>
                 <div class="divider my-0"></div>
@@ -94,9 +103,11 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div class="max-w-xs">
                         <label class="label p-0"><span class="label-text font-medium text-sm">Bio</span></label>
-                        <p class="text-xs text-base-content/60 mt-1">Brief description for your profile. URLs are hyperlinked.</p>
+                        <p class="text-xs text-base-content/60 mt-1">Brief description for your profile. URLs are
+                            hyperlinked.</p>
                     </div>
-                    <textarea x-model="profile.bio" class="textarea textarea-bordered w-full sm:w-64" rows="5"></textarea>
+                    <textarea x-model="profile.bio" class="textarea textarea-bordered w-full sm:w-64"
+                        rows="5"></textarea>
                 </div>
 
             </div>

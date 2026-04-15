@@ -1,4 +1,4 @@
-{% extends "pages/settings/layout.html" %}
+{% extends "layouts/settings.html" %}
 
 {% block settings_content %}
 <div x-data="{
@@ -49,9 +49,8 @@
                                 <label class="font-medium text-sm" x-text="field.label"></label>
                                 <p class="text-xs text-base-content/60 mt-1" x-text="field.description"></p>
                             </div>
-                            <input type="checkbox" class="toggle toggle-primary toggle-sm" 
-                                   x-model="state[field.name]" 
-                                   @change="onChange" />
+                            <input type="checkbox" class="toggle toggle-primary toggle-sm" x-model="state[field.name]"
+                                @change="onChange" />
                         </div>
                     </template>
                 </div>

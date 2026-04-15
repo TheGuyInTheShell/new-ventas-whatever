@@ -1,4 +1,4 @@
-{% extends "pages/settings/layout.html" %}
+{% extends "layouts/settings.html" %}
 
 {% block settings_content %}
 <div x-data="{
@@ -30,13 +30,15 @@
             <p class="text-xs text-base-content/60 mb-4">Confirm your current password before setting a new one.</p>
 
             <form @submit.prevent="onSubmit" class="flex flex-col gap-4 max-w-xs">
-                
+
                 <div class="form-control w-full">
-                    <input type="password" x-model="password.current" placeholder="Current password" class="input input-bordered input-sm w-full" required />
+                    <input type="password" x-model="password.current" placeholder="Current password"
+                        class="input input-bordered input-sm w-full" required />
                 </div>
-                
+
                 <div class="form-control w-full">
-                    <input type="password" x-model="password.new" placeholder="New password" class="input input-bordered input-sm w-full" required />
+                    <input type="password" x-model="password.new" placeholder="New password"
+                        class="input input-bordered input-sm w-full" required />
                 </div>
 
                 <div x-show="error" class="text-error text-xs font-medium" x-text="error" x-transition></div>
@@ -51,7 +53,8 @@
         <div class="card-body p-6">
             <h2 class="card-title text-base text-error">Account</h2>
             <p class="text-xs text-base-content/80 mt-1">
-                No longer want to use our service? You can delete your account here. This action is not reversible. All information related to this account will be deleted permanently.
+                No longer want to use our service? You can delete your account here. This action is not reversible. All
+                information related to this account will be deleted permanently.
             </p>
             <div class="card-actions justify-start mt-4">
                 <button class="btn btn-error btn-sm">Delete account</button>
