@@ -53,9 +53,9 @@ class TransactionBuffer(BasicBaseAsync):
 
     __table_args__ = (
         Index("uq_transactions_buffer_id", "id", unique=True),
-        Index("ix_transactions_buffer_ref_by_user_active", "ref_by_user", postgres_where=(text("deleted_at IS NULL"))),
-        Index("ix_transactions_buffer_ref_balance_from_active", "ref_balance_from", postgres_where=(text("deleted_at IS NULL"))),
-        Index("ix_transactions_buffer_ref_balance_to_active", "ref_balance_to", postgres_where=(text("deleted_at IS NULL"))),
-        Index("ix_transactions_buffer_state_active", "state", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_ref_by_user_active", "ref_by_user", postgresql_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_ref_balance_from_active", "ref_balance_from", postgresql_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_ref_balance_to_active", "ref_balance_to", postgresql_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_state_active", "state", postgresql_where=(text("deleted_at IS NULL"))),
         {"extend_existing": True},
     )

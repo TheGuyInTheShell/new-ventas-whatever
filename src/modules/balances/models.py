@@ -22,7 +22,7 @@ class Balance(BasicBaseAsync):
     value: Mapped["Value"] = relationship("Value", back_populates="balances")
 
     __table_args__ = (
-        Index("ix_balances_ref_value_active", "ref_value", postgres_where=(text("deleted_at IS NULL"))),
-        Index("ix_balances_type_active", "type", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_balances_ref_value_active", "ref_value", postgresql_where=(text("deleted_at IS NULL"))),
+        Index("ix_balances_type_active", "type", postgresql_where=(text("deleted_at IS NULL"))),
         {"extend_existing": True},
     )

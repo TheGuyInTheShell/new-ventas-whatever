@@ -474,30 +474,45 @@ class PermissionsService(Service):
                 if perm and p_data.get("meta"):
                     await self._sync_permission_metadata(db, perm.id, p_data["meta"])
 
-            # 7. Vincular los permisos al rol 'owner'
-            owner_query = await db.execute(select(Role).where(Role.name == "owner"))
-            owner_role = owner_query.scalar_one_or_none()
-
+            # 7. Sincronizar permisos con los roles principales
+            # Se asegura que el rol 'admin' exista con nivel 1 (máximo) y se vinculan todos los permisos.
+            # También se vinculan al rol 'owner' si existe.
+            roles_to_sync = ["admin", "owner"]
             all_permission_ids = [p.id for p in existing_perms.values()]
-            
-            if owner_role:
-                
-                existing_links_query = await db.execute(
-                    select(RolePermission.permission_id).where(
-                        RolePermission.role_id == owner_role.id,
-                        RolePermission.permission_id.in_(all_permission_ids)
-                    )
-                )
-                existing_link_ids = set(existing_links_query.scalars().all())
 
-                new_links = []
-                for p_id in all_permission_ids:
-                    if p_id not in existing_link_ids:
-                        new_links.append(RolePermission(role_id=owner_role.id, permission_id=p_id))
+            for role_name in roles_to_sync:
+                role_query = await db.execute(select(Role).where(Role.name == role_name))
+                role = role_query.scalar_one_or_none()
+
+                if not role and role_name == "admin":
+                    print(f"[Shield Sync] Creating 'admin' role...")
+                    role = Role(
+                        name="admin",
+                        description="Administrator with full access",
+                        level=1, 
+                        disabled=False
+                    )
+                    db.add(role)
+                    await db.flush()
                 
-                if new_links:
-                    print(f"[Shield Sync] Linking {len(new_links)} new permissions to owner role...")
-                    db.add_all(new_links)
+                if role:
+                    # Sincronizar tabla pivote RolePermission
+                    existing_links_query = await db.execute(
+                        select(RolePermission.permission_id).where(
+                            RolePermission.role_id == role.id,
+                            RolePermission.permission_id.in_(all_permission_ids)
+                        )
+                    )
+                    existing_link_ids = set(existing_links_query.scalars().all())
+
+                    new_links = []
+                    for p_id in all_permission_ids:
+                        if p_id not in existing_link_ids:
+                            new_links.append(RolePermission(role_id=role.id, permission_id=p_id))
+                    
+                    if new_links:
+                        print(f"[Shield Sync] Linking {len(new_links)} new permissions to {role_name} role...")
+                        db.add_all(new_links)
 
             # 8. Actualizar o crear registro de Hash
             if option_record:

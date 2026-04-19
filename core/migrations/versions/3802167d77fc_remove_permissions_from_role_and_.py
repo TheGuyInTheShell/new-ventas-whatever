@@ -1,19 +1,19 @@
-"""add_index_to_comparation_values_context
+"""remove_permissions_from_role_and_finalize_indexes
 
-Revision ID: d8b450ff3903
-Revises: 560dbb8caa45
-Create Date: 2026-04-18 09:54:25.376761
+Revision ID: 3802167d77fc
+Revises: 690d367789e6
+Create Date: 2026-04-18 22:56:30.801858
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'd8b450ff3903'
-down_revision: Union[str, None] = '560dbb8caa45'
+revision: str = '3802167d77fc'
+down_revision: Union[str, None] = '690d367789e6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -27,7 +27,6 @@ def upgrade() -> None:
     op.drop_index('idx_business_entities_groups_connections_active', table_name='business_entities_groups_connections', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_business_entities_hierarchy_active', table_name='business_entities_hierarchy', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_comparation_values_active', table_name='comparation_values', postgresql_where='(deleted_at IS NULL)')
-    op.create_index('ix_comparation_values_context_active', 'comparation_values', ['context'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index('idx_comparation_values_historical_active', table_name='comparation_values_historical', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_image_files_active', table_name='image_files', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_invoice_business_entities_active', table_name='invoice_business_entities', postgresql_where='(deleted_at IS NULL)')
@@ -36,8 +35,6 @@ def upgrade() -> None:
     op.drop_index('idx_meta_business_entities_active', table_name='meta_business_entities', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_meta_comparison_values_active', table_name='meta_comparison_values', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_meta_comparison_values_historical_active', table_name='meta_comparison_values_historical', postgresql_where='(deleted_at IS NULL)')
-    op.drop_index('idx_values_meta_ref_comparison_value_historical', table_name='meta_comparison_values_historical')
-    op.create_index('idx_meta_comp_val_hist_ref_comp_val_hist', 'meta_comparison_values_historical', ['key', 'ref_comparison_value_historical'], unique=True)
     op.drop_index('idx_meta_invoices_active', table_name='meta_invoices', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_meta_permissions_active', table_name='meta_permissions', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_meta_persons_active', table_name='meta_persons', postgresql_where='(deleted_at IS NULL)')
@@ -50,6 +47,7 @@ def upgrade() -> None:
     op.drop_index('idx_persons_active', table_name='persons', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_role_permissions_active', table_name='role_permissions', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_roles_active', table_name='roles', postgresql_where='(deleted_at IS NULL)')
+    op.drop_column('roles', 'permissions')
     op.drop_index('idx_transactions_active', table_name='transactions', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_transactions_buffer_active', table_name='transactions_buffer', postgresql_where='(deleted_at IS NULL)')
     op.drop_index('idx_users_active', table_name='users', postgresql_where='(deleted_at IS NULL)')
@@ -69,6 +67,7 @@ def downgrade() -> None:
     op.create_index('idx_users_active', 'users', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_transactions_buffer_active', 'transactions_buffer', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_transactions_active', 'transactions', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
+    op.add_column('roles', sa.Column('permissions', postgresql.ARRAY(sa.INTEGER()), autoincrement=False, nullable=False))
     op.create_index('idx_roles_active', 'roles', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_role_permissions_active', 'role_permissions', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_persons_active', 'persons', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
@@ -81,8 +80,6 @@ def downgrade() -> None:
     op.create_index('idx_meta_persons_active', 'meta_persons', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_meta_permissions_active', 'meta_permissions', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_meta_invoices_active', 'meta_invoices', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
-    op.drop_index('idx_meta_comp_val_hist_ref_comp_val_hist', table_name='meta_comparison_values_historical')
-    op.create_index('idx_values_meta_ref_comparison_value_historical', 'meta_comparison_values_historical', ['key', 'ref_comparison_value_historical'], unique=True)
     op.create_index('idx_meta_comparison_values_historical_active', 'meta_comparison_values_historical', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_meta_comparison_values_active', 'meta_comparison_values', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_meta_business_entities_active', 'meta_business_entities', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
@@ -91,7 +88,6 @@ def downgrade() -> None:
     op.create_index('idx_invoice_business_entities_active', 'invoice_business_entities', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_image_files_active', 'image_files', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_comparation_values_historical_active', 'comparation_values_historical', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
-    op.drop_index('ix_comparation_values_context_active', table_name='comparation_values', postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index('idx_comparation_values_active', 'comparation_values', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_business_entities_hierarchy_active', 'business_entities_hierarchy', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
     op.create_index('idx_business_entities_groups_connections_active', 'business_entities_groups_connections', ['id'], unique=False, postgresql_where='(deleted_at IS NULL)')
