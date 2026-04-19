@@ -5,7 +5,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import BasicBaseAsync
 
 if TYPE_CHECKING:
-    from src.modules.comparison_values.historical.models import ComparisonValueHistorical
+    from src.modules.comparison_values.historical.models import (
+        ComparisonValueHistorical,
+    )
 
 
 class MetaComparisonValuesHistorical(BasicBaseAsync):
@@ -21,7 +23,7 @@ class MetaComparisonValuesHistorical(BasicBaseAsync):
 
     __table_args__ = (
         Index(
-            "idx_comparison_values_historical_meta_ref_comparison_value_historical",
+            "idx_meta_comp_val_hist_ref_comp_val_hist",
             "key",
             "ref_comparison_value_historical",
             unique=True,
