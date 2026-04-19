@@ -166,13 +166,6 @@ class PermissionsService(Service):
                 current_meta = await self._sync_permission_metadata(db, permission_id, perm_data.meta)
                 await db.commit()
 
-                # 4. Sync the Role's permissions array (redundancy)
-                role = await Role.find_one(db, role_id)
-                if role:
-                    current_perms = set(role.permissions or [])
-                    if permission_id not in current_perms:
-                        current_perms.add(permission_id)
-                        await role.update(db, role_id, {"permissions": list(current_perms)})
 
                 # Success
                 results.append(BulkPermissionResult(

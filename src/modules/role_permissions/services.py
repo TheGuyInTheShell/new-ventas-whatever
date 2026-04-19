@@ -16,7 +16,7 @@ class RolePermissionsService(Service):
         db: AsyncSession, role_id: int, permission_id: int
     ) -> Role:
         """
-        Assigns a permission to a role by adding the permission UID to the role's permissions array.
+        Assigns a permission to a role via the RolePermission pivot table.
         """
         # Get the role
         role = await Role.find_one(db, role_id)
@@ -24,10 +24,7 @@ class RolePermissionsService(Service):
         # Get the permission to verify it exists
         permission = await Permission.find_one(db, permission_id)
 
-        # Add permission ID to role's permissions array if not already present
-        if permission.id not in (role.permissions or []):
-            updated_permissions = list(role.permissions or []) + [permission.id]
-            await role.update(db, role_id, {"permissions": updated_permissions})
+        # No longer updating role.permissions array (redundancy removed)
 
         # Sync Pivot Table (RolePermission)
         rp_query = await db.execute(
@@ -49,15 +46,12 @@ class RolePermissionsService(Service):
         db: AsyncSession, role_id: int, permission_id: int
     ) -> Role:
         """
-        Removes a permission from a role by removing the permission UID from the role's permissions array.
+        Removes a permission from a role by deleting the entry from the RolePermission pivot table.
         """
         # Get the role
         role = await Role.find_one(db, role_id)
 
-        # Remove permission ID from role's permissions array if present
-        if role.permissions and permission_id in role.permissions:
-            updated_permissions = [p for p in role.permissions if p != permission_id]
-            await role.update(db, role_id, {"permissions": updated_permissions})
+        # No longer updating role.permissions array (redundancy removed)
 
         # Remove from Pivot Table (RolePermission)
         await db.execute(
@@ -77,23 +71,24 @@ class RolePermissionsService(Service):
         # Get the role
         role = await Role.find_one(db, role_id)
 
-        # Get all permissions for this role
-        permissions = []
-        for permission_id in (role.permissions or []):
-            try:
-                permission = await Permission.find_one(db, permission_id)
-                permissions.append(
-                    RSPermissionDetail(
-                        id=permission.id,
-                        name=permission.name,
-                        action=permission.action,
-                        description=permission.description,
-                        type=permission.type,
-                    )
-                )
-            except:
-                # Skip permissions that no longer exist
-                continue
+        # Get all permissions for this role from the Pivot Table
+        query = await db.execute(
+            select(Permission)
+            .join(RolePermission, Permission.id == RolePermission.permission_id)
+            .where(RolePermission.role_id == role_id)
+        )
+        permission_objs = query.scalars().all()
+
+        permissions = [
+            RSPermissionDetail(
+                id=perm.id,
+                name=perm.name,
+                action=perm.action,
+                description=perm.description,
+                type=perm.type,
+            )
+            for perm in permission_objs
+        ]
 
         return RSRolePermissions(
             role_id=role.id, role_name=role.name, permissions=permissions
