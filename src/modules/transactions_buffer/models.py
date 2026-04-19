@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, ForeignKey, Enum, Index
+from sqlalchemy import String, Integer, ForeignKey, Enum, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
@@ -43,6 +43,7 @@ class TransactionBuffer(BasicBaseAsync):
         foreign_keys=[ref_inverse_transaction],
     )
     user: Mapped["User"] = relationship("User", foreign_keys=[ref_by_user])
+
     balance_from: Mapped["Balance"] = relationship("Balance", foreign_keys=[ref_balance_from])
     balance_to: Mapped["Balance"] = relationship("Balance", foreign_keys=[ref_balance_to])
 
@@ -52,5 +53,9 @@ class TransactionBuffer(BasicBaseAsync):
 
     __table_args__ = (
         Index("uq_transactions_buffer_id", "id", unique=True),
+        Index("ix_transactions_buffer_ref_by_user_active", "ref_by_user", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_ref_balance_from_active", "ref_balance_from", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_ref_balance_to_active", "ref_balance_to", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_buffer_state_active", "state", postgres_where=(text("deleted_at IS NULL"))),
         {"extend_existing": True},
     )

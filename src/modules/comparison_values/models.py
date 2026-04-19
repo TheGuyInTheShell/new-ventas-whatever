@@ -43,6 +43,8 @@ class ComparisonValue(BasicBaseAsync):
 
     __table_args__ = (
         Index("ix_comparation_values_context_active", "context"),
+        Index("ix_comparation_values_value_from_active", "value_from", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_comparation_values_value_to_active", "value_to", postgres_where=(text("deleted_at IS NULL"))),
         Index("ix_comparison_values_value_to_context", "value_to", "context"),
         Index("ix_comparison_values_value_from_context", "value_from", "context"),
         UniqueConstraint(

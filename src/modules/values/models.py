@@ -53,6 +53,7 @@ class Value(BasicBaseAsync):
     )
 
     __table_args__ = (
+        Index("ix_values_context_active", "context"),
         Index("ix_values_name_context", "name", "context"),
         Index("ix_values_name_type", "name", "type"),
         Index("ix_values_name_context_type", "name", "context", "type"),

@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, ForeignKey, Enum, Index
+from sqlalchemy import String, Integer, ForeignKey, Enum, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
@@ -35,5 +35,9 @@ class Transaction(BasicBaseAsync):
     
     __table_args__ = (
         Index("uq_transactions_id", "id", unique=True),
+        Index("ix_transactions_ref_by_user_active", "ref_by_user", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_ref_balance_from_active", "ref_balance_from", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_ref_balance_to_active", "ref_balance_to", postgres_where=(text("deleted_at IS NULL"))),
+        Index("ix_transactions_reference_code_active", "reference_code", postgres_where=(text("deleted_at IS NULL"))),
         {"extend_existing": True},
     )
