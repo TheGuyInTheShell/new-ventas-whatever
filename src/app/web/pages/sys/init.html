@@ -3,7 +3,20 @@
 {% block page %}
 <div
   class="min-h-screen bg-[#0F172A] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans"
-  x-data="{ showPassword: false, loading: false }">
+  x-data="{ 
+    showPassword: false, 
+    loading: false, 
+    password: '',
+    get strength() {
+      let score = 0;
+      if (!this.password) return 0;
+      if (this.password.length >= 8) score++;
+      if (/[A-Z]/.test(this.password)) score++;
+      if (/[0-9]/.test(this.password)) score++;
+      if (/[!@#$%^&*.]/.test(this.password)) score++;
+      return score;
+    }
+  }" id="spinner">
 
   <!-- Main Container -->
   <div class="w-full max-w-[480px] z-10">
@@ -45,7 +58,8 @@
 
         <!-- Form Body -->
         <div class="p-8 pt-6">
-          <form class="flex flex-col gap-6" @submit.prevent="loading = true; setTimeout(() => loading = false, 2000)">
+          <form id="init-form" class="flex flex-col gap-6" hx-post="/partials/sys/init" hx-target="#notification"
+            hx-swap="innerHTML">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <!-- Full Name Container -->
@@ -62,6 +76,7 @@
                 <input type="text" name="full_name" class="grow text-white font-medium placeholder:text-white/10 w-full"
                   placeholder="Administrator Name" required />
               </label>
+              <span id="label-full_name" class="text-[10px] text-error font-bold px-1"></span>
             </div>
 
             <!-- Credentials Row -->
@@ -80,6 +95,7 @@
                     class="grow text-white font-medium placeholder:text-white/10 w-full" placeholder="vault_admin"
                     required />
                 </label>
+                <span id="label-username" class="text-[10px] text-error font-bold px-1"></span>
               </div>
 
               <!-- Email -->
@@ -96,6 +112,7 @@
                   <input type="email" name="email" class="grow text-white font-medium placeholder:text-white/10 w-full"
                     placeholder="master@vault.io" required />
                 </label>
+                <span id="label-email" class="text-[10px] text-error font-bold px-1"></span>
               </div>
             </div>
 
@@ -114,23 +131,30 @@
                 class="input input-lg bg-black/20 border-white/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium w-full">
                 <i data-lucide="key-round"
                   class="w-5 h-5 text-white/20 group-focus-within/field:text-primary transition-premium"></i>
-                <input :type="showPassword ? 'text' : 'password'" name="password"
+                <input :type="showPassword ? 'text' : 'password'" name="password" x-model="password"
                   class="grow text-white font-medium placeholder:text-white/10 w-full" placeholder="••••••••••••"
                   required />
               </label>
+              <span id="label-password" class="text-[10px] text-error font-bold px-1"></span>
 
               <!-- Strength Visualizer -->
               <div class="flex gap-1.5 px-1 mt-1">
                 <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
-                  <div class="h-full bg-error w-full"></div>
+                  <div class="h-full transition-all duration-500" :class="strength >= 1 ? 'bg-error w-full' : 'w-0'">
+                  </div>
                 </div>
                 <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
-                  <div class="h-full bg-warning w-full"></div>
+                  <div class="h-full transition-all duration-500" :class="strength >= 2 ? 'bg-warning w-full' : 'w-0'">
+                  </div>
                 </div>
                 <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
-                  <div class="h-full bg-success w-full opacity-30"></div>
+                  <div class="h-full transition-all duration-500" :class="strength >= 3 ? 'bg-success w-full' : 'w-0'">
+                  </div>
                 </div>
-                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden"></div>
+                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full transition-all duration-500" :class="strength >= 4 ? 'bg-primary w-full' : 'w-0'">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -140,7 +164,7 @@
                 class="btn btn-primary btn-lg w-full rounded-[1.2rem] h-16 shadow-premium group relative overflow-hidden border-none"
                 :disabled="loading">
                 <div
-                  class="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none">
+                  class="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none">
                 </div>
                 <div class="flex items-center gap-3 relative z-10">
                   <span class="text-base font-black uppercase tracking-widest"
@@ -159,52 +183,48 @@
                 cannot be undone</p>
             </div>
           </form>
-        </div>
-      </div>
 
-
-      <!-- System Signature -->
-      <div class="mt-16 text-center space-y-2 animate-fade-in" style="animation-delay: 0.5s;">
-        <h2 class="text-xs font-black text-white/10 tracking-[1em] uppercase">The Guy in the Shell</h2>
-        <div class="flex items-center justify-center gap-2 opacity-5">
-          <div class="w-8 h-px bg-white"></div>
-          <div class="w-2 h-2 rotate-45 border border-white"></div>
-          <div class="w-8 h-px bg-white"></div>
+          <!-- HTMX Response Area -->
+          <div id="notification" class="mt-6"></div>
         </div>
       </div>
     </div>
+
+    <!-- System Signature -->
+    <div class="mt-16 text-center space-y-2 animate-fade-in" style="animation-delay: 0.5s;">
+      <h2 class="text-xs font-black text-white/10 tracking-[1em] uppercase">The Guy in the Shell</h2>
+      <div class="flex items-center justify-center gap-2 opacity-5">
+        <div class="w-8 h-px bg-white"></div>
+        <div class="w-2 h-2 rotate-45 border border-white"></div>
+        <div class="w-8 h-px bg-white"></div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
-    });
-  </script>
+<!-- Styles for extra sleekness -->
+<style>
+  @keyframes gradient-border {
 
-  <style>
-    @keyframes gradient-border {
-
-      0%,
-      100% {
-        background-position: 0% 50%;
-      }
-
-      50% {
-        background-position: 100% 50%;
-      }
+    0%,
+    100% {
+      background-position: 0% 50%;
     }
 
-    .animate-gradient {
-      background-size: 200% 200%;
-      animation: gradient-border 5s ease infinite;
+    50% {
+      background-position: 100% 50%;
     }
+  }
 
-    /* Custom input override for extra sleekness */
-    .input-lg:focus-within {
-      transform: translateY(-2px);
-      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
-    }
-  </style>
-  {% endblock %}
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-border 5s ease infinite;
+  }
+
+  /* Custom input override for extra sleekness */
+  .input-lg:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+</style>
+{% endblock %}

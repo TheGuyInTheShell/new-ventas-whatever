@@ -17,7 +17,7 @@ class SysPartials(Partial):
 
     UsersService: "UsersService"
 
-    @Post("/", response_class=Response)
+    @Post("/init", response_class=Response)
     async def init_system_with_credentials(
         self,
         username: Annotated[str, FastAPIForm()],

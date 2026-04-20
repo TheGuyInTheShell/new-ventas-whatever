@@ -31,7 +31,7 @@ class SysTemplate(Template):
     )
     @enqueue_js(
         js_tag=str(
-            Script(src="/app-static/javascript/index.js", type="module", defer=True)
+            Script(src="/app-static/javascript/sys/init.js", type="module", defer=True)
         ),
         position=Site.BODY_AFTER,
     )
