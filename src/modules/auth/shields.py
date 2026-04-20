@@ -10,7 +10,7 @@ from core.config.settings import settings
 
 
 @Services(PermissionsService, AuthService)
-class AuthGuardApi(ResolverProvider):
+class AuthShieldApi(ResolverProvider):
     PermissionsService: PermissionsService
     AuthService: AuthService
 
@@ -73,7 +73,7 @@ class AuthGuardApi(ResolverProvider):
 
 
 @Services(PermissionsService, AuthService)
-class AuthGuardApp(ResolverProvider):
+class AuthShieldApp(ResolverProvider):
     PermissionsService: PermissionsService
     AuthService: AuthService
 

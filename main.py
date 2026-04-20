@@ -32,20 +32,20 @@ def init_shield_permissions(app: FastAPI):
     from core.security.shield.shield import Shield
     from core.database import SessionAsync
     from src.modules.permissions.services import PermissionsService
-    from src.modules.auth.guards import AuthGuardApi, AuthGuardApp
+    from modules.auth.shields import AuthShieldApi, AuthShieldApp
 
     perm_service = PermissionsService()
     Shield.scan(
         path="src/api",
         callback=perm_service.get_shield_sync_callback(sessionAsync=SessionAsync),
         context="API",
-        resolver=AuthGuardApi(),
+        resolver=AuthShieldApi(),
     )
     Shield.scan(
         path="src/app",
         callback=perm_service.get_shield_sync_callback(sessionAsync=SessionAsync),
         context="WEB",
-        resolver=AuthGuardApp(),
+        resolver=AuthShieldApp(),
     )
 
 
