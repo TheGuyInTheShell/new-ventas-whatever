@@ -44,9 +44,7 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-// Start the Alpine.js framework
 Alpine.start();
-
 /**
  * HTMX & Validation Logic for System Initialization
  */
@@ -113,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 Object.entries(validation).forEach(([keydom, errors]) => {
                     const element = $(`#label-${keydom}`);
+                    console.log(element);
                     if (element) {
                         element.innerHTML = errors.join(', ');
                     }
@@ -148,3 +147,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
