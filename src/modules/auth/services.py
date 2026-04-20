@@ -10,11 +10,11 @@ from core.database import get_async_db
 from ..users.models import User
 from core.lib.register.service import Service
 
-from .schemas import RQUser, RSUser
+from .schemas import CreateUser, User
 from .types import TokenData
 
 import bcrypt
-from bcrypt import _bcrypt # type: ignore
+from bcrypt import _bcrypt  # type: ignore
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 
@@ -24,7 +24,11 @@ import base64
 
 
 if not hasattr(bcrypt, "__about__"):
-   setattr(bcrypt, "__about__", type("About", (object,), {"__version__": _bcrypt.__version_ex__}))
+    setattr(
+        bcrypt,
+        "__about__",
+        type("About", (object,), {"__version__": _bcrypt.__version_ex__}),
+    )
 
 
 class AuthService(Service):
@@ -46,7 +50,9 @@ class AuthService(Service):
         totp = pyotp.TOTP(secret)
         return totp.verify(code)
 
-    def get_otp_provisioning_uri(self, secret: str, username: str, issuer_name: str = "FastAPI Template") -> str:
+    def get_otp_provisioning_uri(
+        self, secret: str, username: str, issuer_name: str = "FastAPI Template"
+    ) -> str:
         """Generates the provisioning URI for the Authenticator app."""
         totp = pyotp.TOTP(secret)
         return totp.provisioning_uri(name=username, issuer_name=issuer_name)
@@ -55,7 +61,7 @@ class AuthService(Service):
         """Generates a QR code image encoded in base64."""
         import qrcode.image.svg
         from io import BytesIO
-        
+
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -64,16 +70,18 @@ class AuthService(Service):
         )
         qr.add_data(provisioning_uri)
         qr.make(fit=True)
-        
+
         # Use SVG factory to avoid PIL dependency
         factory = qrcode.image.svg.SvgPathImage
         img = qr.make_image(image_factory=factory)
-        
+
         buffered = BytesIO()
         img.save(buffered)
-        
+
         # Return SVG base64 data URI
-        return "data:image/svg+xml;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
+        return "data:image/svg+xml;base64," + base64.b64encode(
+            buffered.getvalue()
+        ).decode("utf-8")
 
     async def get_user(self, db: AsyncSession, username: str) -> User | None:
         try:
@@ -87,7 +95,9 @@ class AuthService(Service):
     def verify_password(self, plane_password: str, current_password: str) -> bool:
         return self.hash_context.verify(plane_password, current_password)
 
-    async def authenticade_user(self, db: AsyncSession, username: str, password: str) -> RSUser:
+    async def authenticade_user(
+        self, db: AsyncSession, username: str, password: str
+    ) -> User:
         try:
             user = await self.get_user(db, username)
             if user is None:
@@ -95,7 +105,7 @@ class AuthService(Service):
             same_passowords = self.verify_password(password, user.password)
             if same_passowords is False:
                 raise HTTPException(status_code=401, detail="Incorrect password")
-            result = RSUser(
+            result = User(
                 uid=user.uid,
                 id=user.id,
                 username=user.username,
@@ -109,9 +119,9 @@ class AuthService(Service):
             print(e)
             raise e
 
-    async def create_user(self, db: AsyncSession, user_data: RQUser) -> dict | None:
+    async def create_user(self, db: AsyncSession, user_data: CreateUser) -> dict | None:
         try:
-            
+
             user = await User(
                 username=user_data.username,
                 password=self.hash_context.hash(user_data.password),
@@ -142,10 +152,14 @@ class AuthService(Service):
         if "type" not in copy_user:
             copy_user["type"] = "access"
         copy_user.update({"exp": expires, "iat": current_time})
-        token_jwt = jwt.encode(copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM)
+        token_jwt = jwt.encode(
+            copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM
+        )
         return token_jwt
 
-    def create_refresh_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
+    def create_refresh_token(
+        self, data: dict, expires_time: Union[float, None] = None
+    ) -> str:
         current_time = int(time.time())
         if expires_time is None:
             expires = current_time + (self.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
@@ -153,7 +167,9 @@ class AuthService(Service):
             expires = current_time + int(expires_time)
         copy_user = data.copy()
         copy_user.update({"exp": expires, "type": "refresh", "iat": current_time})
-        token_jwt = jwt.encode(copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM)
+        token_jwt = jwt.encode(
+            copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM
+        )
         return token_jwt
 
     def decode_token(self, token: str) -> TokenData | None:
@@ -172,7 +188,11 @@ class AuthService(Service):
             return None
 
     @injectable
-    async def get_current_user(self, token: str = Depends(OAuth2PasswordBearer("auth/sign-in")), db: AsyncSession = Depends(get_async_db)):
+    async def get_current_user(
+        self,
+        token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
+        db: AsyncSession = Depends(get_async_db),
+    ):
         payload = self.decode_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid token")

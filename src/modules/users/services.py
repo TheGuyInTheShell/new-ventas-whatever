@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi_injectable import injectable
 
 from .models import User
-from .schemas import RSUser
+from .schemas import User
 from ..auth.services import AuthService
 
 
@@ -19,8 +19,8 @@ class UsersService(Service):
     async def get_current_user(
         self,
         token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
-        db: AsyncSession = Depends(get_async_db)
-    ) -> RSUser:
+        db: AsyncSession = Depends(get_async_db),
+    ) -> User:
         """
         Obtiene el usuario actual desde el token JWT de la request.
         """
@@ -28,16 +28,16 @@ class UsersService(Service):
         payload = self.AuthService.decode_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Token inválido")
-        
+
         # Buscar el usuario en la base de datos
         query = await User.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
-        
+
         if not user:
             raise HTTPException(status_code=401, detail="Usuario no encontrado")
-        
+
         # Retornar el schema Pydantic con los datos del usuario
-        return RSUser(
+        return User(
             id=user.id,
             username=user.username,
             full_name=user.full_name,
@@ -46,4 +46,3 @@ class UsersService(Service):
             otp_enabled=user.otp_enabled,
             created_at=user.created_at,
         )
-

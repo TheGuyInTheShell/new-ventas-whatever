@@ -1,32 +1,22 @@
 """
 Template controller para la raíz de app (/).
 
-Este módulo define las rutas de la página principal de la aplicación pública.
+Este módulo define las rutas de la página para el primer registro del sistema.
 """
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 
 from core.lib.decorators import Get
 from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
-from core.security.csrf.csrf import CSRF
-from core.security.shield.shield import Shield
 
 
-@Shield.register(context="Dashboard")
-class SignTemplate(Template):
+class SysTemplate(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 
-    @Get("/in", response_class=HTMLResponse)
-    @CSRF()
-    @Shield.need(
-        name="dashboard",
-        action="read",
-        type="template",
-        description="Permite acceder al dashboard.",
-    )
+    @Get("/init", response_class=HTMLResponse)
     @enqueue_css(
         css_tag=str(
             Style(href="/app-static/css/app.css", type="text/css", media="all")
@@ -41,23 +31,23 @@ class SignTemplate(Template):
     )
     @enqueue_js(
         js_tag=str(
-            Script(src="/app-static/javascript/sign/in.js", type="module", defer=True)
+            Script(src="/app-static/javascript/index.js", type="module", defer=True)
         ),
         position=Site.BODY_AFTER,
     )
-    async def sign_in(self, request: Request) -> HTMLResponse:
-        """Renderiza la página de sign in de la aplicación.
+    async def init_sys(self, request: Request) -> HTMLResponse:
+        """Renderiza la página para el primer registro del sistema.
 
         Args:
             request: Objeto Request de FastAPI.
 
         Returns:
-            Respuesta HTML con la página principal renderizada.
+            Respuesta HTML con la página para el primer registro del sistema.
         """
 
         return self.templates.TemplateResponse(
             request,
-            name="pages/sign/in.html",
+            name="pages/sys/init.html",
             context={
                 "request": request,
             },

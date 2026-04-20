@@ -9,7 +9,7 @@ class Roles(Enum):
     SUPERADMIN = "SUPERADMIN"
 
 
-class RQUser(BaseModel):
+class CreateUser(BaseModel):
     username: str
     role: Union[int, str]
     password: str
@@ -18,7 +18,7 @@ class RQUser(BaseModel):
 
 
 # PYDANTIC
-class RSUser(BaseModel):
+class User(BaseModel):
     id: Union[int, str]
     username: str
     full_name: str
@@ -29,7 +29,7 @@ class RSUser(BaseModel):
     created_at: datetime
 
 
-class RSUserTokenData(BaseModel):
+class UserTokenData(BaseModel):
     id: Union[int, str]
     uid: Union[int, str]
     username: str
@@ -39,10 +39,10 @@ class RSUserTokenData(BaseModel):
     otp_enabled: bool = False
 
 
-class INUser(RSUser):
+class INUser(User):
     password: str
 
 
-class RQUserLogin(BaseModel):
+class UserSignIn(BaseModel):
     username: str
     password: str

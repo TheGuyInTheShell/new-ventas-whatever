@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block page %}
+<div
+  class="min-h-screen bg-[#0F172A] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans"
+  x-data="{ showPassword: false, loading: false }">
+
+  <!-- Main Container -->
+  <div class="w-full max-w-[480px] z-10">
+
+    <!-- Top Meta Info -->
+    <div class="flex items-center justify-between mb-8 px-2 animate-fade-in">
+
+      <div class="flex items-center gap-1.5 bg-white/5 py-1 px-3 rounded-full border border-white/10">
+        <div class="w-1.5 h-1.5 rounded-full bg-success animate-ping"></div>
+        <span class="text-[10px] font-bold text-success/80 uppercase">Root Setup</span>
+      </div>
+    </div>
+
+    <!-- Glass Card with Gradient Border Wrapper -->
+    <div class="relative">
+      <!-- Subtle Glow behind -->
+      <div class="absolute -inset-1 bg-linear-to-r from-primary/20 to-secondary/20 rounded-4xl blur-2xl opacity-50">
+      </div>
+
+      <!-- Card Structure -->
+      <div
+        class="relative bg-[#1E293B]/80 backdrop-blur-2xl rounded-4xl border border-white/10 shadow-2xl overflow-hidden">
+
+        <!-- Header Info -->
+        <div class="p-8 pb-4 text-center">
+          <div class="relative inline-flex mb-6">
+            <div class="absolute -inset-3 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
+            <div
+              class="relative w-20 h-20 rounded-2xl bg-linear-to-br from-primary to-primary/60 flex items-center justify-center shadow-premium transform hover:rotate-3 transition-premium cursor-help">
+              <i data-lucide="shield-plus" class="w-10 h-10 text-white drop-shadow-lg"></i>
+            </div>
+          </div>
+
+          <h1 class="text-4xl font-black tracking-tight text-white mb-2 leading-none">
+            System <span class="text-transparent bg-clip-text bg-linear-to-r from-primary to-secondary">Init</span>
+          </h1>
+          <p class="text-white/50 text-sm font-medium">Create the master administrator vault</p>
+        </div>
+
+        <!-- Form Body -->
+        <div class="p-8 pt-6">
+          <form class="flex flex-col gap-6" @submit.prevent="loading = true; setTimeout(() => loading = false, 2000)">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <!-- Full Name Container -->
+            <div class="space-y-2 group/field">
+              <div class="flex justify-between items-end px-1">
+                <span
+                  class="text-[11px] font-black uppercase tracking-widest text-white/30 group-focus-within/field:text-primary transition-colors">Master
+                  Identity</span>
+              </div>
+              <label
+                class="input input-lg bg-black/20 border-white/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium backdrop-blur-sm w-full">
+                <i data-lucide="user-round"
+                  class="w-5 h-5 text-white/20 group-focus-within/field:text-primary transition-premium"></i>
+                <input type="text" name="full_name" class="grow text-white font-medium placeholder:text-white/10 w-full"
+                  placeholder="Administrator Name" required />
+              </label>
+            </div>
+
+            <!-- Credentials Row -->
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Username -->
+              <div class="space-y-2 group/field">
+                <div class="flex justify-between items-end px-1">
+                  <span
+                    class="text-[11px] font-black uppercase tracking-widest text-white/30 group-focus-within/field:text-primary transition-colors">Handle</span>
+                </div>
+                <label
+                  class="input input-lg bg-black/20 border-white/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium w-full">
+                  <i data-lucide="at-sign"
+                    class="w-5 h-5 text-white/20 group-focus-within/field:text-primary transition-premium"></i>
+                  <input type="text" name="username"
+                    class="grow text-white font-medium placeholder:text-white/10 w-full" placeholder="vault_admin"
+                    required />
+                </label>
+              </div>
+
+              <!-- Email -->
+              <div class="space-y-2 group/field">
+                <div class="flex justify-between items-end px-1">
+                  <span
+                    class="text-[11px] font-black uppercase tracking-widest text-white/30 group-focus-within/field:text-primary transition-colors">Emergency
+                    Protocol Email</span>
+                </div>
+                <label
+                  class="input input-lg bg-black/20 border-white/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium w-full">
+                  <i data-lucide="mail"
+                    class="w-5 h-5 text-white/20 group-focus-within/field:text-primary transition-premium"></i>
+                  <input type="email" name="email" class="grow text-white font-medium placeholder:text-white/10 w-full"
+                    placeholder="master@vault.io" required />
+                </label>
+              </div>
+            </div>
+
+            <!-- Password Vault Container -->
+            <div class="space-y-3 group/field">
+              <div class="flex justify-between items-end px-1">
+                <span
+                  class="text-[11px] font-black uppercase tracking-widest text-white/30 group-focus-within/field:text-primary transition-colors">Secure
+                  Encryption Key</span>
+                <button type="button" @click="showPassword = !showPassword"
+                  class="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-tighter">
+                  <span x-text="showPassword ? 'Mask' : 'Reveal'"></span>
+                </button>
+              </div>
+              <label
+                class="input input-lg bg-black/20 border-white/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium w-full">
+                <i data-lucide="key-round"
+                  class="w-5 h-5 text-white/20 group-focus-within/field:text-primary transition-premium"></i>
+                <input :type="showPassword ? 'text' : 'password'" name="password"
+                  class="grow text-white font-medium placeholder:text-white/10 w-full" placeholder="••••••••••••"
+                  required />
+              </label>
+
+              <!-- Strength Visualizer -->
+              <div class="flex gap-1.5 px-1 mt-1">
+                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-error w-full"></div>
+                </div>
+                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-warning w-full"></div>
+                </div>
+                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-success w-full opacity-30"></div>
+                </div>
+                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Initialization Action -->
+            <div class="pt-6 relative">
+              <button type="submit"
+                class="btn btn-primary btn-lg w-full rounded-[1.2rem] h-16 shadow-premium group relative overflow-hidden border-none"
+                :disabled="loading">
+                <div
+                  class="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none">
+                </div>
+                <div class="flex items-center gap-3 relative z-10">
+                  <span class="text-base font-black uppercase tracking-widest"
+                    x-text="loading ? 'Sealing Vault...' : 'Authorize Setup'"></span>
+                  <template x-if="!loading">
+                    <i data-lucide="unlock" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                  </template>
+                  <template x-if="loading">
+                    <span class="loading loading-spinner loading-sm"></span>
+                  </template>
+                </div>
+              </button>
+
+              <!-- Legal/Action shadow -->
+              <p class="text-[9px] text-center mt-4 text-white/20 uppercase tracking-[0.3em] font-bold">This operation
+                cannot be undone</p>
+            </div>
+          </form>
+        </div>
+      </div>
+
+
+      <!-- System Signature -->
+      <div class="mt-16 text-center space-y-2 animate-fade-in" style="animation-delay: 0.5s;">
+        <h2 class="text-xs font-black text-white/10 tracking-[1em] uppercase">The Guy in the Shell</h2>
+        <div class="flex items-center justify-center gap-2 opacity-5">
+          <div class="w-8 h-px bg-white"></div>
+          <div class="w-2 h-2 rotate-45 border border-white"></div>
+          <div class="w-8 h-px bg-white"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+
+  <style>
+    @keyframes gradient-border {
+
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .animate-gradient {
+      background-size: 200% 200%;
+      animation: gradient-border 5s ease infinite;
+    }
+
+    /* Custom input override for extra sleekness */
+    .input-lg:focus-within {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+  {% endblock %}
