@@ -13,12 +13,12 @@ from core.lib.register import Controller
 from core.lib.decorators.cache import cached
 from core.lib.dependencies.cache import CacheDep
 from core.security.shield import Shield
-from src.api.health.guards import DemoGuardResolver
+from src.api.health.shields import HealthShieldResolver
+
 
 @Shield.register(context="CacheTestModule")
 class CacheTestController(Controller):
-    """Controller para pruebas experimentales del proveedor de caché global.
-    """
+    """Controller para pruebas experimentales del proveedor de caché global."""
 
     @Get("/manual")
     async def test_manual_cache(self, cache: CacheDep) -> Dict[str, Any]:
@@ -27,18 +27,13 @@ class CacheTestController(Controller):
         Genera un número aleatorio y lo almacena por 60 segundos si es nuevo.
         """
         import random
-        
+
         async def fetch_random_number():
             return random.randint(1000, 9999)
-            
-        value = await cache.remember("test_manual_random", 60, fetch_random_number)
-        
-        return {
-            "status": "success",
-            "message": "Manual cache test",
-            "value": value
-        }
 
+        value = await cache.remember("test_manual_random", 60, fetch_random_number)
+
+        return {"status": "success", "message": "Manual cache test", "value": value}
 
     @Get("/decorator")
     @Shield.need(
@@ -46,7 +41,7 @@ class CacheTestController(Controller):
         action="read",
         type="endpoint",
         description="Endpoint de diagnóstico - leer versión",
-        resolver=DemoGuardResolver()
+        resolver=HealthShieldResolver(),
     )
     @cached(ttl=60, prefix="test_decorator")
     async def test_decorator_cache(self) -> Dict[str, Any]:
@@ -55,16 +50,15 @@ class CacheTestController(Controller):
         Debe cachear este JSON serializable entero y retornarlo sin recalculación en los próximos 60s.
         """
         import random
+
         return {
             "status": "success",
             "message": "Decorator cache test",
-            "random": random.randint(1000, 9999)
+            "random": random.randint(1000, 9999),
         }
 
     @Get("/clear")
     async def clear_cache(self, cache: CacheDep) -> Dict[str, str]:
-        """Flush DB cache (Prueba de purgado).
-        """
+        """Flush DB cache (Prueba de purgado)."""
         await cache.clear()
         return {"status": "Cache was fully flushed!"}
-
