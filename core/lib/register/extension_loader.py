@@ -28,15 +28,17 @@ def load_extensions(app: FastAPI) -> List[Extension]:
         if folder.is_dir():
             target_file = folder / f"{folder.name}.py"
             if target_file.exists() and target_file.is_file():
-                # We create a pseudo-module name that includes the folder name, 
+                # We create a pseudo-module name that includes the folder name,
                 # supporting folders with hyphens (which aren't valid python identifiers directly).
                 # To support relative imports within the extension, we structure the name gracefully.
                 package_name = f"extension.{folder.name}"
                 module_name = f"{package_name}.{folder.name}"
-                
+
                 # Mock a package module in sys.modules so relative imports work smoothly
                 if package_name not in sys.modules:
-                    pkg_spec = importlib.machinery.ModuleSpec(package_name, None, is_package=True)
+                    pkg_spec = importlib.machinery.ModuleSpec(
+                        package_name, None, is_package=True
+                    )
                     pkg_module = importlib.util.module_from_spec(pkg_spec)
                     pkg_module.__path__ = [str(folder.resolve())]
                     sys.modules[package_name] = pkg_module
@@ -58,5 +60,11 @@ def load_extensions(app: FastAPI) -> List[Extension]:
                                 extension_instance = obj(app=app)
                                 extension_instance.extends()
                                 instances.append(extension_instance)
+
+    from core.security.csrf.csrf import CSRFExtension
+    from core.security.guards import FastAPI_Guard
+
+    CSRFExtension(app).extends()
+    FastAPI_Guard(app).extends()
 
     return instances
