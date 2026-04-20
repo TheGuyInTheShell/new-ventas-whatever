@@ -12,10 +12,8 @@ from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.csrf.csrf import CSRF
-from core.security.shield.shield import Shield
 
 
-@Shield.register(context="Dashboard")
 class SignTemplate(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 

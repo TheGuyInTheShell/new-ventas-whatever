@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: false;
+  themes: light --default, dark --prefersdark, cupcake, corporate;
 }
 
 @import 'tailwind-animations';

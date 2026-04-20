@@ -6,6 +6,7 @@ from src.modules.auth.services import AuthService
 from core.security.shield.provider import ResolverProvider
 from fastapi import HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from src.modules.options.services import OptionsService
 from core.config.settings import settings
 
 
@@ -153,3 +154,33 @@ class AuthShieldApp(ResolverProvider):
             raise HTTPException(status_code=401, detail=str(he.detail))
         except Exception as e:
             raise HTTPException(status_code=401, detail=str(e))
+
+
+@Services(OptionsService)
+class SysInitShield(ResolverProvider):
+
+    OptionsService: OptionsService
+
+    async def resolve(
+        self,
+        name: str,
+        type_str: str,
+        action: str,
+        context: str,
+        request: Request,
+        **kwargs,
+    ) -> bool:
+        # If the system is ALREADY initialized
+        # We redirect to /sign/in to prevent accessing init again
+        is_ready = await self.OptionsService.get_option(
+            "system_init", "owner_signup", "ready"
+        )
+
+        if is_ready:
+            headers = {"Location": "/sign/in"}
+            if request.headers.get("hx-request"):
+                headers["HX-Redirect"] = "/sign/in"
+
+            raise HTTPException(status_code=303, headers=headers)
+
+        return True

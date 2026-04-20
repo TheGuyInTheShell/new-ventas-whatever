@@ -11,12 +11,22 @@ from core.lib.decorators import Get
 from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
+from core.security.shield import Shield
+from src.modules.auth.shields import SysInitShield
 
 
+@Shield.register(context="Dashboard")
 class SysTemplate(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 
     @Get("/init", response_class=HTMLResponse)
+    @Shield.need(
+        name="sys",
+        action="init",
+        type="template",
+        description="Permite acceder al primer registro del sistema.",
+        resolver=SysInitShield(),
+    )
     @enqueue_css(
         css_tag=str(
             Style(href="/app-static/css/app.css", type="text/css", media="all")

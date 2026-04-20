@@ -9,15 +9,25 @@ from fastapi import Depends, Form as FastAPIForm
 from fastapi.responses import Response
 from fasthtml.common import Div, H1, P, I, to_xml
 from core.security.csrf.csrf import CSRF
+from core.security.shield.shield import Shield
+from src.modules.auth.shields import SysInitShield
 
 
 @Services(UsersService)
+@Shield.register(context="System")
 class SysPartials(Partial):
     """Controlador de parciales para el sistema."""
 
     UsersService: "UsersService"
 
     @Post("/init", response_class=Response)
+    @Shield.need(
+        name="sys",
+        action="init",
+        type="partial",
+        description="Permite ejecutar la inicialización del sistema.",
+        resolver=SysInitShield(),
+    )
     async def init_system_with_credentials(
         self,
         username: Annotated[str, FastAPIForm()],
