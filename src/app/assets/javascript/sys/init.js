@@ -130,21 +130,32 @@ document.addEventListener('DOMContentLoaded', () => {
          * Handle HTMX successful completion to redirect.
          * @param {Event} event 
          */
-        form.addEventListener('htmx:afterOnLoad', function (event) {
-            setTimeout(() => {
-                // Hide loading
-                if (spinner) {
-                    Alpine.$data(spinner).hide();
-                }
+        document.body.addEventListener('htmx:afterSwap', function (event) {
+            if (event.detail.target.id === "notification") {
+                console.log(event.detail.target);
+                setTimeout(() => {
+                    // Hide loading
+                    if (spinner) {
+                        Alpine.$data(spinner).hide();
+                    }
 
-                const successTarget = $("#init-success");
-                if (successTarget) {
-                    setTimeout(() => {
-                        window.location.replace("/auth/sign-in");
-                    }, 1500);
-                }
-            }, 500);
+                    const successTarget = $("#init-success");
+                    if (successTarget) {
+                        const formElem = $("#init-form");
+                        if (formElem) {
+                            formElem.remove();
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.replace("/sign/in");
+                        }, 1500);
+                    }
+                    // Re-initialize Lucide icons for the new content
+                    if (window.lucide) {
+                        window.lucide.createIcons();
+                    }
+                }, 100);
+            }
         });
     }
 });
-

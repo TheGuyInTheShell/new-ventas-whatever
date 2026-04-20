@@ -5,7 +5,7 @@ Este módulo define las rutas de la página para el primer registro del sistema.
 """
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse
 
 from core.lib.decorators import Get
 from core.lib.register import Template

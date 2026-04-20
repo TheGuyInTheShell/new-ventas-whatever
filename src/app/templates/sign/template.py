@@ -21,12 +21,6 @@ class SignTemplate(Template):
 
     @Get("/in", response_class=HTMLResponse)
     @CSRF()
-    @Shield.need(
-        name="dashboard",
-        action="read",
-        type="template",
-        description="Permite acceder al dashboard.",
-    )
     @enqueue_css(
         css_tag=str(
             Style(href="/app-static/css/app.css", type="text/css", media="all")

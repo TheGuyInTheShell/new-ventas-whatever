@@ -15,7 +15,9 @@
       if (/[0-9]/.test(this.password)) score++;
       if (/[!@#$%^&*.]/.test(this.password)) score++;
       return score;
-    }
+    },
+    show() { this.loading = true; },
+    hide() { this.loading = false; }
   }" id="spinner">
 
   <!-- Main Container -->
