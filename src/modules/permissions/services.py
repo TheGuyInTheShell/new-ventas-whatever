@@ -468,20 +468,19 @@ class PermissionsService(Service):
                     await self._sync_permission_metadata(db, perm.id, p_data["meta"])
 
             # 7. Sincronizar permisos con los roles principales
-            # Se asegura que el rol 'admin' exista con nivel 1 (máximo) y se vinculan todos los permisos.
-            # También se vinculan al rol 'owner' si existe.
-            roles_to_sync = ["admin", "owner"]
+            # Se asegura que el rol 'owner' exista con nivel 1 (máximo) y se vinculan todos los permisos.
+            roles_to_sync = ["owner"]
             all_permission_ids = [p.id for p in existing_perms.values()]
 
             for role_name in roles_to_sync:
                 role_query = await db.execute(select(Role).where(Role.name == role_name))
                 role = role_query.scalar_one_or_none()
 
-                if not role and role_name == "admin":
-                    print(f"[Shield Sync] Creating 'admin' role...")
+                if not role and role_name == "owner":
+                    print(f"[Shield Sync] Creating 'owner' role...")
                     role = Role(
-                        name="admin",
-                        description="Administrator with full access",
+                        name="owner",
+                        description="Owner with full access",
                         level=1, 
                         disabled=False
                     )

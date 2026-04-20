@@ -12,6 +12,7 @@ from core.lib.register.exceptions import (
 )
 from core.lib.register.template import Template
 from core.lib.register.service import Service
+from core.lib.register.partial import Partial
 
 __all__: list[str] = [
     "auto_router_api",
@@ -24,4 +25,5 @@ __all__: list[str] = [
     "TemplateControllerMissingError",
     "TemplateFileNotFoundWarning",
     "Service",
+    "Partial",
 ]

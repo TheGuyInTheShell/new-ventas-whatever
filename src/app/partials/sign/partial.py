@@ -1,14 +1,16 @@
 from core.lib.decorators import Get, Post, Services
-from core.lib.register.partial import Partial
+from core.lib.register import Partial
+
 # from src.modules.auth.services import AuthService
 # from src.modules.users.services import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 from fastapi import Depends, Form as FastAPIForm
 from fastapi.responses import Response
-from fasthtml.common import *
+from fasthtml.common import Div
 from typing import Annotated
 from core.security.csrf.csrf import CSRF
+
 
 # @Services(AuthService, UsersService)
 class SignPartial(Partial):
@@ -16,11 +18,15 @@ class SignPartial(Partial):
     # AuthService: "AuthService"
     # UserService: "UsersService"
 
-
     @Post("/in", response_class=Response)
-    @CSRF(['form'])
-    async def sign_in_partial(self, username: Annotated[str, FastAPIForm()], password: Annotated[str, FastAPIForm()], db: AsyncSession = Depends(get_async_db)) -> Response:
-        
+    @CSRF(["form"])
+    async def sign_in_partial(
+        self,
+        username: Annotated[str, FastAPIForm()],
+        password: Annotated[str, FastAPIForm()],
+        db: AsyncSession = Depends(get_async_db),
+    ) -> Response:
+
         # user = await self.AuthService.authenticade_user(db, username, password)
 
         # if user is None:
@@ -51,10 +57,12 @@ class SignPartial(Partial):
         #     }
         # )
 
-        response = str(Div(
-            f"Login successful! Redirecting... {username} {password}",
-            cls="success-msg alert alert-success text-white text-sm font-semibold rounded-lg shadow-md p-3 animate-bounce flex items-center justify-center w-full"
-        ))
+        response = str(
+            Div(
+                f"Login successful! Redirecting... {username} {password}",
+                cls="success-msg alert alert-success text-white text-sm font-semibold rounded-lg shadow-md p-3 animate-bounce flex items-center justify-center w-full",
+            )
+        )
         # response.set_cookie(
         #     key="access_token",
         #     value=access_token,
@@ -71,5 +79,3 @@ class SignPartial(Partial):
         #     path="/auth/refresh",
         # )
         return Response(response)
-
-
