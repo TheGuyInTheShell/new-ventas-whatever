@@ -39,8 +39,8 @@ Shield is a hierarchical, high-performance permission management system designed
 
 - **Registry (`core/security/shield/registry.py`)**: A hierarchical singleton store that organizes permissions by context (modules or features).
 - **Scanner (`core/security/shield/scanner.py`)**: An automated discovery tool that scans directories for classes and methods decorated with Shield metadata during application startup.
-- **Provider (`core/security/shield/provider.py`)**: The resolution engine. It evaluates whether a user (via `Request`) satisfies a permission requirement using a customizable `ResolverProvider`.
-- **Facade (`core/security/shield/shield.py`)**: The primary entry point for developers, offering decorators and imperative utilities.
+- **Provider (`core/security/shield/provider.py`)**: The resolution engine. It evaluates whether a user (via `Request`) satisfies a permission requirement using a customizable `ResolverProvider` or `BasicResolverProvider`.
+- **Facade (`core/security/shield/shield.py`)**: The primary entry point for developers, offering decorators and imperative utilities. It now supports runtime resolver mapping by path or context.
 
 ### Declarative Usage (Decorators)
 
@@ -57,23 +57,48 @@ class FinanceTemplate(Template):
 ```
 
 #### 2. Endpoint Protection
-Use `@Shield.need` to protect specific endpoints. Shield will automatically inject a FastAPI `Depends` guard that validates the permission before execution.
+Use `@Shield.need` to protect specific endpoints. Shield will automatically inject a FastAPI `Depends` guard that validates the permission before execution. You can also provide optional `meta` for additional validation context.
 
 ```python
 @Shield.register(context="Portfolio")
 class PortfolioController:
     @Get("/assets")
-    @Shield.need(name="Assets", action="view", type="READ", description="View user assets")
+    @Shield.need(
+        name="Assets", 
+        action="view", 
+        type="READ", 
+        description="View user assets",
+        meta=[("scope", "internal")]
+    )
     async def get_assets(self, request: Request):
         return {"data": "..."}
 ```
 
 #### 3. Basic Validation
-For general protection layer (like API Key or JWT validation without specific granular permissions), use `@Shield.basic`.
+For general protection layers (like API Key or JWT validation without specific granular permissions), use `@Shield.basic`. This decorator accepts a `BasicResolverProvider`.
 
 ```python
+from core.security.shield import BasicResolverProvider
+
+class MyApiKeyResolver(BasicResolverProvider):
+    def resolve(self, request: Request) -> bool:
+        return request.headers.get("X-API-KEY") == "secret"
+
 @Shield.basic(resolver=MyApiKeyResolver())
 async def secure_endpoint(request: Request):
+    ...
+```
+
+#### 4. Argument-Level Protection (Advanced)
+Shield allows marking specific function arguments as protected using `@Shield.arg`. This is useful for injecting permissions that are evaluated against specific data inputs.
+
+```python
+@Get("/user/{user_id}")
+async def get_user(
+    request: Request, 
+    user_id: str,
+    permission = Shield.arg("User", "view", "READ", "View user details", default=None)
+):
     ...
 ```
 
@@ -95,7 +120,7 @@ Shield.create(
 ```
 
 #### Imperative Permission Checks
-For logic-heavy permission checks within a function body, use `Shield.use`.
+For logic-heavy permission checks within a function body, use `Shield.use`. This method returns a wrapper that expects a `ResolverProvider` and a callback.
 
 ```python
 def process_sensitive_data(provider: ResolverProvider):
@@ -106,17 +131,36 @@ def process_sensitive_data(provider: ResolverProvider):
     )
 ```
 
-### Automated Discovery (Scanning)
-
-To avoid manual registration of every permission, use `Shield.scan` during the application's lifespan setup. This will recursively find all decorated classes and methods.
+To avoid manual registration of every permission, use `Shield.scan` during the application's initialization. You can now map specific resolvers to paths or contexts during scanning.
 
 ```python
 # In main.py or lifespan
 Shield.scan(
     path="src/api", 
     callback=lambda registry_dict: print(f"Registered {len(registry_dict)} permissions"),
-    context="Global"
+    context="Global",
+    resolver=MyDefaultResolver() # Optional: Default resolver for this entire path
 )
+```
+
+---
+
+## FastAPI Guards and Middleware
+
+The application integrates a custom `FastAPI_Guard` extension that applies global security policies via middleware.
+
+### SecurityMiddleware
+The `SecurityMiddleware` (`guard.middleware.SecurityMiddleware`) processes all incoming requests and can enforce global security rules (like valid JWT or API keys) before they reach the endpoint handlers.
+
+### Extension Registration
+To enable the guard globally, register it as an extension:
+
+```python
+# In main.py
+from core.security.guards import FastAPI_Guard
+
+app = FastAPI(...)
+FastAPI_Guard(app).extends()
 ```
 
 ---
