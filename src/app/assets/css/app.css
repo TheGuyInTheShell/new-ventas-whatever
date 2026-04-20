@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
+  themes: false;
 }
 
 @import 'tailwind-animations';
@@ -135,11 +135,11 @@
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-@layer components {
+@layer utilities {
 
   @variant dark {
     html:has(:hover) #selector {
-      background-color: inherit;
+      background-color: var(--color-base-100);
     }
   }
 }
