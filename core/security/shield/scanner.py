@@ -5,7 +5,7 @@ import importlib.util
 from typing import Callable, Dict, Any, Optional
 
 from .registry import permission_registry
-from .types import PermissionDefinition
+from .types import PermissionDefinition, PermissionMeta
 
 def scan_permissions(path: str, callback: Callable[[Dict[str, Any]], Any], default_context: Optional[str] = None) -> None:
     """
@@ -50,6 +50,14 @@ def _inspect_file(file_path: str, default_context: Optional[str]) -> None:
         module = importlib.import_module(module_name)
         
         for name, obj in inspect.getmembers(module, inspect.isclass):
+            # --- ShieldGroup subclasses (declarative manual trees) ----------
+            # __init_subclass__ already ran when the module was imported above,
+            # registering all CanNode permissions in the global registry.
+            # Nothing extra to do — just skip to avoid double-processing.
+            if hasattr(obj, "__shield_group_marker__") and obj.__name__ != "ShieldGroup":
+                continue
+
+            # --- @Shield.register classes (automatic scanner flow) ----------
             # Check if it has the shield register marker
             if hasattr(obj, "__shield_context_marker__"):
                 class_context = getattr(obj, "__shield_context__")
@@ -68,13 +76,19 @@ def _inspect_file(file_path: str, default_context: Optional[str]) -> None:
                             if not context:
                                 context = final_class_context
                                 
+                            raw_meta = p_data["meta"]
+                            if isinstance(raw_meta, PermissionMeta):
+                                coerced_meta = raw_meta
+                            else:
+                                coerced_meta = PermissionMeta.from_list(raw_meta)
+
                             definition = PermissionDefinition(
                                 name=p_data["name"],
                                 action=p_data["action"],
                                 type=p_data["type"],
                                 description=p_data["description"],
                                 context=context,
-                                meta=p_data["meta"]
+                                meta=coerced_meta,
                             )
                             # Registrando en el padre (default_context o el class_context)
                             permission_registry.add(definition, parent_context=default_context if context != default_context else None)
