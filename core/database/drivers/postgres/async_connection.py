@@ -26,6 +26,7 @@ def init_async_engine():
                 max_overflow=20,
                 pool_timeout=30,
                 query_cache_size=1200,
+                pool_recycle=1800,
             )
             break
         except KeyboardInterrupt:
