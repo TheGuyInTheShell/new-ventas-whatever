@@ -245,6 +245,8 @@ class PermissionsService(Service):
             for item in meta:
                 if isinstance(item, (list, tuple)) and len(item) >= 2:
                     meta_dict[item[0]] = item[1]
+                elif isinstance(item, dict) and "key" in item and "value" in item:
+                    meta_dict[item["key"]] = item["value"]
 
         if not meta_dict:
             return {}
