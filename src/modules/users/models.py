@@ -1,4 +1,5 @@
-from sqlalchemy import ForeignKey, Index, Integer, String, text, types
+from sqlalchemy import select, ForeignKey, Index, Integer, String, text, types
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.dialects.postgresql import TSVECTOR
 
@@ -43,6 +44,10 @@ class User(BasicBaseAsync):
             to_tsvector_ix("username", "email", "full_name"),
             postgresql_using="gin",
         ),
-        Index("ix_users_role_ref_active", "role_ref", postgresql_where=(text("deleted_at IS NULL"))),
+        Index(
+            "ix_users_role_ref_active",
+            "role_ref",
+            postgresql_where=(text("deleted_at IS NULL")),
+        ),
         {"extend_existing": True},
     )

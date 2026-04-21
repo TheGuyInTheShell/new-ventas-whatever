@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 
-from ..users.models import User
+from ..users.models import User as UserModel
 from core.lib.register.service import Service
 
 from .schemas import CreateUser, User
@@ -85,7 +85,7 @@ class AuthService(Service):
 
     async def get_user(self, db: AsyncSession, username: str) -> User | None:
         try:
-            query = await User.find_by_colunm(db, "username", username)
+            query = await UserModel.find_by_colunm(db, "username", username)
             user = query.scalar_one_or_none()
             return user
         except ValueError as e:
@@ -122,7 +122,7 @@ class AuthService(Service):
     async def create_user(self, db: AsyncSession, user_data: CreateUser) -> dict | None:
         try:
 
-            user = await User(
+            user = await UserModel(
                 username=user_data.username,
                 password=self.hash_context.hash(user_data.password),
                 email=user_data.email,
@@ -196,7 +196,7 @@ class AuthService(Service):
         payload = self.decode_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid token")
-        query = await User.find_by_colunm(db, "username", payload.sub)
+        query = await UserModel.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")

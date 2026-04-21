@@ -18,7 +18,7 @@ class SignTemplate(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 
     @Get("/in", response_class=HTMLResponse)
-    @CSRF()
+    @CSRF(["form"])
     @enqueue_css(
         css_tag=str(
             Style(href="/app-static/css/app.css", type="text/css", media="all")
