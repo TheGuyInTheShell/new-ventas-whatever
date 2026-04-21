@@ -99,6 +99,7 @@ class AuthShieldApp(ResolverProvider):
                 )
 
             auth_header = request.cookies.get("access_token")
+
             if not auth_header:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
@@ -107,6 +108,7 @@ class AuthShieldApp(ResolverProvider):
                 )
 
             payload = self.AuthService.decode_token(auth_header)
+
             if not payload:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
@@ -131,6 +133,7 @@ class AuthShieldApp(ResolverProvider):
             permission = await self.PermissionsService.get_permission(
                 name, context, action, type_str
             )
+
             if not permission:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,

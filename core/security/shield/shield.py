@@ -60,12 +60,22 @@ class Shield:
             setattr(cls, "__shield_context_marker__", True)
             ctx = context if context is not None else (cls.__name__)
             setattr(cls, "__shield_context__", ctx)
+
+            # Inject class context into all @Shield.need guards that were
+            # registered without an explicit context (holder[0] is None).
+            # This avoids the fragile runtime globals lookup in shield_guard.
+            for _, method_obj in inspect.getmembers(cls, predicate=callable):
+                if hasattr(method_obj, "__shield_context_holders__"):
+                    for holder in method_obj.__shield_context_holders__:
+                        if holder[0] is None:
+                            holder[0] = ctx
+
             return cls
 
         if inspect.isclass(cls_or_context) or isinstance(cls_or_context, type):
             # Used as @Shield.register sin parenthesis
             return decorator(cls_or_context)
-            
+
         return decorator
 
     @staticmethod
@@ -76,7 +86,7 @@ class Shield:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             if not hasattr(func, "__shield_permissions__"):
                 setattr(func, "__shield_permissions__", [])
-            
+
             p_data = {
                 "name": name,
                 "action": action,
@@ -86,13 +96,22 @@ class Shield:
                 "meta": meta
             }
             getattr(func, "__shield_permissions__").append(p_data)
-            
+
             if not hasattr(func, "__dependencies__"):
                 setattr(func, "__dependencies__", [])
-                
+
+            # Mutable holder so @Shield.register can inject the class context
+            # without relying on a fragile runtime globals lookup.
+            context_holder: List[Optional[str]] = [context]
+            if not hasattr(func, "__shield_context_holders__"):
+                setattr(func, "__shield_context_holders__", [])
+            getattr(func, "__shield_context_holders__").append(context_holder)
+
             async def shield_guard(request: Request) -> None:
-                # 1. Fallback to discover context through class binding at runtime
-                actual_context = context
+                # 1. Primary: context injected by @Shield.register at decoration time
+                actual_context = context_holder[0]
+
+                # 2. Fallback: runtime globals lookup (in case @Shield.register was not used)
                 if actual_context is None:
                     try:
                         cls_name = func.__qualname__.split(".")[0]
@@ -102,8 +121,8 @@ class Shield:
                                 actual_context = getattr(cls_obj, "__shield_context__")
                     except Exception:
                         pass
-                
-                # If still none, fallback
+
+                # 3. Last resort
                 if actual_context is None:
                     actual_context = "Global"
 
