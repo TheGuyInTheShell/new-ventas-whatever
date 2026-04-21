@@ -5,7 +5,7 @@ from src.modules.permissions.services import PermissionsService
 from src.modules.auth.services import AuthService
 from core.security.shield.provider import ResolverProvider
 from fastapi import HTTPException, Request, status
-from fastapi.responses import RedirectResponse
+from core.lib.dependencies.cache import get_cache
 from src.modules.options.services import OptionsService
 from core.config.settings import settings
 
@@ -48,18 +48,31 @@ class AuthShieldApi(ResolverProvider):
             if not payload.role:
                 raise HTTPException(status_code=403, detail="Role not defined in token")
 
-            permission = await self.PermissionsService.get_permission(
-                name, context, action, type_str
-            )
-            if not permission:
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"No tienes el permiso requerido: {name} (acción: {action})",
-                )
+            permission_cache_key = f"shield:perm:{context}:{type_str}:{action}:{name}"
+            cache = await get_cache(request)
+            perm_id = await cache.get(permission_cache_key)
 
-            has_permission = await self.PermissionsService.check_role_has_permission(
-                int(payload.role), permission.id
-            )
+            if perm_id is None:
+                permission = await self.PermissionsService.get_permission(
+                    name, context, action, type_str
+                )
+                if not permission:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"No tienes el permiso requerido: {name} (acción: {action})",
+                    )
+                perm_id = permission.id
+                await cache.set(permission_cache_key, perm_id, 3600)  # 1 hour
+
+            access_cache_key = f"shield:access:{payload.role}:{perm_id}"
+            has_permission = await cache.get(access_cache_key)
+
+            if has_permission is None:
+                has_permission = await self.PermissionsService.check_role_has_permission(
+                    int(payload.role), perm_id
+                )
+                await cache.set(access_cache_key, has_permission, 600)  # 10 minutes
+
             if not has_permission:
                 raise HTTPException(
                     status_code=403,
@@ -90,7 +103,7 @@ class AuthShieldApp(ResolverProvider):
         try:
             if settings.MODE == "DEVELOPMENT":
                 return True
-            # redirect to login page
+
             if not request:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
@@ -109,41 +122,40 @@ class AuthShieldApp(ResolverProvider):
 
             payload = self.AuthService.decode_token(auth_header)
 
-            if not payload:
+            if not payload or payload.type != "access" or not payload.role:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
                     detail="Invalid request",
                     headers={"Location": "/sign/in"},
                 )
 
-            if payload.type != "access":
-                raise HTTPException(
-                    status_code=status.HTTP_302_FOUND,
-                    detail="Invalid request",
-                    headers={"Location": "/sign/in"},
+            permission_cache_key = f"shield:perm:{context}:{type_str}:{action}:{name}"
+            cache = await get_cache(request)
+            perm_id = await cache.get(permission_cache_key)
+
+            if perm_id is None:
+                permission = await self.PermissionsService.get_permission(
+                    name, context, action, type_str
                 )
 
-            if not payload.role:
-                raise HTTPException(
-                    status_code=status.HTTP_302_FOUND,
-                    detail="Invalid request",
-                    headers={"Location": "/sign/in"},
+                if not permission:
+                    raise HTTPException(
+                        status_code=status.HTTP_302_FOUND,
+                        detail="Invalid request",
+                        headers={"Location": "/sign/in"},
+                    )
+                perm_id = permission.id
+                await cache.set(permission_cache_key, perm_id, 3600)  # 1 hour
+
+            access_cache_key = f"shield:access:{payload.role}:{perm_id}"
+            has_permission = await cache.get(access_cache_key)
+
+            if has_permission is None:
+                has_permission = await self.PermissionsService.check_role_has_permission(
+                    int(payload.role), perm_id
                 )
+                await cache.set(access_cache_key, has_permission, 600)  # 10 minutes
 
-            permission = await self.PermissionsService.get_permission(
-                name, context, action, type_str
-            )
-
-            if not permission:
-                raise HTTPException(
-                    status_code=status.HTTP_302_FOUND,
-                    detail="Invalid request",
-                    headers={"Location": "/sign/in"},
-                )
-
-            has_permission = await self.PermissionsService.check_role_has_permission(
-                int(payload.role), permission.id
-            )
             if not has_permission:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
@@ -186,11 +198,19 @@ class SysInitShield(ResolverProvider):
         if settings.MODE == "DEVELOPMENT":
             return True
 
-        # If the system is ALREADY initialized
-        # We redirect to /sign/in to prevent accessing init again
-        is_ready = await self.OptionsService.get_option(
-            "system_init", "owner_signup", "ready"
-        )
+        # Use caching for system initialization check
+        cache = await get_cache(request)
+        sys_init_key = "shield:sys_init:ready"
+        is_ready = await cache.get(sys_init_key)
+
+        if is_ready is None:
+            is_ready = await self.OptionsService.get_option(
+                "system_init", "owner_signup", "ready"
+            )
+            if is_ready:
+                await cache.set(sys_init_key, True, 3600)  # Ready = 1 hour
+            else:
+                await cache.set(sys_init_key, False, 60)   # Not ready = 1 minute
 
         if is_ready:
             headers = {"Location": "/sign/in"}
