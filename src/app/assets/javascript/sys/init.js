@@ -42,6 +42,27 @@ document.addEventListener('alpine:init', () => {
             this.loading = false;
         }
     }));
+
+    Alpine.data('sys_init', () => ({
+        password: '',
+        loading: false,
+        showPassword: false,
+        get strength() {
+            let score = 0;
+            if (!this.password) return 0;
+            if (this.password.length >= 8) score++;
+            if (/[A-Z]/.test(this.password)) score++;
+            if (/[0-9]/.test(this.password)) score++;
+            if (/[!@#$%^&*.]/.test(this.password)) score++;
+            return score;
+        },
+        show() {
+            this.loading = true;
+        },
+        hide() {
+            this.loading = false;
+        }
+    }));
 });
 
 Alpine.start();
@@ -145,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (formElem) {
                             formElem.remove();
                         }
-                        
+
                         setTimeout(() => {
                             window.location.replace("/sign/in");
                         }, 1500);

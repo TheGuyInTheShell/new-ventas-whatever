@@ -3,22 +3,7 @@
 {% block page %}
 <div
   class="min-h-screen bg-[#0F172A] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans"
-  x-data="{ 
-    showPassword: false, 
-    loading: false, 
-    password: '',
-    get strength() {
-      let score = 0;
-      if (!this.password) return 0;
-      if (this.password.length >= 8) score++;
-      if (/[A-Z]/.test(this.password)) score++;
-      if (/[0-9]/.test(this.password)) score++;
-      if (/[!@#$%^&*.]/.test(this.password)) score++;
-      return score;
-    },
-    show() { this.loading = true; },
-    hide() { this.loading = false; }
-  }" id="spinner">
+  x-data="sys_init" id="spinner">
 
   <!-- Main Container -->
   <div class="w-full max-w-[480px] z-10">
