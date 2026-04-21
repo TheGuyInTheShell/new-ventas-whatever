@@ -39,6 +39,9 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
+// Start the Alpine.js framework
+Alpine.start();
+
 /**
  * Attaches event listeners to the sign-in form for HTMX request lifecycle management.
  */
@@ -96,5 +99,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Start the Alpine.js framework
-Alpine.start();
+

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block page %}
 
-<div class="min-h-screen flex items-center justify-center bg-base-200">
+<div x-data="spinner" id="spinner" class="min-h-screen flex items-center justify-center bg-base-200">
   <div class="card w-96 shadow-xl p-6 bg-base-100">
     <div class="text-center mb-6">
       <h1 class="text-3xl font-bold font-sans text-primary">Welcome Back</h1>
@@ -41,9 +41,10 @@
         </label>
       </div>
 
-      <button type="submit"
-        class="btn btn-primary w-full text-white font-bold hover:scale-[1.02] active:scale-95 transition-transform">Sign
-        in</button>
+      <button id="submit-btn" type="submit"
+        :class="'btn w-full text-white font-bold hover:scale-[1.02] active:scale-95 transition-transform btn-primary ' + (loading ? ' btn-disabled cursor-not-allowed' : ' cursor-pointer')">
+        <span x-text="loading ? 'Signing in...' : 'Sign in'"></span>
+      </button>
     </form>
   </div>
 </div>
