@@ -170,6 +170,10 @@ class SysInitShield(ResolverProvider):
         request: Request,
         **kwargs,
     ) -> bool:
+
+        if settings.MODE == "DEVELOPMENT":
+            return True
+
         # If the system is ALREADY initialized
         # We redirect to /sign/in to prevent accessing init again
         is_ready = await self.OptionsService.get_option(
