@@ -6,7 +6,7 @@ from fastapi import Request, Depends, HTTPException
 
 from .types import PermissionDefinition, PermissionMeta
 from .registry import permission_registry
-from .provider import ResolverProvider, BasicResolverProvider
+from .provider import ResolverProvider, BasicResolverProvider, Default401Resolver
 from .errors import ShieldPermissionError
 from .scanner import scan_permissions
 
@@ -36,7 +36,7 @@ class Shield:
     
     _resolvers: Dict[str, ResolverProvider] = {}
     _path_resolvers: Dict[str, ResolverProvider] = {}
-    _global_resolver: Optional[ResolverProvider] = None
+    _global_resolver: ResolverProvider = Default401Resolver()
     
     @classmethod
     def scan(cls, path: str, callback: Callable[[Dict[str, Any]], Any], context: Optional[str] = None, resolver: Optional[ResolverProvider] = None) -> None:
@@ -122,12 +122,10 @@ class Shield:
                             active_resolver = scan_resolver
                             break
 
-                # 4. Global fallback
-                if not active_resolver:
-                    active_resolver = Shield._global_resolver
-                
                 if active_resolver is None:
-                    return
+                    # Closing the vector of attack: if no resolver is found, 
+                    # we must jump to the Default401Resolver manually if it wasn't picked up.
+                    active_resolver = Shield._global_resolver
                 
                 is_async = inspect.iscoroutinefunction(active_resolver.resolve)
                 if is_async:

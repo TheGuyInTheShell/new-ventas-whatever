@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Coroutine
 
+
 class ResolverProvider(ABC):
     """
     Contrato abstracto para la resolución de permisos en runtime.
@@ -9,17 +10,20 @@ class ResolverProvider(ABC):
     """
 
     @abstractmethod
-    def resolve(self, name: str, type_str: str, action: str, context: str, **kwargs: Any) -> bool | Coroutine[Any, Any, bool]:
+    def resolve(
+        self, name: str, type_str: str, action: str, context: str, **kwargs: Any
+    ) -> bool | Coroutine[Any, Any, bool]:
         """
         Resuelve si el usuario/sesión actual tiene el permiso solicitado.
         Retorna True si tiene permiso, False de lo contrario.
-        
+
         Args:
             name: Nombre del permiso (ej. 'users:read')
             type_str: Tipo de permiso (ej. 'endpoint', 'argument')
             context: Contexto del permiso (ej. 'UsersController')
         """
         pass
+
 
 class BasicResolverProvider(ABC):
     """
@@ -33,3 +37,21 @@ class BasicResolverProvider(ABC):
         Resuelve si la peticion es autorizada. Retorna True o False.
         """
         pass
+
+
+class Default401Resolver(ResolverProvider):
+    """
+    Resolver por defecto que siempre lanza un error 401.
+    Actúa como una capa de seguridad para evitar que endpoints sin resolver
+    configurado sean accesibles.
+    """
+
+    def resolve(
+        self, name: str, type_str: str, action: str, context: str, **kwargs: Any
+    ):
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: No security resolver configured for this context.",
+        )

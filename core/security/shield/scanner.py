@@ -14,6 +14,10 @@ def scan_permissions(path: str, callback: Callable[[Dict[str, Any]], Any], defau
 
     Todos los permisos encontrados heredarán el `default_context` a menos que tengan 
     su propio contexto especificado explícitamente en el decorador.
+
+    Nota de Seguridad: Todos los permisos escaneados requieren un Resolver configurado. 
+    Por defecto, Shield utiliza un `Default401Resolver` que bloqueará el acceso con 
+    un error 401 si no se asigna un resolver específico durante el escaneo o globalmente.
     """
     normalized_path = path.replace("\\", "/").rstrip("/")
     

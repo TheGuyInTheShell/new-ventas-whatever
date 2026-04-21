@@ -24,7 +24,8 @@
       </div>
 
       <!-- Card Structure -->
-      <div class="relative bg-base-200 backdrop-blur-2xl rounded-4xl border border-base-content/10 shadow-2xl overflow-hidden">
+      <div
+        class="relative bg-base-200 backdrop-blur-2xl rounded-4xl border border-base-content/10 shadow-2xl overflow-hidden">
 
         <!-- Header Info -->
         <div class="p-8 pb-4 text-center">
@@ -59,7 +60,8 @@
                 class="input input-lg bg-base-300 border-base-content/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium backdrop-blur-sm w-full">
                 <i data-lucide="user-round"
                   class="w-5 h-5 text-base-content/30 group-focus-within/field:text-primary transition-premium"></i>
-                <input type="text" name="full_name" class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
+                <input type="text" name="full_name"
+                  class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
                   placeholder="Administrator Name" required />
               </label>
               <span id="label-full_name" class="text-[10px] text-error font-bold px-1"></span>
@@ -78,8 +80,8 @@
                   <i data-lucide="at-sign"
                     class="w-5 h-5 text-base-content/30 group-focus-within/field:text-primary transition-premium"></i>
                   <input type="text" name="username"
-                    class="grow text-base-content font-medium placeholder:text-base-content/30 w-full" placeholder="vault_admin"
-                    required />
+                    class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
+                    placeholder="vault_admin" required />
                 </label>
                 <span id="label-username" class="text-[10px] text-error font-bold px-1"></span>
               </div>
@@ -95,7 +97,8 @@
                   class="input input-lg bg-base-300 border-base-content/5 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 flex items-center gap-4 rounded-2xl transition-premium w-full">
                   <i data-lucide="mail"
                     class="w-5 h-5 text-base-content/30 group-focus-within/field:text-primary transition-premium"></i>
-                  <input type="email" name="email" class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
+                  <input type="email" name="email"
+                    class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
                     placeholder="master@vault.io" required />
                 </label>
                 <span id="label-email" class="text-[10px] text-error font-bold px-1"></span>
@@ -118,8 +121,8 @@
                 <i data-lucide="key-round"
                   class="w-5 h-5 text-base-content/30 group-focus-within/field:text-primary transition-premium"></i>
                 <input :type="showPassword ? 'text' : 'password'" name="password" x-model="password"
-                  class="grow text-base-content font-medium placeholder:text-base-content/30 w-full" placeholder="••••••••••••"
-                  required />
+                  class="grow text-base-content font-medium placeholder:text-base-content/30 w-full"
+                  placeholder="••••••••••••" required />
               </label>
               <span id="label-password" class="text-[10px] text-error font-bold px-1"></span>
 
@@ -165,7 +168,8 @@
               </button>
 
               <!-- Legal/Action shadow -->
-              <p class="text-[9px] text-center mt-4 text-base-content/40 uppercase tracking-[0.3em] font-bold">This operation
+              <p class="text-[9px] text-center mt-4 text-base-content/40 uppercase tracking-[0.3em] font-bold">This
+                operation
                 cannot be undone</p>
             </div>
           </form>
