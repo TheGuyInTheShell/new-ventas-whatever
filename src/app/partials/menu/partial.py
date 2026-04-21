@@ -92,9 +92,10 @@ class MenuPartial(Partial):
         if "children" in node and node["children"]:
             summary = Summary(
                 icon_elem,
-                Span(
+                A(
                     display_name,
-                    cls="flex-1 text-left is-drawer-close:hidden font-medium",
+                    href=route,
+                    cls="flex-1 text-left is-drawer-close:hidden font-medium hover:text-primary transition-colors",
                 ),
                 cls="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right",
                 data_tip=display_name,

@@ -72,7 +72,7 @@ class SettingsChildren:
         description="Gestión de usuarios del sistema",
         meta=[
             ("icon", "user"),
-            ("route", "/dashboard/settings/users"),
+            ("route", "/settings/users"),
             ("name", "Usuarios"),
         ],
     )
@@ -83,7 +83,7 @@ class SettingsChildren:
         description="Gestión de roles del sistema",
         meta=[
             ("icon", "users"),
-            ("route", "/dashboard/settings/roles"),
+            ("route", "/settings/roles"),
             ("name", "Roles"),
         ],
     )
@@ -94,7 +94,7 @@ class SettingsChildren:
         description="Gestión de permisos del sistema",
         meta=[
             ("icon", "lock"),
-            ("route", "/dashboard/settings/permissions"),
+            ("route", "/settings/permissions"),
             ("name", "Permisos"),
         ],
     )
@@ -105,7 +105,7 @@ class SettingsChildren:
         description="Configuración de monedas FIAT",
         meta=[
             ("icon", "circle-dollar-sign"),
-            ("route", "/dashboard/settings/fiat-config"),
+            ("route", "/settings/fiat"),
             ("name", "Monedas FIAT"),
         ],
     )
@@ -150,7 +150,7 @@ class MenuShields(ShieldGroup):
         description="Acceso al módulo de configuración del sistema",
         meta=[
             ("icon", "cog"),
-            ("route", "/dashboard/settings"),
+            ("route", "/settings"),
             ("name", "Configuración"),
         ],
     ).children(SettingsChildren)
@@ -162,7 +162,7 @@ class MenuShields(ShieldGroup):
         description="Acceso al perfil de usuario",
         meta=[
             ("icon", "user"),
-            ("route", "/dashboard/profile"),
+            ("route", "/profile"),
             ("name", "Perfil"),
         ],
     )
