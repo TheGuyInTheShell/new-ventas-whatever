@@ -79,13 +79,13 @@ class MenuPartial(Partial):
                 elif k == "name":
                     display_name = v
 
-        # Limpiamos prefijo mdi- por compatibilidad si es necesario, 
+        # Limpiamos prefijo mdi- por compatibilidad si es necesario,
         # pero se usará el valor directo que viene de base de datos
         lucide_icon = icon.replace("mdi-", "") if icon.startswith("mdi-") else icon
 
         icon_elem = I(
             data_lucide=lucide_icon,
-            cls="size-5 shrink-0 transition-premium group-hover:scale-110",
+            cls="size-5 shrink-0 transition-premium group-hover:scale-110 hover:text-white",
         )
 
         # Si el nodo padre tiene hijos, renderizar el desplegable <details>
@@ -95,9 +95,9 @@ class MenuPartial(Partial):
                 A(
                     display_name,
                     href=route,
-                    cls="flex-1 text-left is-drawer-close:hidden font-medium hover:text-primary transition-colors",
+                    cls="flex-1 text-left is-drawer-close:hidden font-medium hover:text-white transition-colors",
                 ),
-                cls="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right",
+                cls="sidebar-item hover:scale-[1.02] hover:text-white is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right",
                 data_tip=display_name,
             )
 
@@ -105,7 +105,9 @@ class MenuPartial(Partial):
             for child_key, child_node in node["children"].items():
                 child_meta_list = child_node.get("meta", [])
                 child_route = "#"
-                child_display = child_node.get("description") or child_key.replace("_", " ").title()
+                child_display = (
+                    child_node.get("description") or child_key.replace("_", " ").title()
+                )
 
                 for item in child_meta_list:
                     if isinstance(item, dict):
@@ -121,7 +123,7 @@ class MenuPartial(Partial):
                         A(
                             child_display,
                             href=child_route,
-                            cls="text-xs py-1.5 transition-premium hover:text-primary hover:translate-x-1 inline-block text-base-content/70",
+                            cls="text-xs py-1.5 transition-premium hover:text-white hover:translate-x-1 inline-block text-base-content/70",
                         )
                     )
                 )
@@ -147,7 +149,7 @@ class MenuPartial(Partial):
                 icon_elem,
                 Span(display_name, cls="is-drawer-close:hidden font-medium"),
                 href=route,
-                cls="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right",
+                cls="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right hover:text-white",
                 data_tip=display_name,
             )
             return Li(link, cls="group")
