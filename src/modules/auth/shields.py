@@ -68,8 +68,10 @@ class AuthShieldApi(ResolverProvider):
             has_permission = await cache.get(access_cache_key)
 
             if has_permission is None:
-                has_permission = await self.PermissionsService.check_role_has_permission(
-                    int(payload.role), perm_id
+                has_permission = (
+                    await self.PermissionsService.check_role_has_permission(
+                        int(payload.role), perm_id
+                    )
                 )
                 await cache.set(access_cache_key, has_permission, 600)  # 10 minutes
 
@@ -151,10 +153,12 @@ class AuthShieldApp(ResolverProvider):
             has_permission = await cache.get(access_cache_key)
 
             if has_permission is None:
-                has_permission = await self.PermissionsService.check_role_has_permission(
-                    int(payload.role), perm_id
+                has_permission = (
+                    await self.PermissionsService.check_role_has_permission(
+                        int(payload.role), perm_id
+                    )
                 )
-                await cache.set(access_cache_key, has_permission, 600)  # 10 minutes
+                await cache.set(access_cache_key, has_permission, 60)  # 1 minutes
 
             if not has_permission:
                 raise HTTPException(
@@ -210,7 +214,7 @@ class SysInitShield(ResolverProvider):
             if is_ready:
                 await cache.set(sys_init_key, True, 3600)  # Ready = 1 hour
             else:
-                await cache.set(sys_init_key, False, 60)   # Not ready = 1 minute
+                await cache.set(sys_init_key, False, 60)  # Not ready = 1 minute
 
         if is_ready:
             headers = {"Location": "/sign/in"}
