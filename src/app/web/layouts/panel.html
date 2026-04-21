@@ -89,85 +89,13 @@
             <!-- Sidebar Content -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
 
-                <!-- Quick Search (Mini state tooltip) -->
-                <div class="px-1">
-                    <button
-                        class="flex items-center w-full px-2 py-2 text-xs text-base-content/60 border border-base-300 rounded-lg hover:bg-base-300 transition-colors is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                        data-tip="Quick Search (⌘K)">
-                        <i data-lucide="search" class="size-4 shrink-0"></i>
-                        <span class="ml-2 is-drawer-close:hidden">Search...</span>
-                    </button>
+                <!-- Menu cargado dinámicamente según permisos del usuario -->
+                <div hx-get="/partials/menu" hx-trigger="load" hx-swap="outerHTML">
+                    <!-- Placeholder de carga opcional -->
+                    <div class="flex justify-center p-4">
+                        <span class="loading loading-spinner text-primary"></span>
+                    </div>
                 </div>
-
-                <ul class="menu p-0 w-full gap-1">
-                    <li class="group">
-                        <a href="/dashboard"
-                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                            data-tip="Home">
-                            <i data-lucide="house" class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
-                            <span class="is-drawer-close:hidden font-medium">Home</span>
-                        </a>
-                    </li>
-
-                    <div class="pt-2 px-2 is-drawer-close:hidden">
-                        <span
-                            class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Management</span>
-                    </div>
-
-                    <li>
-                        <details x-data="{ open: false }" @toggle="open = $event.target.open" class="group">
-                            <summary
-                                class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                                data-tip="Customers">
-                                <i data-lucide="users"
-                                    class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
-                                <span class="flex-1 text-left is-drawer-close:hidden font-medium">Customers</span>
-                            </summary>
-                            <ul class="is-drawer-close:hidden mt-1 ml-4 border-l border-base-300 pl-4 space-y-1">
-                                <li><a href="#"
-                                        class="text-xs py-1.5 transition-premium hover:text-primary hover:translate-x-1 inline-block text-base-content/70">Contact
-                                        List</a></li>
-                                <li><a href="#"
-                                        class="text-xs py-1.5 transition-premium hover:text-primary hover:translate-x-1 inline-block text-base-content/70">Groups</a>
-                                </li>
-                            </ul>
-                        </details>
-                    </li>
-
-                    <li>
-                        <a href="#"
-                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                            data-tip="Inbox">
-                            <i data-lucide="inbox" class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
-                            <span class="flex-1 is-drawer-close:hidden font-medium">Inbox</span>
-                            <span
-                                class="is-drawer-close:hidden bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-1 ring-primary/30">4</span>
-                        </a>
-                    </li>
-
-                    <div class="pt-2 px-2 is-drawer-close:hidden">
-                        <span class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest">System</span>
-                    </div>
-
-                    <li>
-                        <a href="#"
-                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                            data-tip="Permissions">
-                            <i data-lucide="shield-check"
-                                class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
-                            <span class="is-drawer-close:hidden font-medium">Permissions</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                            class="sidebar-item hover:scale-[1.02] is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                            data-tip="Settings">
-                            <i data-lucide="settings-2"
-                                class="size-5 shrink-0 transition-premium group-hover:scale-110"></i>
-                            <span class="is-drawer-close:hidden font-medium">Settings</span>
-                        </a>
-                    </li>
-                </ul>
             </div>
 
             <!-- Sidebar Footer -->

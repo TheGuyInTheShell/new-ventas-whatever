@@ -5,41 +5,62 @@ from core.security.shield import Shield, ShieldGroup
 # Children classes — permisos hijos de cada sección del menú
 # ---------------------------------------------------------------------------
 
+
 class ChineseRestaurantChildren:
     menu = Shield.can(
         "chinese_restaurant.menu",
         "read",
         "ui",
         description="Ver el menú del restaurante chino",
-        meta=[("icon", "mdi-food-fork-drink")],
+        meta=[
+            ("icon", "utensils"),
+            ("route", "/dashboard/chinese-restaurant/menu"),
+            ("name", "Menú"),
+        ],
     )
     orders = Shield.can(
         "chinese_restaurant.orders",
         "read",
         "ui",
         description="Ver los pedidos del restaurante chino",
-        meta=[("icon", "mdi-clipboard-list")],
+        meta=[
+            ("icon", "clipboard-list"),
+            ("route", "/dashboard/chinese-restaurant/orders"),
+            ("name", "Pedidos"),
+        ],
     )
     tables = Shield.can(
         "chinese_restaurant.tables",
         "read",
         "ui",
         description="Ver las mesas del restaurante chino",
-        meta=[("icon", "mdi-table-chair")],
+        meta=[
+            ("icon", "table"),
+            ("route", "/dashboard/chinese-restaurant/tables"),
+            ("name", "Mesas"),
+        ],
     )
     staff = Shield.can(
         "chinese_restaurant.staff",
         "read",
         "ui",
         description="Ver el personal del restaurante chino",
-        meta=[("icon", "mdi-account-tie")],
+        meta=[
+            ("icon", "contact"),
+            ("route", "/dashboard/chinese-restaurant/staff"),
+            ("name", "Personal"),
+        ],
     )
     reservations = Shield.can(
         "chinese_restaurant.reservations",
         "read",
         "ui",
         description="Ver las reservaciones del restaurante chino",
-        meta=[("icon", "mdi-calendar-clock")],
+        meta=[
+            ("icon", "calendar-clock"),
+            ("route", "/dashboard/chinese-restaurant/reservations"),
+            ("name", "Reservaciones"),
+        ],
     )
 
 
@@ -49,34 +70,51 @@ class SettingsChildren:
         "read",
         "ui",
         description="Gestión de usuarios del sistema",
-        meta=[("icon", "mdi-account")],
+        meta=[
+            ("icon", "user"),
+            ("route", "/dashboard/settings/users"),
+            ("name", "Usuarios"),
+        ],
     )
     roles = Shield.can(
         "settings.roles",
         "read",
         "ui",
         description="Gestión de roles del sistema",
-        meta=[("icon", "mdi-account-group")],
+        meta=[
+            ("icon", "users"),
+            ("route", "/dashboard/settings/roles"),
+            ("name", "Roles"),
+        ],
     )
     permissions = Shield.can(
         "settings.permissions",
         "read",
         "ui",
         description="Gestión de permisos del sistema",
-        meta=[("icon", "mdi-lock")],
+        meta=[
+            ("icon", "lock"),
+            ("route", "/dashboard/settings/permissions"),
+            ("name", "Permisos"),
+        ],
     )
     fiat_config = Shield.can(
         "settings.fiat_config",
         "read",
         "ui",
         description="Configuración de monedas FIAT",
-        meta=[("icon", "mdi-currency-usd")],
+        meta=[
+            ("icon", "circle-dollar-sign"),
+            ("route", "/dashboard/settings/fiat-config"),
+            ("name", "Monedas FIAT"),
+        ],
     )
 
 
 # ---------------------------------------------------------------------------
 # Árbol raíz del menú de la aplicación
 # ---------------------------------------------------------------------------
+
 
 class MenuShields(ShieldGroup):
     """
@@ -98,7 +136,11 @@ class MenuShields(ShieldGroup):
         "read",
         "ui",
         description="Acceso al módulo de restaurante chino",
-        meta=[("icon", "mdi-food-fork-drink")],
+        meta=[
+            ("icon", "utensils"),
+            ("route", "/dashboard/chinese-restaurant"),
+            ("name", "Restaurante Chino"),
+        ],
     ).children(ChineseRestaurantChildren)
 
     settings = Shield.can(
@@ -106,7 +148,11 @@ class MenuShields(ShieldGroup):
         "read",
         "ui",
         description="Acceso al módulo de configuración del sistema",
-        meta=[("icon", "mdi-cog")],
+        meta=[
+            ("icon", "cog"),
+            ("route", "/dashboard/settings"),
+            ("name", "Configuración"),
+        ],
     ).children(SettingsChildren)
 
     profile = Shield.can(
@@ -114,5 +160,9 @@ class MenuShields(ShieldGroup):
         "read",
         "ui",
         description="Acceso al perfil de usuario",
-        meta=[("icon", "mdi-account")],
+        meta=[
+            ("icon", "user"),
+            ("route", "/dashboard/profile"),
+            ("name", "Perfil"),
+        ],
     )

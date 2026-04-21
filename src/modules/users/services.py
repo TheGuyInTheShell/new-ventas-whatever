@@ -1,3 +1,4 @@
+from fastapi import Request
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
@@ -20,11 +21,48 @@ class UsersService(Service):
     OptionsService: OptionsService
 
     @injectable
-    async def get_current_user(
+    async def get_current_user_app(
+        self,
+        request: Request,
+        db: AsyncSession = Depends(get_async_db),
+    ) -> UserSchema | None:
+        """
+        Obtiene el usuario actual desde el token JWT de la request.
+        """
+        # Decodificar el token JWT
+
+        auth_header = request.cookies.get("access_token")
+        if not auth_header:
+            return None
+
+        payload = self.AuthService.decode_token(auth_header)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Token inválido")
+
+        # Buscar el usuario en la base de datos
+        query = await UserModel.find_by_colunm(db, "username", payload.sub)
+        user = query.scalar_one_or_none()
+
+        if not user:
+            return None
+
+        # Retornar el schema Pydantic con los datos del usuario
+        return UserSchema(
+            id=user.id,
+            username=user.username,
+            full_name=user.full_name,
+            email=user.email,
+            role=user.role_ref,
+            otp_enabled=user.otp_enabled,
+            created_at=user.created_at,
+        )
+
+    @injectable
+    async def get_current_user_api(
         self,
         token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
         db: AsyncSession = Depends(get_async_db),
-    ) -> UserSchema:
+    ) -> UserSchema | None:
         """
         Obtiene el usuario actual desde el token JWT de la request.
         """
@@ -38,7 +76,7 @@ class UsersService(Service):
         user = query.scalar_one_or_none()
 
         if not user:
-            raise HTTPException(status_code=401, detail="Usuario no encontrado")
+            return None
 
         # Retornar el schema Pydantic con los datos del usuario
         return UserSchema(
