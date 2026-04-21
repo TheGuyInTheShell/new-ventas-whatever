@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@plugin "daisyui";
 
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, cupcake, corporate;
@@ -154,5 +155,18 @@
   &:has(>input:is(input[type=checkbox], input[type=radio])) {
     cursor: auto !important;
     user-select: none !important;
+  }
+}
+
+/*
+  FIX: DaisyUI v5 + Tailwind v4 CSS optimizer incorrectly merges
+  .alert-error and .alert-success into a single rule using --color-success.
+  This explicit override restores the correct error color tokens.
+*/
+@layer utilities {
+  .alert-error {
+    --alert-color: var(--color-error);
+    --alert-border-color: var(--color-error);
+    color: var(--color-base-300);
   }
 }

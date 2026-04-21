@@ -24,15 +24,15 @@ class SignPartial(Partial):
         self,
         username: Annotated[str, FastAPIForm()],
         password: Annotated[str, FastAPIForm()],
-        db: AsyncSession = Depends(get_async_db),
     ) -> HTMLResponse:
 
-        user = await self.AuthService.authenticade_user(db, username, password)
+        user = await self.AuthService.authenticade_user(username, password)
 
         if user is None:
             content = to_xml(
                 Div(
                     "Incorrect username or password",
+                    role="alert",
                     cls="alert alert-error text-white text-sm font-semibold rounded-lg shadow-md p-3 animate-pulse flex items-center justify-center w-full",
                 )
             )
@@ -63,6 +63,7 @@ class SignPartial(Partial):
         content = to_xml(
             Div(
                 f"Login successful! Redirecting...",
+                role="alert",
                 cls="success-msg alert alert-success text-white text-sm font-semibold rounded-lg shadow-md p-3 animate-bounce flex items-center justify-center w-full",
             )
         )

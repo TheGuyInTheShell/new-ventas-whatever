@@ -98,16 +98,15 @@ class AuthShieldApp(ResolverProvider):
                     headers={"Location": "/sign/in"},
                 )
 
-            auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
+            auth_header = request.cookies.get("access_token")
+            if not auth_header:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
                     detail="Invalid request",
                     headers={"Location": "/sign/in"},
                 )
 
-            token = auth_header.split(" ")[1]
-            payload = self.AuthService.decode_token(token)
+            payload = self.AuthService.decode_token(auth_header)
             if not payload:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
@@ -115,7 +114,7 @@ class AuthShieldApp(ResolverProvider):
                     headers={"Location": "/sign/in"},
                 )
 
-            if payload.type not in ["access", "refresh"]:
+            if payload.type != "access":
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
                     detail="Invalid request",
@@ -134,8 +133,9 @@ class AuthShieldApp(ResolverProvider):
             )
             if not permission:
                 raise HTTPException(
-                    status_code=401,
-                    detail=f"No tienes el permiso requerido: {name} (acción: {action})",
+                    status_code=status.HTTP_302_FOUND,
+                    detail="Invalid request",
+                    headers={"Location": "/sign/in"},
                 )
 
             has_permission = await self.PermissionsService.check_role_has_permission(
@@ -143,17 +143,26 @@ class AuthShieldApp(ResolverProvider):
             )
             if not has_permission:
                 raise HTTPException(
-                    status_code=401,
-                    detail=f"No tienes el permiso requerido: {name} (acción: {action})",
+                    status_code=status.HTTP_302_FOUND,
+                    detail="Invalid request",
+                    headers={"Location": "/sign/in"},
                 )
 
             return True
         except HTTPException as he:
             if he.status_code == 302:
                 raise he
-            raise HTTPException(status_code=401, detail=str(he.detail))
+            raise HTTPException(
+                status_code=status.HTTP_302_FOUND,
+                detail="Invalid request",
+                headers={"Location": "/sign/in"},
+            )
         except Exception as e:
-            raise HTTPException(status_code=401, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_302_FOUND,
+                detail="Invalid request",
+                headers={"Location": "/sign/in"},
+            )
 
 
 @Services(OptionsService)

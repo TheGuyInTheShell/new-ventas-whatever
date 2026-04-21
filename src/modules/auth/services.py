@@ -83,7 +83,10 @@ class AuthService(Service):
             buffered.getvalue()
         ).decode("utf-8")
 
-    async def get_user(self, db: AsyncSession, username: str) -> User | None:
+    @injectable
+    async def get_user(
+        self, username: str, db: AsyncSession = Depends(get_async_db)
+    ) -> User | None:
         try:
             query = await UserModel.find_by_colunm(db, "username", username)
             user = query.scalar_one_or_none()
@@ -95,16 +98,15 @@ class AuthService(Service):
     def verify_password(self, plane_password: str, current_password: str) -> bool:
         return self.hash_context.verify(plane_password, current_password)
 
-    async def authenticade_user(
-        self, db: AsyncSession, username: str, password: str
-    ) -> User:
+    @injectable
+    async def authenticade_user(self, username: str, password: str) -> User | None:
         try:
-            user = await self.get_user(db, username)
+            user = await self.get_user(username)
             if user is None:
-                raise HTTPException(status_code=404, detail="User not found")
+                return None
             same_passowords = self.verify_password(password, user.password)
             if same_passowords is False:
-                raise HTTPException(status_code=401, detail="Incorrect password")
+                return None
             result = User(
                 uid=user.uid,
                 id=user.id,
@@ -117,7 +119,7 @@ class AuthService(Service):
             return result
         except ValueError as e:
             print(e)
-            raise e
+            return None
 
     async def create_user(self, db: AsyncSession, user_data: CreateUser) -> dict | None:
         try:
@@ -140,7 +142,7 @@ class AuthService(Service):
             }
         except ValueError as e:
             print(e)
-            raise e
+            return None
 
     def create_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
         current_time = int(time.time())
@@ -192,12 +194,12 @@ class AuthService(Service):
         self,
         token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
         db: AsyncSession = Depends(get_async_db),
-    ):
+    ) -> User | None:
         payload = self.decode_token(token)
         if not payload:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            return None
         query = await UserModel.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
         if not user:
-            raise HTTPException(status_code=401, detail="User not found")
+            return None
         return user

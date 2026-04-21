@@ -8,7 +8,8 @@
       <p class="text-sm opacity-70 mt-2 font-medium">Sign in to your account</p>
     </div>
 
-    <div id="notification" class="flex justify-center items-center min-h-[40px] mb-4 transition-all duration-300">
+    <div id="notification" role="alert"
+      class="flex justify-center items-center min-h-[40px] mb-4 transition-all duration-300">
       <div x-data="spinner" id="spinner" :class="{ 'hidden!': !loading }" class="hidden">
         <span class="loading loading-spinner loading-lg text-primary"></span>
       </div>
