@@ -1,0 +1,193 @@
+{% extends "layouts/panel.html" %}
+
+{% block content %}
+<div x-data="{ 
+    search: '', 
+    sortBy: 'name_asc',
+    isModalOpen: false,
+    isIngredientsModalOpen: false,
+    ingredientsData: {name: '', list: []},
+    dishes: {{ dishes | tojson }},
+    
+    get filteredDishes() {
+        let result = [...this.dishes];
+        if (this.search) {
+            const q = this.search.toLowerCase();
+            result = result.filter(d => d.name.toLowerCase().includes(q));
+        }
+        if (this.sortBy === 'name_asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (this.sortBy === 'price_asc') {
+            result.sort((a, b) => a.price - b.price);
+        } else if (this.sortBy === 'price_desc') {
+            result.sort((a, b) => b.price - a.price);
+        }
+        return result;
+    },
+
+    openIngredients(dish) {
+        this.ingredientsData = {
+            name: dish.name,
+            list: dish.ingredients.map(id => ({name: 'Ingredient ' + id, qty: 1, price: 2.0}))
+        };
+        this.isIngredientsModalOpen = true;
+    }
+}" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Restaurant Menu</h1>
+            <p class="text-sm text-base-content/60">Manage your dishes and pricing</p>
+        </div>
+        <button @click="isModalOpen = true" class="btn btn-primary btn-sm md:btn-md shadow-lg shadow-primary/20">
+            <i data-lucide="plus" class="size-4 mr-2"></i>
+            Add Dish
+        </button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="flex flex-col md:flex-row gap-4 bg-base-200/50 p-4 rounded-2xl border border-base-300">
+        <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40"></i>
+            <input type="text" x-model="search" placeholder="Search dishes..." 
+                   class="input input-bordered w-full pl-10 bg-base-100 focus:border-primary">
+        </div>
+        <div class="flex gap-2">
+            <select x-model="sortBy" class="select select-bordered bg-base-100">
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="price_asc">Price (Low to High)</option>
+                <option value="price_desc">Price (High to Low)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto bg-base-100 rounded-2xl border border-base-300 shadow-sm">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr class="bg-base-200 text-base-content/70">
+                    <th class="w-20">Image</th>
+                    <th>Dish Name</th>
+                    <th>Prep Time</th>
+                    <th>Ingredients</th>
+                    <th>Price</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="dish in filteredDishes" :key="dish.id">
+                    <tr class="hover:bg-base-200/50 transition-colors">
+                        <td>
+                            <div class="avatar">
+                                <div class="mask mask-squircle w-12 h-12">
+                                    <template x-if="dish.image_id">
+                                        <img :src="dish.image_id" alt="Dish image" />
+                                    </template>
+                                    <template x-if="!dish.image_id">
+                                        <div class="bg-base-300 flex items-center justify-center">
+                                            <i data-lucide="image" class="size-5 text-base-content/30"></i>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="font-medium text-base-content" x-text="dish.name"></td>
+                        <td>
+                            <span class="badge badge-ghost badge-sm py-2" x-text="dish.prep_time"></span>
+                        </td>
+                        <td>
+                            <button @click="openIngredients(dish)" class="btn btn-ghost btn-xs text-primary gap-1">
+                                <i data-lucide="list" class="size-3"></i>
+                                <span x-text="dish.ingredients.length + ' ingredients'"></span>
+                            </button>
+                        </td>
+                        <td class="font-mono font-bold text-success" x-text="dish.price + ' ' + dish.currency"></td>
+                        <td class="text-right">
+                            <div class="flex justify-end gap-1">
+                                <button class="btn btn-ghost btn-square btn-sm text-base-content/60 hover:text-primary">
+                                    <i data-lucide="edit-3" class="size-4"></i>
+                                </button>
+                                <button class="btn btn-ghost btn-square btn-sm text-base-content/60 hover:text-error">
+                                    <i data-lucide="trash-2" class="size-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modals -->
+    <!-- Ingredients Modal -->
+    <dialog :class="isIngredientsModalOpen ? 'modal modal-open' : 'modal'">
+        <div class="modal-box max-w-sm rounded-3xl border border-base-300">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <i data-lucide="list" class="size-5 text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg" x-text="ingredientsData.name"></h3>
+                        <p class="text-xs text-base-content/50">Ingredients breakdown</p>
+                    </div>
+                </div>
+                <button @click="isIngredientsModalOpen = false" class="btn btn-sm btn-ghost btn-circle">
+                    <i data-lucide="x" class="size-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <template x-for="ing in ingredientsData.list" :key="ing.name">
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-base-200/50 border border-base-300">
+                        <div class="flex flex-col">
+                            <span class="font-semibold text-sm" x-text="ing.name"></span>
+                            <span class="text-[10px] text-base-content/50" x-text="ing.qty + ' units'"></span>
+                        </div>
+                        <span class="text-sm font-mono text-primary" x-text="'$' + ing.price.toFixed(2)"></span>
+                    </div>
+                </template>
+            </div>
+
+            <div class="modal-action mt-8 pt-4 border-t border-base-300">
+                <button @click="isIngredientsModalOpen = false" class="btn btn-block">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop" @click="isIngredientsModalOpen = false">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Add Dish Modal (Simplified) -->
+    <dialog :class="isModalOpen ? 'modal modal-open' : 'modal'">
+        <div class="modal-box rounded-3xl border border-base-300">
+            <h3 class="font-bold text-lg mb-4">Add New Dish</h3>
+            <div class="space-y-4">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Dish Name</span></label>
+                    <input type="text" placeholder="e.g. Kung Pao Chicken" class="input input-bordered w-full">
+                </div>
+                <div class="flex gap-4">
+                    <div class="form-control flex-1">
+                        <label class="label"><span class="label-text">Price</span></label>
+                        <input type="number" step="0.01" class="input input-bordered w-full">
+                    </div>
+                    <div class="form-control flex-1">
+                        <label class="label"><span class="label-text">Prep Time</span></label>
+                        <input type="text" placeholder="15 min" class="input input-bordered w-full">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button @click="isModalOpen = false" class="btn btn-ghost">Cancel</button>
+                <button @click="isModalOpen = false" class="btn btn-primary">Save Dish</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop" @click="isModalOpen = false">
+            <button>close</button>
+        </form>
+    </dialog>
+
+</div>
+{% endblock %}

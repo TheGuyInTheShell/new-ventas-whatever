@@ -1,0 +1,173 @@
+{% extends "layouts/panel.html" %}
+
+{% block content %}
+<div x-data="{ 
+    reservations: {{ reservations | tojson }},
+    isAddModalOpen: false
+}" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Reservations</h1>
+            <p class="text-sm text-base-content/60">Manage table bookings and guest attendance</p>
+        </div>
+        <button @click="isAddModalOpen = true" class="btn btn-primary btn-sm rounded-xl px-6">
+            <i data-lucide="calendar-plus" class="size-4 mr-2"></i>
+            New Booking
+        </button>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-base-100 p-6 rounded-[2rem] border border-base-300 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <i data-lucide="users" class="size-6"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Total Guests Today</p>
+                <p class="text-2xl font-black text-base-content">12</p>
+            </div>
+        </div>
+        <div class="bg-base-100 p-6 rounded-[2rem] border border-base-300 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center text-success">
+                <i data-lucide="calendar-check" class="size-6"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Confirmed</p>
+                <p class="text-2xl font-black text-base-content">8</p>
+            </div>
+        </div>
+        <div class="bg-base-100 p-6 rounded-[2rem] border border-base-300 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-warning/10 flex items-center justify-center text-warning">
+                <i data-lucide="clock" class="size-6"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Waiting List</p>
+                <p class="text-2xl font-black text-base-content">3</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservations List -->
+    <div class="bg-base-100 rounded-[2.5rem] border border-base-300 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-base-300 bg-base-200/50 flex items-center justify-between">
+            <h3 class="font-bold text-base-content">Upcoming Bookings</h3>
+            <div class="flex gap-2">
+                <button class="btn btn-ghost btn-xs rounded-lg active">Table View</button>
+                <button class="btn btn-ghost btn-xs rounded-lg">List View</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table table-lg w-full">
+                <thead>
+                    <tr class="text-base-content/40 text-[10px] uppercase tracking-widest border-b border-base-300">
+                        <th class="pl-8">Customer</th>
+                        <th>Table</th>
+                        <th>Time</th>
+                        <th>Guests</th>
+                        <th>Status</th>
+                        <th class="text-right pr-8">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="res in reservations" :key="res.id">
+                        <tr class="hover:bg-base-200/50 transition-colors border-b border-base-300/50">
+                            <td class="pl-8">
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary/10 text-primary rounded-xl w-10">
+                                            <span class="text-xs font-bold" x-text="res.customer.substring(0,2).toUpperCase()"></span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm text-base-content" x-text="res.customer"></p>
+                                        <p class="text-[10px] text-base-content/40" x-text="res.date"></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-outline border-base-300 font-mono text-xs font-bold px-3 py-3 rounded-lg" x-text="res.table"></span>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="clock" class="size-3 text-primary"></i>
+                                    <span class="text-sm font-bold" x-text="res.time"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <template x-for="i in Array.from({length: res.guests})" :key="i">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-primary/30"></div>
+                                    </template>
+                                    <span class="text-xs font-bold ml-1 text-base-content/60" x-text="res.guests"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-success badge-xs p-2 gap-1 rounded-md text-[9px] font-black uppercase">
+                                    <span class="w-1 h-1 rounded-full bg-white animate-pulse"></span> Confirmed
+                                </span>
+                            </td>
+                            <td class="text-right pr-8">
+                                <div class="flex justify-end gap-1">
+                                    <button class="btn btn-ghost btn-square btn-sm rounded-xl">
+                                        <i data-lucide="edit-2" class="size-4 text-base-content/30 hover:text-primary transition-colors"></i>
+                                    </button>
+                                    <button class="btn btn-ghost btn-square btn-sm rounded-xl">
+                                        <i data-lucide="trash-2" class="size-4 text-base-content/30 hover:text-error transition-colors"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <dialog :class="isAddModalOpen ? 'modal modal-open' : 'modal'">
+        <div class="modal-box rounded-[2.5rem] border border-base-300">
+            <h3 class="font-black text-xl mb-6">New Reservation</h3>
+            <div class="space-y-4">
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-bold">Customer Name</span></label>
+                    <input type="text" class="input input-bordered rounded-2xl w-full" placeholder="John Wick">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Date</span></label>
+                        <input type="date" class="input input-bordered rounded-2xl w-full">
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Time</span></label>
+                        <input type="time" class="input input-bordered rounded-2xl w-full">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Table</span></label>
+                        <select class="select select-bordered rounded-2xl w-full">
+                            <option>T-01</option>
+                            <option>T-02</option>
+                            <option>T-03</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Guests</span></label>
+                        <input type="number" class="input input-bordered rounded-2xl w-full" value="2">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button @click="isAddModalOpen = false" class="btn btn-ghost rounded-2xl">Cancel</button>
+                <button @click="isAddModalOpen = false" class="btn btn-primary rounded-2xl px-8">Confirm Booking</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop" @click="isAddModalOpen = false">
+            <button>close</button>
+        </form>
+    </dialog>
+
+</div>
+{% endblock %}

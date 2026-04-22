@@ -1,0 +1,180 @@
+{% extends "layouts/panel.html" %}
+
+{% block content %}
+<div x-data="{ 
+    dishes: {{ dishes | tojson }},
+    cart: [],
+    isCheckoutOpen: false,
+    selectedPayment: 'USD',
+    
+    addToCart(dish) {
+        const existing = this.cart.find(item => item.id === dish.id);
+        if (existing) {
+            existing.qty++;
+        } else {
+            this.cart.push({ ...dish, qty: 1 });
+        }
+    },
+    
+    removeFromCart(id) {
+        this.cart = this.cart.filter(item => item.id !== id);
+    },
+    
+    updateQty(id, delta) {
+        const item = this.cart.find(i => i.id === id);
+        if (item) {
+            item.qty += delta;
+            if (item.qty <= 0) this.removeFromCart(id);
+        }
+    },
+    
+    get total() {
+        return this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    },
+    
+    processSale() {
+        alert('Sale processed successfully!');
+        this.cart = [];
+        this.isCheckoutOpen = false;
+    }
+}" class="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-6 overflow-hidden">
+
+    <!-- Left side: Dish Grid -->
+    <div class="flex-1 flex flex-col min-h-0">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-base-content">Sales Register</h1>
+            <p class="text-sm text-base-content/60">Select dishes to add to the order</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <template x-for="dish in dishes" :key="dish.id">
+                    <div @click="addToCart(dish)" 
+                         class="group bg-base-100 rounded-3xl border border-base-300 overflow-hidden cursor-pointer hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-premium active:scale-95">
+                        <div class="aspect-square bg-base-200 relative overflow-hidden">
+                            <template x-if="dish.image_id">
+                                <img :src="dish.image_id" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            </template>
+                            <template x-if="!dish.image_id">
+                                <div class="w-full h-full flex items-center justify-center text-base-content/20">
+                                    <i data-lucide="image" class="size-10"></i>
+                                </div>
+                            </template>
+                            <div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex justify-between items-end">
+                                <span class="badge badge-primary border-none font-bold" x-text="dish.price + ' ' + dish.currency"></span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-sm truncate" x-text="dish.name"></h3>
+                            <p class="text-[10px] text-base-content/50 mt-1" x-text="dish.prep_time"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right side: Cart -->
+    <div class="w-full md:w-96 flex flex-col bg-base-200/50 rounded-[2.5rem] border border-base-300 p-6 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">Current Order</h2>
+            <span class="badge badge-neutral" x-text="cart.length + ' items'"></span>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+            <template x-if="cart.length === 0">
+                <div class="h-full flex flex-col items-center justify-center text-base-content/40 space-y-4">
+                    <div class="w-16 h-16 rounded-full bg-base-300 flex items-center justify-center">
+                        <i data-lucide="shopping-cart" class="size-8 opacity-20"></i>
+                    </div>
+                    <p class="text-sm">Your cart is empty</p>
+                </div>
+            </template>
+
+            <template x-for="(item, index) in cart" :key="item.id">
+                <div class="bg-base-100 p-4 rounded-3xl border border-base-300 animate-in fade-in slide-in-from-right-4 duration-300 shadow-sm transition-all hover:shadow-md">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="grow">
+                            <h4 class="font-bold text-sm" x-text="item.name"></h4>
+                            <p class="text-xs text-base-content/50" x-text="'$' + item.price + ' each'"></p>
+                        </div>
+                        <button @click="removeFromCart(item.id)" class="btn btn-ghost btn-xs btn-circle text-error/40 hover:text-error transition-colors">
+                            <i data-lucide="x" class="size-3"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center bg-base-200 rounded-full p-1 border border-base-300">
+                            <button @click="updateQty(item.id, -1)" class="btn btn-square btn-ghost btn-xs rounded-full">
+                                <i data-lucide="minus" class="size-3"></i>
+                            </button>
+                            <span class="w-8 text-center text-xs font-bold" x-text="item.qty"></span>
+                            <button @click="updateQty(item.id, 1)" class="btn btn-square btn-ghost btn-xs rounded-full">
+                                <i data-lucide="plus" class="size-3"></i>
+                            </button>
+                        </div>
+                        <span class="font-mono font-bold text-primary" x-text="'$' + (item.price * item.qty).toFixed(2)"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-6 pt-6 border-t border-base-300 space-y-4">
+            <div class="flex justify-between items-center text-2xl font-black">
+                <span class="text-base-content/40 text-sm font-medium">TOTAL</span>
+                <span class="text-primary" x-text="'$' + total.toFixed(2)"></span>
+            </div>
+
+            <button @click="isCheckoutOpen = true" 
+                    :disabled="cart.length === 0"
+                    class="btn btn-primary btn-block btn-lg rounded-2xl shadow-lg shadow-primary/30 h-16 transition-premium active:scale-95 disabled:opacity-50">
+                Checkout
+                <i data-lucide="arrow-right" class="size-5 ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <dialog :class="isCheckoutOpen ? 'modal modal-open' : 'modal'">
+        <div class="modal-box rounded-[2.5rem] p-8 border border-base-300 max-w-md shadow-2xl">
+            <div class="text-center space-y-2 mb-8">
+                <p class="text-xs uppercase tracking-widest text-base-content/40 font-bold">Process Payment</p>
+                <p class="text-4xl font-black text-primary" x-text="'$' + total.toFixed(2)"></p>
+            </div>
+
+            <div class="space-y-4">
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-bold">Payment Method</span></div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <template x-for="method in ['USD', 'VES', 'USDT']" :key="method">
+                            <button @click="selectedPayment = method" 
+                                    :class="selectedPayment === method ? 'btn btn-primary rounded-2xl' : 'btn btn-outline rounded-2xl'" 
+                                    x-text="method"></button>
+                        </template>
+                    </div>
+                </label>
+
+                <div class="divider text-[10px] text-base-content/30 opacity-50">OR SCAN QR</div>
+                
+                <div class="flex justify-center p-4 bg-white rounded-2xl border border-base-300/50 shadow-inner">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AcmeRestaurantPayment" class="w-32 h-32 opacity-80" />
+                </div>
+            </div>
+
+            <div class="modal-action flex flex-col gap-3 mt-8">
+                <button @click="processSale()" class="btn btn-primary btn-lg rounded-2xl h-14 font-bold shadow-lg shadow-primary/20">
+                    Confirm & Print Receipt
+                </button>
+                <button @click="isCheckoutOpen = false" class="btn btn-ghost rounded-2xl font-medium">
+                    Wait, let me check again
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop" @click="isCheckoutOpen = false">
+            <button>close</button>
+        </form>
+    </dialog>
+
+</div>
+{% endblock %}
