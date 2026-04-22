@@ -90,11 +90,8 @@
             <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
 
                 <!-- Menu cargado dinámicamente según permisos del usuario -->
-                <div hx-get="/partials/menu" hx-trigger="load" hx-swap="outerHTML">
-                    <!-- Placeholder de carga opcional -->
-                    <div class="flex justify-center p-4">
-                        <span class="loading loading-spinner text-primary"></span>
-                    </div>
+                <div>
+                    {{ menu | safe }}
                 </div>
             </div>
 
