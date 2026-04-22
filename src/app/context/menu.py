@@ -14,7 +14,7 @@ class ChineseRestaurantChildren:
         description="Ver el menú del restaurante chino",
         meta=[
             ("icon", "utensils"),
-            ("route", "/dashboard/chinese-restaurant/menu"),
+            ("route", "/chinese-restaurant/menu"),
             ("name", "Menú"),
         ],
     )
@@ -25,7 +25,7 @@ class ChineseRestaurantChildren:
         description="Ver los pedidos del restaurante chino",
         meta=[
             ("icon", "clipboard-list"),
-            ("route", "/dashboard/chinese-restaurant/orders"),
+            ("route", "/chinese-restaurant/orders"),
             ("name", "Pedidos"),
         ],
     )
@@ -36,7 +36,7 @@ class ChineseRestaurantChildren:
         description="Ver las mesas del restaurante chino",
         meta=[
             ("icon", "table"),
-            ("route", "/dashboard/chinese-restaurant/tables"),
+            ("route", "/chinese-restaurant/tables"),
             ("name", "Mesas"),
         ],
     )
@@ -47,7 +47,7 @@ class ChineseRestaurantChildren:
         description="Ver el personal del restaurante chino",
         meta=[
             ("icon", "contact"),
-            ("route", "/dashboard/chinese-restaurant/staff"),
+            ("route", "/chinese-restaurant/staff"),
             ("name", "Personal"),
         ],
     )
@@ -58,7 +58,7 @@ class ChineseRestaurantChildren:
         description="Ver las reservaciones del restaurante chino",
         meta=[
             ("icon", "calendar-clock"),
-            ("route", "/dashboard/chinese-restaurant/reservations"),
+            ("route", "/chinese-restaurant/reservations"),
             ("name", "Reservaciones"),
         ],
     )
@@ -138,7 +138,7 @@ class MenuShields(ShieldGroup):
         description="Acceso al módulo de restaurante chino",
         meta=[
             ("icon", "utensils"),
-            ("route", "/dashboard/chinese-restaurant"),
+            ("route", "/chinese-restaurant"),
             ("name", "Restaurante Chino"),
         ],
     ).children(ChineseRestaurantChildren)
