@@ -1,17 +1,22 @@
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 
-from core.lib.decorators import Get
+from core.lib.decorators import Get, Services
 from core.lib.register import Template
 from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.csrf.csrf import CSRF
 from core.security.shield import Shield
 
+from src.modules.d.services.menu import MenuService
 
+
+@Services(MenuService)
 @Shield.register(context="WEB")
 class SettingsTemplate(Template):
     """Controlador de templates para Settings."""
+
+    MenuService: "MenuService"
 
     @Get("/", response_class=HTMLResponse)
     @Shield.need(
@@ -39,6 +44,7 @@ class SettingsTemplate(Template):
             name="pages/settings/index.html",
             context={
                 "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
             },
         )
 
@@ -66,7 +72,10 @@ class SettingsTemplate(Template):
         return self.templates.TemplateResponse(
             request,
             name="pages/settings/profile.html",
-            context={"request": request},
+            context={
+                "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
+            },
         )
 
     @Get("/fiat", response_class=HTMLResponse)
@@ -111,7 +120,10 @@ class SettingsTemplate(Template):
         return self.templates.TemplateResponse(
             request,
             name="pages/settings/fiat.html",
-            context={"request": request},
+            context={
+                "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
+            },
         )
 
     @Get("/members", response_class=HTMLResponse)
@@ -138,7 +150,10 @@ class SettingsTemplate(Template):
         return self.templates.TemplateResponse(
             request,
             name="pages/settings/members.html",
-            context={"request": request},
+            context={
+                "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
+            },
         )
 
     @Get("/notifications", response_class=HTMLResponse)
@@ -165,7 +180,10 @@ class SettingsTemplate(Template):
         return self.templates.TemplateResponse(
             request,
             name="pages/settings/notifications.html",
-            context={"request": request},
+            context={
+                "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
+            },
         )
 
     @Get("/security", response_class=HTMLResponse)
@@ -192,5 +210,8 @@ class SettingsTemplate(Template):
         return self.templates.TemplateResponse(
             request,
             name="pages/settings/security.html",
-            context={"request": request},
+            context={
+                "request": request,
+                "menu": await self.MenuService.get_menu_component(request),
+            },
         )
