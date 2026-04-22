@@ -47,17 +47,11 @@ class MenuService(Service):
             result = await db.execute(query)
             allowed_names: Set[str] = set(result.scalars().all())
 
-            print(f"[MenuService] role_id={role_id} allowed_names={allowed_names}")
-
             # 2. Obtener el esquema declarativo original
             raw_menu = MenuShields.to_consume()
 
-            print(f"[MenuService] raw_menu keys={list(raw_menu.keys())}")
-
             # 3. Filtrar recursivamente
             filtered = self._filter_menu_tree(raw_menu, allowed_names)
-
-            print(f"[MenuService] filtered keys={list(filtered.keys())}")
 
             return filtered
         finally:

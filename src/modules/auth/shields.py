@@ -33,18 +33,23 @@ class AuthShieldApi(ResolverProvider):
                     status_code=401, detail="Request context is missing"
                 )
 
-            auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
+            auth_source = request.headers.get("Authorization") or request.cookies.get(
+                "access_token"
+            )
+            if not auth_source:
                 raise HTTPException(status_code=401, detail="Missing or invalid token")
 
-            token = auth_header.split(" ")[1]
+            token = (
+                auth_source.split(" ")[1]
+                if auth_source.lower().startswith("bearer ")
+                else auth_source
+            )
             payload = self.AuthService.decode_token(token)
             if not payload:
                 raise HTTPException(status_code=401, detail="Invalid token")
 
-            if payload.type not in ["access", "refresh"]:
+            if payload.type != "access":
                 raise HTTPException(status_code=401, detail="Invalid token type")
-
             if not payload.role:
                 raise HTTPException(status_code=403, detail="Role not defined in token")
 
@@ -123,7 +128,6 @@ class AuthShieldApp(ResolverProvider):
                 )
 
             payload = self.AuthService.decode_token(auth_header)
-
             if not payload or payload.type != "access" or not payload.role:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,

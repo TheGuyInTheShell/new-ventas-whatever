@@ -233,6 +233,7 @@ class ShieldGroup:
 # Helpers privados
 # ---------------------------------------------------------------------------
 
+
 def _safe_add(definition: PermissionDefinition, parent_context: Optional[str]) -> None:
     """Agrega una definición al registry ignorando duplicados (re-import protection)."""
     try:
