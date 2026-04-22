@@ -1,48 +1,85 @@
-# Base image with Miniconda
-FROM python:3.11-slim
+# Stage 1: Build Frontend Assets
+FROM node:20-slim AS builder
 
-# Install wget
-RUN apt-get update && apt-get install -y wget dos2unix
+WORKDIR /app
 
-RUN mkdir -p ~/miniconda3
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-RUN bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-RUN rm -rf ~/miniconda3/miniconda.sh
+# Copy dependency files first for caching
+COPY package*.json ./
+RUN npm ci
 
-# Set environment name and working directorydokcer 
-ENV CONDA_ENV_NAME current
-
-WORKDIR /
-
-ENV TZ=America/Caracas
-
-RUN ln -sf /usr/share/zoneinfo/America/Caracas /etc/localtime && \
-    echo "America/Caracas" > /etc/timezone
-
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 libpng16-16
-
-# Create conda environment
-RUN ~/miniconda3/bin/conda create -n $CONDA_ENV_NAME python=3.11
-
-# Directly source the conda initialization script for bash
-RUN echo "source ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc
-
-# Activate conda environment
-RUN echo "conda activate $CONDA_ENV_NAME" >> ~/.bashrc
-
-# Install packages from requirements.txt
-COPY requirements.txt .
-
-RUN pip install -r requirements.txt
-
-# Copy your application code
+# Copy the rest of the application
 COPY . .
 
-RUN python --version
+# Build the frontend assets using rolldown
+RUN npm run build
 
-# Convert line endings of uvicorn_start.sh to Unix style
-RUN dos2unix start.sh
+
+# Stage 2: Production Python Image
+FROM python:3.11-slim AS runner
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    TZ=America/Caracas \
+    MODE=PRODUCTION
+
+# Accept Build ARGs for Coolify compatibility
+ARG DB_HOST
+ENV DB_HOST=${DB_HOST}
+ARG DB_PORT
+ENV DB_PORT=${DB_PORT}
+ARG DB_USER
+ENV DB_USER=${DB_USER}
+ARG DB_PASSWORD
+ENV DB_PASSWORD=${DB_PASSWORD}
+ARG DB_NAME
+ENV DB_NAME=${DB_NAME}
+ARG REDIS_URL
+ENV REDIS_URL=${REDIS_URL}
+ARG JWT_KEY
+ENV JWT_KEY=${JWT_KEY}
+ARG JWT_ALG
+ENV JWT_ALG=${JWT_ALG}
+
+# Install system dependencies required by python packages and the system
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libpng16-16 \
+    tzdata \
+    && ln -sf /usr/share/zoneinfo/America/Caracas /etc/localtime \
+    && echo "America/Caracas" > /etc/timezone \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies explicitly
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source code
+COPY . .
+
+# Copy built frontend assets from the builder stage
+COPY --from=builder /app/src/app/web/out ./src/app/web/out
+COPY --from=builder /app/plugins ./plugins
+
+# Prepare start script
+COPY start.sh ./
+RUN chmod +x start.sh
+
+# Create non-root user (Coolify / Security best practice)
+RUN addgroup --system --gid 1001 pythonapp && \
+    adduser --system --uid 1001 pythonapp
+RUN chown -R pythonapp:pythonapp /app
+USER pythonapp
 
 EXPOSE 8000
 
-CMD ["bash", "./start.sh"]
+ENV PORT=8000
+ENV HOST=0.0.0.0
+
+CMD ["./start.sh"]

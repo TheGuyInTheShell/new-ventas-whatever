@@ -1,9 +1,38 @@
 version: "3.8"
 
 services:
-  uvicorn:
-    build: .
-    volumes:
-      - .:/app
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: # Argumentos mapeados para Coolify en etapa de build
+        - DB_HOST=${DB_HOST}
+        - DB_PORT=${DB_PORT}
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - REDIS_URL=${REDIS_URL}
+        - JWT_KEY=${JWT_KEY}
+        - JWT_ALG=${JWT_ALG}
     ports:
-      - "8880:8000"
+      - "8000:8000"
+    environment:
+      # inyección explícita a tiempo de run (Coolify lo maneja muy bien así)
+      - MODE=PROD
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_KEY=${JWT_KEY}
+      - JWT_ALG=${JWT_ALG}
+      - PORT=8000
+      - HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - finance_net
+
+networks:
+  finance_net:
+    driver: bridge
