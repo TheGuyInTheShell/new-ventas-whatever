@@ -95,18 +95,19 @@ export const fiatActions = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'fiat', context: 'global', page_size: 100, balances: true })
             });
-            const data = await res.json();
-            fiatStore.trigger.setFiats({ data: data || [] });
+            const data = res.ok ? await res.json() : [];
+            const fiatList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+            fiatStore.trigger.setFiats({ data: fiatList });
 
             // Fetch Main and Custom comparisons
             const [mainRes, customRes] = await Promise.all([
                 fetch(`${API_BASE}/comparison_values/?context=main`),
                 fetch(`${API_BASE}/comparison_values/?context=custom`)
             ]);
-            const mainComps = (await mainRes.json()).data || [];
-            const customComps = (await customRes.json()).data || [];
+            const mainComps = mainRes.ok ? (await mainRes.json()).data || [] : [];
+            const customComps = customRes.ok ? (await customRes.json()).data || [] : [];
             /** @type {Comparison[]} */
-            const comps = [...mainComps, ...customComps];
+            const comps = Array.isArray(mainComps) && Array.isArray(customComps) ? [...mainComps, ...customComps] : [];
             fiatStore.trigger.setComparisons({ data: comps });
 
             // Fetch main fiat option

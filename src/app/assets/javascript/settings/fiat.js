@@ -129,6 +129,7 @@ document.addEventListener('alpine:init', () => {
          * @returns {string}
          */
         getFiatName(id) {
+            if (!Array.isArray(this.fiats)) return `#${id}`;
             const f = this.fiats.find(f => f.id === id);
             return f ? f.name : `#${id}`;
         },
@@ -139,6 +140,7 @@ document.addEventListener('alpine:init', () => {
          * @returns {string}
          */
         getFiatExpression(id) {
+            if (!Array.isArray(this.fiats)) return '';
             const f = this.fiats.find(f => f.id === id);
             return f ? f.expression : '';
         }
