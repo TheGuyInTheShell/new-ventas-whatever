@@ -6,6 +6,10 @@ from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
+from src.context.consts.jwt import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_MINUTES,
+)
 
 from ..users.models import User as UserModel
 from core.lib.register.service import Service
@@ -35,9 +39,6 @@ class AuthService(Service):
 
     SECRET_KEY_JWT = settings.JWT_KEY.encode()
     USED_ALGORITHM = settings.JWT_ALG
-
-    ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
-    REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
     hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
