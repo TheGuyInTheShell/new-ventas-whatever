@@ -110,7 +110,9 @@ class SettingsTemplate(Template):
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/settings/fiat.js", type="module", defer=True
+                src="/app-static/javascript/pages/settings/fiat.js",
+                type="module",
+                defer=True,
             )
         ),
         position=Site.HEAD,

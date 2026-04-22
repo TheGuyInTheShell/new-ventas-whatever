@@ -9,7 +9,7 @@ window.Alpine = Alpine;
 Alpine.plugin(mask);
 Alpine.plugin(focus);
 Alpine.plugin(collapse);
-import { fiatStore, fiatActions } from "../store/fiatStore";
+import { fiatStore, fiatActions } from "../../store/fiatStore";
 
 /**
  * Registers the 'fiatConfig' Alpine.js data component.

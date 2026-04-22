@@ -15,7 +15,7 @@ from core.security.shield import Shield
 from src.modules.auth.shields import SysInitShield
 
 
-@Shield.register(context="Dashboard")
+@Shield.register(context="Sys")
 class SysTemplate(Template):
     """Controlador de templates para la raíz de la aplicación pública."""
 
@@ -41,7 +41,11 @@ class SysTemplate(Template):
     )
     @enqueue_js(
         js_tag=str(
-            Script(src="/app-static/javascript/sys/init.js", type="module", defer=True)
+            Script(
+                src="/app-static/javascript/pages/sys/init.js",
+                type="module",
+                defer=True,
+            )
         ),
         position=Site.BODY_AFTER,
     )

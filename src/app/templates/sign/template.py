@@ -33,7 +33,11 @@ class SignTemplate(Template):
     )
     @enqueue_js(
         js_tag=str(
-            Script(src="/app-static/javascript/sign/in.js", type="module", defer=True)
+            Script(
+                src="/app-static/javascript/pages/sign/in.js",
+                type="module",
+                defer=True,
+            )
         ),
         position=Site.BODY_AFTER,
     )
