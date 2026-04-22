@@ -46,9 +46,9 @@ ENV JWT_ALG=${JWT_ALG}
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
-    libpng16-16 \
+    libpng16-16t64 \
     tzdata \
     && ln -sf /usr/share/zoneinfo/America/Caracas /etc/localtime \
     && echo "America/Caracas" > /etc/timezone \
