@@ -3,7 +3,7 @@ from typing import Optional, Any
 from core.lib.decorators import Services
 from src.modules.permissions.services import PermissionsService
 from src.modules.auth.services import AuthService
-from core.security.shield.provider import ResolverProvider
+from core.security.shield.provider import ResolverProvider, BasicResolverProvider
 from fastapi import HTTPException, Request, status
 from core.lib.dependencies.cache import get_cache
 from src.modules.options.services import OptionsService
@@ -227,6 +227,25 @@ class SysInitShield(ResolverProvider):
             if request.headers.get("hx-request"):
                 headers["HX-Redirect"] = "/sign/in"
 
+            raise HTTPException(status_code=303, headers=headers)
+
+        return True
+
+
+class SignInShield(BasicResolverProvider):
+    async def resolve(
+        self,
+        request: Request,
+        **kwargs,
+    ) -> bool:
+        if settings.MODE == "DEVELOPMENT":
+            return True
+
+        auth_header = request.cookies.get("access_token")
+        if auth_header:
+            headers = {"Location": "/dashboard"}
+            if request.headers.get("hx-request"):
+                headers["HX-Redirect"] = "/dashboard"
             raise HTTPException(status_code=303, headers=headers)
 
         return True
