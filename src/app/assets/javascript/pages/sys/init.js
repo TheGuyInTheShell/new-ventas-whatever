@@ -5,7 +5,7 @@
  * integrates HTMX, and handles global CSS imports for bundling.
  */
 
-import "../../css/app.css";
+import "../../../css/app.css";
 import Alpine from "alpinejs";
 import mask from '@alpinejs/mask';
 import focus from '@alpinejs/focus';

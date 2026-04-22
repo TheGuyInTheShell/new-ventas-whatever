@@ -132,6 +132,10 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
+        Script(src="/app-static/javascript/pages/chinese-restaurant/menu.js", type="module", defer=True),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
         Script(src="/app-static/javascript/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
@@ -146,6 +150,10 @@ class ChineseRestaurant(Template):
     @Shield.need(name="chinese_restaurant.orders_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(
+        Script(src="/app-static/javascript/pages/chinese-restaurant/orders.js", type="module", defer=True),
+        position=Site.HEAD,
+    )
     @enqueue_js(
         Script(src="/app-static/javascript/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
@@ -162,6 +170,10 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
+        Script(src="/app-static/javascript/pages/chinese-restaurant/tables.js", type="module", defer=True),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
         Script(src="/app-static/javascript/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
@@ -176,6 +188,10 @@ class ChineseRestaurant(Template):
     @Shield.need(name="chinese_restaurant.staff_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(
+        Script(src="/app-static/javascript/pages/chinese-restaurant/staff.js", type="module", defer=True),
+        position=Site.HEAD,
+    )
     @enqueue_js(
         Script(src="/app-static/javascript/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
@@ -193,6 +209,10 @@ class ChineseRestaurant(Template):
     )
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(
+        Script(src="/app-static/javascript/pages/chinese-restaurant/reservations.js", type="module", defer=True),
+        position=Site.HEAD,
+    )
     @enqueue_js(
         Script(src="/app-static/javascript/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
