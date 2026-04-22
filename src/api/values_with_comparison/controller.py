@@ -7,8 +7,12 @@ from core.lib.register import Controller
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 
-from src.modules.d.schemas.values_with_comparison import RQValueWithComparison, QueryValuesWithComparison
+from src.modules.d.schemas.values_with_comparison import (
+    RQValueWithComparison,
+    QueryValuesWithComparison,
+)
 from src.modules.d.services.value_with_comparison import DValueWithComparisonService
+
 
 @Shield.register(context="Values With Comparison API")
 @Services(DValueWithComparisonService)
@@ -17,30 +21,53 @@ class ValuesWithComparisonController(Controller):
 
     @Post("/")
     @Shield.need(
-        name="create",
+        name="create.value_with_comparison",
         action="create",
         type="endpoint",
         description="Save an optional value and an optional comparison.",
     )
-    async def create_value_with_comparison(self, payload: RQValueWithComparison, db: AsyncSession = Depends(get_async_db)):
-        return await self.DValueWithComparisonService.save_value_with_comparison_service(db, payload)
+    async def create_value_with_comparison(
+        self, payload: RQValueWithComparison, db: AsyncSession = Depends(get_async_db)
+    ):
+        return (
+            await self.DValueWithComparisonService.save_value_with_comparison_service(
+                db, payload
+            )
+        )
 
     @Put("/id/{id}")
     @Shield.need(
-        name="update",
+        name="update.value_with_comparison",
         action="update",
         type="endpoint",
         description="Update a value with its comparison.",
     )
-    async def update_value_with_comparison(self, id: str, payload: RQValueWithComparison, db: AsyncSession = Depends(get_async_db)):
-        return await self.DValueWithComparisonService.update_value_with_comparison_service(db, id, payload)
+    async def update_value_with_comparison(
+        self,
+        id: str,
+        payload: RQValueWithComparison,
+        db: AsyncSession = Depends(get_async_db),
+    ):
+        return (
+            await self.DValueWithComparisonService.update_value_with_comparison_service(
+                db, id, payload
+            )
+        )
 
     @Post("/query")
     @Shield.need(
-        name="query",
+        name="query.value_with_comparison",
         action="read",
         type="endpoint",
         description="Get all values with their comparisons using filters",
     )
-    async def query_values_with_comparison(self, payload: QueryValuesWithComparison, db: AsyncSession = Depends(get_async_db)):
-        return await self.DValueWithComparisonService.get_values_with_comparison_service(db, payload)
+    async def query_values_with_comparison(
+        self,
+        payload: QueryValuesWithComparison,
+        db: AsyncSession = Depends(get_async_db),
+    ):
+        return (
+            await self.DValueWithComparisonService.get_values_with_comparison_service(
+                db, payload
+            )
+        )

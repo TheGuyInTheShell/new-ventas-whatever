@@ -20,22 +20,26 @@ class ValuesController(Controller):
 
     @Post("/")
     @Shield.need(
-        name="create",
+        name="create.value",
         action="create",
         type="endpoint",
         description="Creates a new value",
     )
-    async def create_value(self, payload: RQValue, db: AsyncSession = Depends(get_async_db)):
+    async def create_value(
+        self, payload: RQValue, db: AsyncSession = Depends(get_async_db)
+    ):
         return await self.ValuesService.create_value_with_meta(db, payload)
 
     @Post("/query")
     @Shield.need(
-        name="query",
+        name="query.value",
         action="read",
         type="endpoint",
         description="Query values dynamically",
     )
-    async def query_values(self, payload: RQValueQuery, db: AsyncSession = Depends(get_async_db)):
+    async def query_values(
+        self, payload: RQValueQuery, db: AsyncSession = Depends(get_async_db)
+    ):
         filters = {}
         if payload.type:
             filters["type"] = payload.type
@@ -43,19 +47,19 @@ class ValuesController(Controller):
             filters["context"] = payload.context
 
         values, total = await self.ValuesService.get_values_paginated(
-            db, 
-            page=payload.page, 
-            page_size=payload.page_size, 
-            order_by=payload.order_by, 
+            db,
+            page=payload.page,
+            page_size=payload.page_size,
+            order_by=payload.order_by,
             order=payload.order,
-            filters=filters
+            filters=filters,
         )
         # Returns raw list of values ensuring JS can parse directly
         return values
 
     @Delete("/id/{id}")
     @Shield.need(
-        name="delete",
+        name="delete.value",
         action="delete",
         type="endpoint",
         description="Delete a value by internal id",

@@ -27,7 +27,9 @@ class AuthShieldApi(ResolverProvider):
         try:
             if settings.MODE == "DEVELOPMENT":
                 return True
-
+            print(
+                f"[AuthShieldApi] resolve: name={name} type_str={type_str} action={action} context={context}"
+            )
             if not request:
                 raise HTTPException(
                     status_code=401, detail="Request context is missing"
