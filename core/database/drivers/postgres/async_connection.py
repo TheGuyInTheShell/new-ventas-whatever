@@ -18,7 +18,7 @@ def init_async_engine():
     global engineAsync
     while engineAsync is None:
         try:
-            engineAsync = engineAsync = create_async_engine(
+            engineAsync = create_async_engine(
                 url=f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
                 echo=DEBUG,
                 pool_pre_ping=True,
@@ -27,6 +27,7 @@ def init_async_engine():
                 pool_timeout=30,
                 query_cache_size=1200,
                 pool_recycle=1800,
+                pool_use_lifo=True,
             )
             break
         except KeyboardInterrupt:
@@ -48,3 +49,13 @@ async def get_async_db():
         yield db
     finally:
         await db.close()
+
+
+async def warm_up_async_db():
+    """
+    Establishes the initial connection to the database to avoid
+    the ~1.5s overhead on the first user request.
+    """
+    from sqlalchemy import text
+    async with engineAsync.connect() as conn:
+        await conn.execute(text("SELECT 1"))

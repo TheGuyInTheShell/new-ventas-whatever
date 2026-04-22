@@ -76,6 +76,13 @@ async def plugin_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Execute startup logic
     ChannelEvent().emit_to("app.init").run(app=app)
 
+    # Warm up DB connection pool (async only for now)
+    from core.database.drivers.postgres.async_connection import warm_up_async_db
+    try:
+        await warm_up_async_db()
+    except Exception as e:
+        print(f"Warning: Database warm-up failed: {e}")
+
     for plugin in plugins:
         if inspect.iscoroutinefunction(plugin.init):
             await plugin.init()

@@ -26,7 +26,6 @@ class MenuPartial(Partial):
         description="Permite renderizar dinámicamente la barra de navegación del menú",
     )
     async def get_menu_partial(self, request: Request) -> HTMLResponse:
-
         user = await self.UsersService.get_current_user_app(request)
         if not user:
             return HTMLResponse(content="", status_code=200)
@@ -58,7 +57,6 @@ class MenuPartial(Partial):
 
         # 3. Retornar contenedor principal HTML
         content = to_xml(Ul(*items, cls="menu p-0 w-full gap-1"))
-
         return HTMLResponse(content=content, status_code=200)
 
     def _build_menu_node(self, key: str, node: dict):
