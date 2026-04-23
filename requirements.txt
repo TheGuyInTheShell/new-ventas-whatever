@@ -15,6 +15,7 @@ Authlib==1.7.0
 bcrypt==5.0.0
 bidict==0.23.1
 botocore==1.42.94
+cachetools==7.0.6
 certifi==2026.4.22
 cffi==2.0.0
 charset-normalizer==3.4.7
@@ -32,8 +33,10 @@ fastapi==0.136.0
 fastapi-injectable==1.4.7
 fastapi-plugins==0.14.0
 fastapi-restful==0.6.0
+fastapi_guard==5.0.0
 frozenlist==1.8.0
 greenlet==3.4.0
+guard-core==1.0.3
 h11==0.16.0
 hf-xet==1.4.3
 hiredis==3.3.1
@@ -56,6 +59,7 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 marshmallow==3.26.2
 marshmallow-enum==1.5.1
+maxminddb==3.1.1
 mdurl==0.1.2
 multidict==6.7.1
 mypy_extensions==1.1.0
