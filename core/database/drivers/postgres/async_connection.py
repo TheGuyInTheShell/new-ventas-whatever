@@ -3,16 +3,15 @@ import time
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-DB_USER = settings.DB_USER
-DB_PASSWORD = settings.DB_PASSWORD
-DB_HOST = settings.DB_HOST
-DB_PORT = settings.DB_PORT
-DB_NAME = settings.DB_NAME
+DB_USER = str(settings.DB_USER).strip()
+DB_PASSWORD = str(settings.DB_PASSWORD).strip()
+DB_HOST = str(settings.DB_HOST).strip()
+DB_PORT = str(settings.DB_PORT).strip()
+DB_NAME = str(settings.DB_NAME).strip()
 DEBUG = settings.MODE == "DEVELOPMENT"
 
 # SQLALCHEMY
 engineAsync = None
-print(f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 
 def init_async_engine():
@@ -59,7 +58,8 @@ async def warm_up_async_db():
     """
     from sqlalchemy import text
 
-    if engineAsync is None:
-        init_async_engine()
-    async with engineAsync.connect() as conn:
-        await conn.execute(text("SELECT 1"))
+    if engineAsync is not None:
+        async with engineAsync.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    else:
+        print("engineAsync is None")
