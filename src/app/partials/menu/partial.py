@@ -5,7 +5,7 @@ from src.modules.auth.services import AuthService
 from src.modules.users.services import UsersService
 from src.modules.d.services.menu import MenuService
 from fastapi.responses import HTMLResponse
-from fasthtml.common import Div, Ul, Li, A, Details, Summary, I, Span, to_xml
+from fastcore.xml import Div, Ul, Li, A, Details, Summary, I, Span, to_xml
 from core.security.shield.shield import Shield
 from fastapi import Request
 
@@ -35,7 +35,7 @@ class MenuPartial(Partial):
         # 1. Obtener el diccionario del menú resuelto (filtrado y cacheado por rol)
         menu_tree = await self.MenuService.get_resolved_menu(role_id=role_id)
 
-        # 2. Construir nodos FastHTML
+        # 2. Construir nodos FastCore
         items = []
 
         # Opcional: Quick Search fijo al principio de la barra

@@ -2,7 +2,7 @@ import functools
 import asyncio
 from typing import Callable, TypeVar, Any, ParamSpec, Optional
 from enum import Enum
-from fasthtml.common import Link
+from fastcore.xml import Link
 
 # ParamSpec preserves the original function's parameters (e.g. self, request)
 # TypeVar R preserves the original return type (e.g. HTMLResponse)

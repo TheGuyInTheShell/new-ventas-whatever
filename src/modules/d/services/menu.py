@@ -15,7 +15,7 @@ from src.app.context.menu import MenuShields
 from src.modules.permissions.models import Permission
 from src.modules.role_permissions.models import RolePermission
 
-from fasthtml.common import Div, Ul, Li, A, Details, Summary, I, Span, to_xml
+from fastcore.xml import Div, Ul, Li, A, Details, Summary, I, Span, to_xml
 
 from src.modules.users.services import UsersService
 
@@ -110,7 +110,7 @@ class MenuService(Service):
         # 1. Obtener el diccionario del menú resuelto (filtrado y cacheado por rol)
         menu_tree = await self.get_resolved_menu(role_id=role_id)
 
-        # 2. Construir nodos FastHTML
+        # 2. Construir nodos FastCore
         items = []
 
         # Opcional: Quick Search fijo al principio de la barra

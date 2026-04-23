@@ -27,7 +27,7 @@ Contains the **Source Assets**.
 ### `src/app/partials/`
 Contains **HTMX Partials**.
 - These are small blocks of HTML managed by controllers that return partial views.
-- Added fastHTML to the project to use it for generate HTML from Python code.
+- Added fastcore to the project to use it for generate HTML from Python code.
 - Used for dynamic updates without full page reloads.
 
 ### `src/app/templates/`

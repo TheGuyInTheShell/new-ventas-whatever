@@ -2,7 +2,7 @@ import functools
 import asyncio
 from typing import Callable, TypeVar, Any, ParamSpec, Coroutine, Optional
 from enum import Enum
-from fasthtml.common import ScriptX
+from fastcore.xml import Script as ScriptX
 
 # ParamSpec preserves the original function's parameters (e.g. self, request)
 # TypeVar R preserves the original return type (e.g. HTMLResponse)
@@ -24,15 +24,14 @@ def Script(
     """Helper for ScriptX."""
     return str(
         ScriptX(
-            "./core/services/ui/none.js",
-            src,
-            nomodule,
-            type,
-            _async,
-            defer,
-            charset,
-            crossorigin,
-            integrity,
+            src=src,
+            nomodule=nomodule,
+            type=type,
+            _async=_async,
+            defer=defer,
+            charset=charset,
+            crossorigin=crossorigin,
+            integrity=integrity,
             **kw,
         )
     )
@@ -52,11 +51,12 @@ def enqueue_js(
     """Decorator to enqueue a script tag into the template globals."""
 
     def decorator(class_method: Callable[P, R]) -> Callable[P, R]:
-        
+
         # We need to check if the route is async so we handle it properly.
         is_coroutine = asyncio.iscoroutinefunction(class_method)
 
         if is_coroutine:
+
             @functools.wraps(class_method)
             async def async_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
                 injectable = None
@@ -65,19 +65,26 @@ def enqueue_js(
                         instance: Any = args[0]
                         if hasattr(instance, "templates"):
                             template_provider: Any = instance.templates
-                            injectable = template_provider.env.globals.get("_injectable")
-                            
+                            injectable = template_provider.env.globals.get(
+                                "_injectable"
+                            )
+
                             if injectable:
                                 section = position.value
                                 if section == "head":
                                     injectable["head"]["scripts"] += f"\n{js_tag}"
                                 elif section == "body_before":
-                                    injectable["body"]["scripts_before"] += f"\n{js_tag}"
+                                    injectable["body"][
+                                        "scripts_before"
+                                    ] += f"\n{js_tag}"
                                 elif section == "body_after":
                                     injectable["body"]["scripts_after"] += f"\n{js_tag}"
 
                     import typing
-                    _async_callable = typing.cast(typing.Callable[..., typing.Awaitable[typing.Any]], class_method)
+
+                    _async_callable = typing.cast(
+                        typing.Callable[..., typing.Awaitable[typing.Any]], class_method
+                    )
                     return await _async_callable(*args, **kwargs)
                 finally:
                     if injectable:
@@ -85,9 +92,11 @@ def enqueue_js(
                         injectable["body"]["scripts_after"] = ""
                         injectable["body"]["scripts_before"] = ""
                         injectable["head"]["scripts"] = ""
+
             return async_inner  # type: ignore
 
         else:
+
             @functools.wraps(class_method)
             def sync_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
                 injectable = None
@@ -96,14 +105,18 @@ def enqueue_js(
                         instance: Any = args[0]
                         if hasattr(instance, "templates"):
                             template_provider: Any = instance.templates
-                            injectable = template_provider.env.globals.get("_injectable")
-                            
+                            injectable = template_provider.env.globals.get(
+                                "_injectable"
+                            )
+
                             if injectable:
                                 section = position.value
                                 if section == "head":
                                     injectable["head"]["scripts"] += f"\n{js_tag}"
                                 elif section == "body_before":
-                                    injectable["body"]["scripts_before"] += f"\n{js_tag}"
+                                    injectable["body"][
+                                        "scripts_before"
+                                    ] += f"\n{js_tag}"
                                 elif section == "body_after":
                                     injectable["body"]["scripts_after"] += f"\n{js_tag}"
 
@@ -113,6 +126,7 @@ def enqueue_js(
                         injectable["body"]["scripts_after"] = ""
                         injectable["body"]["scripts_before"] = ""
                         injectable["head"]["scripts"] = ""
+
             return sync_inner  # type: ignore
 
     return decorator

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 from fastapi import Depends, Form as FastAPIForm
 from fastapi.responses import HTMLResponse
-from fasthtml.common import Div, to_xml
+from fastcore.xml import Div, to_xml
 from typing import Annotated
 from core.security.csrf.csrf import CSRF
 
