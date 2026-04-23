@@ -11,6 +11,7 @@ services:
         - DB_USER=${DB_USER}
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
+        - DB_DRIVER=${DB_DRIVER}
         - REDIS_URL=${REDIS_URL}
         - JWT_KEY=${JWT_KEY}
         - JWT_ALG=${JWT_ALG}
@@ -24,6 +25,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
+      - DB_DRIVER=${DB_DRIVER}
       - REDIS_URL=${REDIS_URL}
       - JWT_KEY=${JWT_KEY}
       - JWT_ALG=${JWT_ALG}

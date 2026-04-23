@@ -57,5 +57,6 @@ async def warm_up_async_db():
     the ~1.5s overhead on the first user request.
     """
     from sqlalchemy import text
+
     async with engineAsync.connect() as conn:
         await conn.execute(text("SELECT 1"))
