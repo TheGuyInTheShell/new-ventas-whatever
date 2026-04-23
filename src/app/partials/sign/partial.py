@@ -86,5 +86,5 @@ class SignPartial(Partial):
             path="/auth/refresh",
         )
 
-        response.headers["HX-Location"] = "/dashboard"
+        response.headers["Location"] = "/dashboard"
         return response
