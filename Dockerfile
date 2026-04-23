@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copy dependency files first for caching
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 # Copy the rest of the application
 COPY . .
@@ -60,7 +60,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install python dependencies explicitly
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
 # Copy application source code
 COPY . .

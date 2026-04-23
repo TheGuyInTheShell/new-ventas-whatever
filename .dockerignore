@@ -1,0 +1,31 @@
+.git
+.gitignore
+.env
+.env.*
+node_modules
+npm-debug.log
+Dockerfile
+docker-compose.yaml
+docker-compose.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+.mypy_cache/
+.pytest_cache/
+pytest_cache/
+
+# Project
+logs
+scratch
+test.txt
+conda.txt
+environment.yml
