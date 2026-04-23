@@ -2,8 +2,7 @@ from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
-from fastapi import HTTPException, Depends
-from passlib.context import CryptContext
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 from src.context.consts.jwt import (
@@ -18,7 +17,6 @@ from .schemas import CreateUser, User
 from .types import TokenData
 
 import bcrypt
-from bcrypt import _bcrypt  # type: ignore
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 
@@ -27,20 +25,10 @@ import qrcode
 import base64
 
 
-if not hasattr(bcrypt, "__about__"):
-    setattr(
-        bcrypt,
-        "__about__",
-        type("About", (object,), {"__version__": _bcrypt.__version_ex__}),
-    )
-
-
 class AuthService(Service):
 
     SECRET_KEY_JWT = settings.JWT_KEY.encode()
     USED_ALGORITHM = settings.JWT_ALG
-
-    hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def generate_otp_secret(self) -> str:
         """Generates a random base32 formatted secret string."""
@@ -97,7 +85,13 @@ class AuthService(Service):
             return None
 
     def verify_password(self, plane_password: str, current_password: str) -> bool:
-        return self.hash_context.verify(plane_password, current_password)
+        try:
+            return bcrypt.checkpw(
+                plane_password.encode("utf-8"),
+                current_password.encode("utf-8"),
+            )
+        except Exception:
+            return False
 
     @injectable
     async def authenticade_user(self, username: str, password: str) -> User | None:
@@ -127,7 +121,9 @@ class AuthService(Service):
 
             user = await UserModel(
                 username=user_data.username,
-                password=self.hash_context.hash(user_data.password),
+                password=bcrypt.hashpw(
+                    user_data.password.encode("utf-8"), bcrypt.gensalt()
+                ).decode("utf-8"),
                 email=user_data.email,
                 full_name=user_data.full_name,
                 role_ref=1,
