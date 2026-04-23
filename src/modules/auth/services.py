@@ -148,7 +148,7 @@ class AuthService(Service):
     def create_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
         current_time = int(time.time())
         if expires_time is None:
-            expires = current_time + (self.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+            expires = current_time + (ACCESS_TOKEN_EXPIRE_MINUTES * 60)
         else:
             expires = current_time + int(expires_time)
         copy_user = data.copy()
@@ -165,7 +165,7 @@ class AuthService(Service):
     ) -> str:
         current_time = int(time.time())
         if expires_time is None:
-            expires = current_time + (self.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
+            expires = current_time + (REFRESH_TOKEN_EXPIRE_MINUTES * 60)
         else:
             expires = current_time + int(expires_time)
         copy_user = data.copy()

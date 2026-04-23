@@ -134,7 +134,10 @@ class AuthShieldApp(ResolverProvider):
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
                     detail="Invalid request",
-                    headers={"Location": "/sign/in"},
+                    headers={
+                        "Location": "/sign/in",
+                        "Set-Cookie": "access_token=; Path=/; HttpOnly; Secure; SameSite=Lax",
+                    },
                 )
 
             permission_cache_key = f"shield:perm:{context}:{type_str}:{action}:{name}"
@@ -148,9 +151,8 @@ class AuthShieldApp(ResolverProvider):
 
                 if not permission:
                     raise HTTPException(
-                        status_code=status.HTTP_302_FOUND,
-                        detail="Invalid request",
-                        headers={"Location": "/sign/in"},
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="No tienes el permiso requerido",
                     )
                 perm_id = permission.id
                 await cache.set(permission_cache_key, perm_id, 3600)  # 1 hour
@@ -168,9 +170,8 @@ class AuthShieldApp(ResolverProvider):
 
             if not has_permission:
                 raise HTTPException(
-                    status_code=status.HTTP_302_FOUND,
-                    detail="Invalid request",
-                    headers={"Location": "/sign/in"},
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="No tienes el permiso requerido",
                 )
 
             return True
