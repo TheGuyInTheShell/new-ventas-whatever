@@ -50,6 +50,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libpng16-16t64 \
     tzdata \
+    pkg-config \
+    libsqlite3-dev \
     && ln -sf /usr/share/zoneinfo/America/Caracas /etc/localtime \
     && echo "America/Caracas" > /etc/timezone \
     && apt-get clean \
