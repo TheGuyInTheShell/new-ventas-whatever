@@ -15,7 +15,7 @@ services:
         - JWT_KEY=${JWT_KEY}
         - JWT_ALG=${JWT_ALG}
     ports:
-      - "8000:8000"
+      - "8050:8000"
     environment:
       # inyección explícita a tiempo de run (Coolify lo maneja muy bien así)
       - MODE=PROD
