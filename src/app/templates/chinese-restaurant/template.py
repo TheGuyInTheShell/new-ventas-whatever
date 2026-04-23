@@ -12,14 +12,20 @@ from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.shield import Shield
 
 from src.modules.d.services.menu import MenuService
+from src.modules.d.services.value_with_comparison import DValueWithComparisonService
+from src.modules.d.schemas.values_with_comparison import (
+    QueryValuesWithComparison,
+    QueryValue,
+)
 
 
-@Services(MenuService)
+@Services(MenuService, DValueWithComparisonService)
 @Shield.register(context="ChineseRestaurant")
 class ChineseRestaurant(Template):
     """Controlador de templates para el módulo de Restaurante Chino."""
 
     MenuService: "MenuService"
+    DValueWithComparisonService: "DValueWithComparisonService"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -132,7 +138,11 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
-        Script(src="/app-static/javascript/pages/chinese-restaurant/menu.js", type="module", defer=True),
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/menu.js",
+            type="module",
+            defer=True,
+        ),
         position=Site.HEAD,
     )
     @enqueue_js(
@@ -151,7 +161,11 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
-        Script(src="/app-static/javascript/pages/chinese-restaurant/orders.js", type="module", defer=True),
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/orders.js",
+            type="module",
+            defer=True,
+        ),
         position=Site.HEAD,
     )
     @enqueue_js(
@@ -170,7 +184,11 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
-        Script(src="/app-static/javascript/pages/chinese-restaurant/tables.js", type="module", defer=True),
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/tables.js",
+            type="module",
+            defer=True,
+        ),
         position=Site.HEAD,
     )
     @enqueue_js(
@@ -189,7 +207,11 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
-        Script(src="/app-static/javascript/pages/chinese-restaurant/staff.js", type="module", defer=True),
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/staff.js",
+            type="module",
+            defer=True,
+        ),
         position=Site.HEAD,
     )
     @enqueue_js(
@@ -210,7 +232,11 @@ class ChineseRestaurant(Template):
     @enqueue_css(Style(href="/app-static/css/app.css"))
     @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
     @enqueue_js(
-        Script(src="/app-static/javascript/pages/chinese-restaurant/reservations.js", type="module", defer=True),
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/reservations.js",
+            type="module",
+            defer=True,
+        ),
         position=Site.HEAD,
     )
     @enqueue_js(
@@ -244,4 +270,70 @@ class ChineseRestaurant(Template):
         )
         return self.templates.TemplateResponse(
             request, name="pages/chinese-restaurant/reservations.html", context=context
+        )
+
+    @Get("/inventory", response_class=HTMLResponse)
+    @Shield.need(
+        name="chinese_restaurant.inventory_page", action="read", type="template"
+    )
+    @enqueue_css(Style(href="/app-static/css/app.css"))
+    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(
+        Script(
+            src="/app-static/javascript/pages/chinese-restaurant/inventory.js",
+            type="module",
+            defer=True,
+        ),
+        position=Site.HEAD,
+    )
+    async def inventory_page(self, request: Request) -> HTMLResponse:
+        # Fetch inventory using DValueWithComparisonService
+
+        # We query all values of specific types or context if needed,
+        # For now, let's fetch those that have context="inventory" or type="ingredient|utensil|consumable|other"
+        # We will query all for the inventory page context
+        query_data = QueryValuesWithComparison(
+            context="inventory",
+        )
+        result = (
+            await self.DValueWithComparisonService.get_values_with_comparison_service(
+                query_data
+            )
+        )
+
+        inventory_items = []
+        if result.value:
+            for val in result.value:
+                # Find matching comparison
+                comp = next(
+                    (
+                        c
+                        for c in (result.comparison_value or [])
+                        if c.value_from == val.id
+                    ),
+                    None,
+                )
+                inventory_items.append(
+                    {
+                        "id": val.id,
+                        "uid": val.uid,
+                        "name": val.name,
+                        "type": val.type,
+                        "expression": val.expression,
+                        "context": val.context,
+                        "identifier": val.identifier,
+                        # From comparison
+                        "comparison_id": comp.id if comp else None,
+                        "quantity_from": comp.quantity_from if comp else 1,
+                        "quantity_to": comp.quantity_to if comp else 0,
+                        "value_to": comp.value_to if comp else None,
+                        "balance": 0,  # This should theoretically come from a balance fetch if needed, defaulting to 0
+                    }
+                )
+
+        context = await self._get_common_context(request)
+        context.update({"inventory_items": inventory_items})
+
+        return self.templates.TemplateResponse(
+            request, name="pages/chinese-restaurant/inventory.html", context=context
         )

@@ -26,12 +26,10 @@ class ValuesWithComparisonController(Controller):
         type="endpoint",
         description="Save an optional value and an optional comparison.",
     )
-    async def create_value_with_comparison(
-        self, payload: RQValueWithComparison, db: AsyncSession = Depends(get_async_db)
-    ):
+    async def create_value_with_comparison(self, payload: RQValueWithComparison):
         return (
             await self.DValueWithComparisonService.save_value_with_comparison_service(
-                db, payload
+                payload
             )
         )
 
@@ -46,11 +44,10 @@ class ValuesWithComparisonController(Controller):
         self,
         id: str,
         payload: RQValueWithComparison,
-        db: AsyncSession = Depends(get_async_db),
     ):
         return (
             await self.DValueWithComparisonService.update_value_with_comparison_service(
-                db, id, payload
+                id, payload
             )
         )
 
@@ -64,10 +61,9 @@ class ValuesWithComparisonController(Controller):
     async def query_values_with_comparison(
         self,
         payload: QueryValuesWithComparison,
-        db: AsyncSession = Depends(get_async_db),
     ):
         return (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
-                db, payload
+                payload
             )
         )

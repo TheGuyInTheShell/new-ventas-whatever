@@ -62,6 +62,17 @@ class ChineseRestaurantChildren:
             ("name", "Reservaciones"),
         ],
     )
+    inventory = Shield.can(
+        "chinese_restaurant.inventory",
+        "read",
+        "ui",
+        description="Ver el inventario del restaurante chino",
+        meta=[
+            ("icon", "package"),
+            ("route", "/chinese-restaurant/inventory"),
+            ("name", "Inventario"),
+        ],
+    )
 
 
 class SettingsChildren:
