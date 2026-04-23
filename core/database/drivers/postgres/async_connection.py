@@ -12,6 +12,7 @@ DEBUG = settings.MODE == "DEVELOPMENT"
 
 # SQLALCHEMY
 engineAsync = None
+print(f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 
 def init_async_engine():
@@ -58,5 +59,7 @@ async def warm_up_async_db():
     """
     from sqlalchemy import text
 
+    if engineAsync is None:
+        init_async_engine()
     async with engineAsync.connect() as conn:
         await conn.execute(text("SELECT 1"))
