@@ -8,8 +8,9 @@
 import Alpine from "alpinejs";
 import { fiatStore, fiatActions } from "../../store/fiatStore.js";
 import { inventoryStore, inventoryActions } from "../../store/inventoryStore.js";
+import { notifySuccess, notifyError } from "../../includes/toast.js";
 import { createIcons, icons } from "lucide";
-
+window.Alpine = Alpine;
 /**
  * @typedef {Object} InventoryItem
  * @property {number} id - Unique identifier.
@@ -37,11 +38,26 @@ document.addEventListener('alpine:init', () => {
         typeFilter: 'all',
         /** @type {'asc'|'desc'} */
         sortOrder: 'asc',
-        
+
         /** @type {boolean} */
         deleteModalOpen: false,
         /** @type {InventoryItem|null} */
         itemToDelete: null,
+
+        /** @type {boolean} */
+        formModalOpen: false,
+        /** @type {boolean} */
+        isSaving: false,
+        /** @type {InventoryItem|null} */
+        editingItem: null,
+        /** @type {Object} */
+        formData: {
+            name: '',
+            type: 'ingredient',
+            expression: 'unit',
+            price: 0,
+            currency_id: null
+        },
 
         /** @type {Object} */
         fiatContext: fiatStore.getSnapshot().context,
@@ -75,7 +91,7 @@ document.addEventListener('alpine:init', () => {
                 // Otherwise fetch from API
                 await inventoryActions.fetchItems();
             }
-            
+
             this.$nextTick(() => {
                 createIcons({ icons });
             });
@@ -87,25 +103,25 @@ document.addEventListener('alpine:init', () => {
          */
         get filteredItems() {
             let result = [...this.inventoryContext.items];
-            
+
             // Text search
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
                 result = result.filter(i => i.name.toLowerCase().includes(q));
             }
-            
+
             // Type filter
             if (this.typeFilter !== 'all') {
                 result = result.filter(i => i.type === this.typeFilter);
             }
-            
+
             // Sort
             if (this.sortOrder === 'asc') {
                 result.sort((a, b) => a.name.localeCompare(b.name));
             } else {
                 result.sort((a, b) => b.name.localeCompare(a.name));
             }
-            
+
             return result;
         },
 
@@ -131,13 +147,24 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Returns the name of the main fiat currency.
+         * @returns {string}
+         */
+        getMainFiatName() {
+            const mainId = this.fiatContext.mainFiatId;
+            if (!mainId) return '';
+            const fiat = this.fiatContext.fiats.find(f => f.id === mainId);
+            return fiat ? fiat.name : '';
+        },
+
+        /**
          * Calculates the price of an item converted to the main fiat currency.
          * @param {InventoryItem} item - The inventory item to calculate.
          * @returns {number|string}
          */
         calculatePrice(item) {
             if (!item.quantity_to || item.quantity_to <= 0) return '-';
-            
+
             const mainId = this.fiatContext.mainFiatId;
             if (!mainId) return item.quantity_to;
 
@@ -160,8 +187,16 @@ document.addEventListener('alpine:init', () => {
          * Opens the modal to add a new inventory item.
          */
         openAddModal() {
-            // Setup form data for add...
-            console.log('Open Add Modal');
+            this.editingItem = null;
+            this.formData = {
+                name: '',
+                type: 'ingredient',
+                expression: 'unit',
+                price: 0,
+                currency_id: this.fiatContext.mainFiatId
+            };
+            this.formModalOpen = true;
+            this.$nextTick(() => { createIcons({ icons }); });
         },
 
         /**
@@ -169,8 +204,23 @@ document.addEventListener('alpine:init', () => {
          * @param {InventoryItem} item - The item to edit.
          */
         editItem(item) {
-            // Setup form data for edit...
-            console.log('Edit Item', item);
+            this.editingItem = item;
+            this.formData = {
+                name: item.name,
+                type: item.type,
+                expression: item.expression,
+                price: item.quantity_to || 0,
+                currency_id: item.value_to || this.fiatContext.mainFiatId
+            };
+            this.formModalOpen = true;
+            this.$nextTick(() => { createIcons({ icons }); });
+        },
+
+        /**
+         * Closes the form modal.
+         */
+        closeFormModal() {
+            this.formModalOpen = false;
         },
 
         /**
@@ -184,14 +234,21 @@ document.addEventListener('alpine:init', () => {
         /**
          * Submits a save action for an item via the inventory store.
          * @async
-         * @param {InventoryItem|null} editingItem - The item being edited, or null for new.
-         * @param {Object} formData - Form data with name, expression, type, price, currency_id.
          */
-        async saveItemSubmit(editingItem, formData) {
-            const success = await inventoryActions.saveItem(editingItem, formData);
-            if (success) {
-                // Close modal, show toast, etc.
-                console.log('Saved successfully');
+        async saveItemSubmit() {
+            this.isSaving = true;
+            try {
+                const success = await inventoryActions.saveItem(this.editingItem, this.formData);
+                if (success) {
+                    this.formModalOpen = false;
+                    notifySuccess(this.editingItem ? 'Item updated successfully' : 'Item added successfully', 'Inventory');
+                } else {
+                    notifyError('Failed to save item. Check the console.', 'Error');
+                }
+            } catch (e) {
+                notifyError(e.message || 'Unknown error', 'Error');
+            } finally {
+                this.isSaving = false;
             }
         },
 
@@ -210,9 +267,9 @@ document.addEventListener('alpine:init', () => {
          */
         async confirmDelete() {
             if (!this.itemToDelete) return;
-            
+
             const success = await inventoryActions.deleteItem(this.itemToDelete.id, this.itemToDelete.comparison_id);
-            
+
             if (success) {
                 this.deleteModalOpen = false;
                 this.itemToDelete = null;
@@ -220,3 +277,5 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 });
+
+Alpine.start();

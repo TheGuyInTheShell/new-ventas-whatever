@@ -1,0 +1,113 @@
+<!-- Inventory Form Modal (PenguinUI Inspired) -->
+<div x-cloak x-show="formModalOpen" x-transition.opacity.duration.200ms x-trap.inert.noscroll="formModalOpen"
+    x-on:keydown.esc.window="closeFormModal" x-on:click.self="closeFormModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 pb-8 backdrop-blur-md sm:items-center lg:p-8"
+    role="dialog" aria-modal="true" aria-labelledby="inventoryModalTitle">
+
+    <!-- Modal Dialog -->
+    <div x-show="formModalOpen"
+        x-transition:enter="transition ease-out duration-200 delay-100 motion-reduce:transition-opacity"
+        x-transition:enter-start="opacity-0 scale-95 translate-y-4 sm:translate-y-0 sm:scale-95"
+        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+        class="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 text-base-content shadow-2xl">
+
+        <!-- Dialog Header -->
+        <div class="flex items-center justify-between border-b border-base-200 bg-base-200/50 px-6 py-4">
+            <h3 id="inventoryModalTitle" class="font-bold text-lg flex items-center gap-3">
+                <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-base-100">
+                    <i :data-lucide="editingItem ? 'edit' : 'package-plus'" class="w-5 h-5"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span x-text="editingItem ? 'Edit Item' : 'New Item'"></span>
+                    <span class="text-xs font-normal text-base-content/60"
+                        x-text="editingItem ? 'Update inventory details' : 'Add to your inventory'"></span>
+                </div>
+            </h3>
+            <button type="button" @click="closeFormModal" aria-label="close modal"
+                class="btn btn-sm btn-circle btn-ghost text-base-content/70 hover:bg-base-300 hover:text-base-content">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor"
+                    fill="none" stroke-width="1.4" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Dialog Body -->
+        <form @submit.prevent="saveItemSubmit" class="flex flex-col gap-5 px-6 py-5">
+
+            <div class="form-control">
+                <label class="label pt-0"><span class="label-text font-semibold">Item Name <span
+                            class="text-error">*</span></span></label>
+                <input type="text" x-model="formData.name" placeholder="e.g. Soy Sauce, Wok Pan..."
+                    class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-base-100 h-11"
+                    required />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold">Category <span
+                                class="text-error">*</span></span></label>
+                    <select x-model="formData.type"
+                        class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11"
+                        required>
+                        <option value="ingredient">Ingredient</option>
+                        <option value="utensil">Utensil</option>
+                        <option value="consumable">Consumable</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold">Unit <span
+                                class="text-error">*</span></span></label>
+                    <input type="text" x-model="formData.expression" placeholder="kg, unit, l"
+                        class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11"
+                        required />
+                </div>
+            </div>
+
+            <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2">Pricing Details</div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold">Price</span></label>
+                    <input type="number" step="0.01" x-model.number="formData.price" placeholder="0.00"
+                        class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11" />
+                </div>
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold">Currency</span></label>
+                    <select x-model.number="formData.currency_id"
+                        class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11">
+                        <template x-for="fiat in fiatContext.fiats" :key="fiat.id">
+                            <option :value="fiat.id" x-text="fiat.name"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Main Currency Info Bar -->
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-base-300 border border-primary/10 text-sm">
+                <div class="bg-primary/10 p-1.5 rounded-full text-base-100 shrink-0">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                </div>
+                <span class="text-base-content/80 text-sm leading-tight">
+                    Calculations use <strong class="text-primary font-semibold" x-text="getMainFiatName()"></strong> as
+                    reference.
+                </span>
+            </div>
+
+            <!-- Dialog Footer -->
+            <div
+                class="flex flex-col-reverse justify-between gap-3 border-t border-base-200 bg-base-200/50 px-6 py-4 -mx-6 -mb-5 sm:flex-row sm:items-center md:justify-end mt-2">
+                <button type="button" @click="closeFormModal"
+                    class="btn btn-ghost px-6 font-medium text-base-content/80" :disabled="isSaving">Cancel</button>
+                <button type="submit" class="btn btn-primary px-8 shadow-lg shadow-primary/20 font-medium"
+                    :disabled="isSaving">
+                    <span x-show="isSaving" class="loading loading-spinner loading-sm" x-cloak></span>
+                    <span x-show="!isSaving" class="flex items-center gap-2">
+                        <i data-lucide="check" class="w-4 h-4"></i> Save
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
