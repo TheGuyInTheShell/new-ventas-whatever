@@ -10,6 +10,14 @@ import { fiatStore, fiatActions } from "../../store/fiatStore.js";
 import { inventoryStore, inventoryActions } from "../../store/inventoryStore.js";
 import { notifySuccess, notifyError } from "../../includes/toast.js";
 import { createIcons, icons } from "lucide";
+import mask from '@alpinejs/mask';
+import focus from '@alpinejs/focus';
+import collapse from '@alpinejs/collapse';
+
+Alpine.plugin(mask);
+Alpine.plugin(focus);
+Alpine.plugin(collapse);
+
 window.Alpine = Alpine;
 /**
  * @typedef {Object} InventoryItem

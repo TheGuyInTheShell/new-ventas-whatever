@@ -1,7 +1,7 @@
 {% extends "layouts/panel.html" %}
 
 {% block content %}
-<div class="p-4 space-y-4 w-full relative min-h-screen pb-24" x-data="inventoryPage({{ inventory_items | tojson }})">
+<div class="p-4 space-y-4 w-full relative min-h-screen pb-24" x-data='inventoryPage({{ inventory_items | tojson | safe if inventory_items is not none else "[]" }})'>
     <!-- Header -->
     <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold">Inventory</h1>
