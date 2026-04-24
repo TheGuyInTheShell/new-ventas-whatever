@@ -445,12 +445,33 @@ class PermissionsService(Service):
             option_name = "permissions_hash_shield"
 
             # 2. Check for existing hash in database
-            query = await db.execute(
-                select(Options).where(
-                    Options.context == context_name, Options.name == option_name
-                )
-            )
-            option_record = query.scalar_one_or_none()
+            # Si es el primer run, la tabla "options" podría no existir todavía. Implementamos un retry.
+            from sqlalchemy.exc import ProgrammingError
+            import asyncio
+            
+            option_record = None
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    query = await db.execute(
+                        select(Options).where(
+                            Options.context == context_name, Options.name == option_name
+                        )
+                    )
+                    option_record = query.scalar_one_or_none()
+                    break  # Éxito, salimos del retry loop
+                except ProgrammingError as e:
+                    await db.rollback()
+                    if "does not exist" in str(e) or "UndefinedTableError" in str(e):
+                        if attempt < max_retries - 1:
+                            print(f"[Shield Sync] Tabla 'options' no encontrada (intento {attempt + 1}/{max_retries}). Esperando a que las migraciones terminen...")
+                            await asyncio.sleep(3)
+                        else:
+                            print("[Shield Sync] Las tablas de la base de datos no existen después de varios reintentos. Omitiendo sincronización.")
+                            return
+                    else:
+                        raise e
+
 
             if option_record and option_record.value == current_hash:
                 print(
