@@ -53,8 +53,10 @@ def handle_service_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     async def wrapper(*args, **kwargs) -> tuple[Any | None, AuthError | None]:
         try:
             result = await func(*args, **kwargs)
-            # If the result is already a tuple of length 2 and the second element is an AuthError, 
-            # it might have been manually returned. But usually we expect the raw value here.
+            # Prevent double wrapping if the method manually returned a ServiceResult tuple
+            if isinstance(result, tuple) and len(result) == 2:
+                if result[1] is None or isinstance(result[1], AuthError):
+                    return result
             return result, None
         except AuthError as e:
             # Known domain errors
@@ -77,6 +79,9 @@ def handle_sync_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs) -> tuple[Any | None, AuthError | None]:
         try:
             result = func(*args, **kwargs)
+            if isinstance(result, tuple) and len(result) == 2:
+                if result[1] is None or isinstance(result[1], AuthError):
+                    return result
             return result, None
         except AuthError as e:
             return None, e

@@ -1,4 +1,4 @@
-from fastapi_injectable import injectable
+﻿from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
@@ -33,7 +33,7 @@ from .exceptions import (
     UserNotFoundError,
     UserAlreadyExistsError,
     TokenError,
-    TokenExpiredError
+    TokenExpiredError,
 )
 
 
@@ -105,7 +105,9 @@ class AuthService(Service):
         return user
 
     @handle_sync_errors
-    def verify_password(self, plane_password: str, current_password: str) -> ServiceResult[bool]:
+    def verify_password(
+        self, plane_password: str, current_password: str
+    ) -> ServiceResult[bool]:
         return bcrypt.checkpw(
             plane_password.encode("utf-8"),
             current_password.encode("utf-8"),
@@ -113,7 +115,9 @@ class AuthService(Service):
 
     @injectable
     @handle_service_errors
-    async def authenticate_user(self, username: str, password: str) -> ServiceResult[User]:
+    async def authenticate_user(
+        self, username: str, password: str
+    ) -> ServiceResult[User]:
         user, error = await self.get_user(username)
         if error:
             return None, error
@@ -126,7 +130,7 @@ class AuthService(Service):
         if not is_valid:
             return None, AuthenticationError()
 
-        result = User(
+        user = User(
             uid=user.uid,
             id=user.id,
             username=user.username,
@@ -135,10 +139,12 @@ class AuthService(Service):
             role=user.role_ref,
             otp_enabled=user.otp_enabled,
         )
-        return result
+        return user
 
     @handle_service_errors
-    async def create_user(self, db: AsyncSession, user_data: CreateUser) -> ServiceResult[dict]:
+    async def create_user(
+        self, db: AsyncSession, user_data: CreateUser
+    ) -> ServiceResult[dict]:
         user = await UserModel(
             username=user_data.username,
             password=bcrypt.hashpw(
@@ -159,7 +165,9 @@ class AuthService(Service):
         }
 
     @handle_sync_errors
-    def create_token(self, data: dict, expires_time: Union[float, None] = None) -> ServiceResult[str]:
+    def create_token(
+        self, data: dict, expires_time: Union[float, None] = None
+    ) -> ServiceResult[str]:
         current_time = int(time.time())
         if expires_time is None:
             expires = current_time + (ACCESS_TOKEN_EXPIRE_MINUTES * 60)
