@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial_reconstruction
 
-Revision ID: 0c68a46a4a24
+Revision ID: f0987f3285a9
 Revises: 
-Create Date: 2026-04-10 16:30:55.915039
+Create Date: 2026-04-24 00:37:09.673378
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0c68a46a4a24'
+revision: str = 'f0987f3285a9'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -100,6 +100,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_options_uid'), 'options', ['uid'], unique=True)
     op.create_table('permissions',
     sa.Column('name', sa.String(length=50), nullable=False),
+    sa.Column('context', sa.String(length=50), nullable=False),
     sa.Column('action', sa.String(length=50), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
     sa.Column('type', sa.String(length=50), nullable=False),
@@ -118,7 +119,6 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
     sa.Column('level', sa.Integer(), nullable=False),
-    sa.Column('permissions', sa.ARRAY(sa.Integer(), as_tuple=True), nullable=False),
     sa.Column('disabled', sa.Boolean(), nullable=False),
     sa.Column('uid', sa.String(), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -146,6 +146,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('uid', 'id'),
     sa.UniqueConstraint('name', 'context', 'type', name='uix_values_name_context_type')
     )
+    op.create_index('ix_values_context_active', 'values', ['context'], unique=False)
     op.create_index(op.f('ix_values_id'), 'values', ['id'], unique=True)
     op.create_index('ix_values_name_context', 'values', ['name', 'context'], unique=False)
     op.create_index('ix_values_name_context_type', 'values', ['name', 'context', 'type'], unique=False)
@@ -165,6 +166,8 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('uid', 'id')
     )
     op.create_index(op.f('ix_balances_id'), 'balances', ['id'], unique=True)
+    op.create_index('ix_balances_ref_value_active', 'balances', ['ref_value'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_balances_type_active', 'balances', ['type'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index(op.f('ix_balances_uid'), 'balances', ['uid'], unique=True)
     op.create_table('business_entities_groups_connections',
     sa.Column('ref_business_entities_group', sa.Integer(), nullable=False),
@@ -214,8 +217,11 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('uid', 'id'),
     sa.UniqueConstraint('value_from', 'value_to', 'context', name='uix_comparison_values_value_from_value_to')
     )
+    op.create_index('ix_comparation_values_context_active', 'comparation_values', ['context'], unique=False)
     op.create_index(op.f('ix_comparation_values_id'), 'comparation_values', ['id'], unique=True)
     op.create_index(op.f('ix_comparation_values_uid'), 'comparation_values', ['uid'], unique=True)
+    op.create_index('ix_comparation_values_value_from_active', 'comparation_values', ['value_from'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_comparation_values_value_to_active', 'comparation_values', ['value_to'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index('ix_comparison_values_value_from_context', 'comparation_values', ['value_from', 'context'], unique=False)
     op.create_index('ix_comparison_values_value_to_context', 'comparation_values', ['value_to', 'context'], unique=False)
     op.create_table('invoice_business_entities',
@@ -351,6 +357,7 @@ def upgrade() -> None:
     )
     op.create_index('ix_user_tsv', 'users', [sa.text("to_tsvector('english', username || ' ' || email || ' ' || full_name)")], unique=False, postgresql_using='gin')
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=True)
+    op.create_index('ix_users_role_ref_active', 'users', ['role_ref'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index(op.f('ix_users_uid'), 'users', ['uid'], unique=True)
     op.create_table('values_hierarchy',
     sa.Column('ref_value_top', sa.Integer(), nullable=False),
@@ -470,6 +477,10 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('uid', 'id')
     )
     op.create_index(op.f('ix_transactions_id'), 'transactions', ['id'], unique=True)
+    op.create_index('ix_transactions_ref_balance_from_active', 'transactions', ['ref_balance_from'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_ref_balance_to_active', 'transactions', ['ref_balance_to'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_ref_by_user_active', 'transactions', ['ref_by_user'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_reference_code_active', 'transactions', ['reference_code'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index(op.f('ix_transactions_uid'), 'transactions', ['uid'], unique=True)
     op.create_index('uq_transactions_id', 'transactions', ['id'], unique=True)
     op.create_table('transactions_buffer',
@@ -494,6 +505,10 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('uid', 'id')
     )
     op.create_index(op.f('ix_transactions_buffer_id'), 'transactions_buffer', ['id'], unique=True)
+    op.create_index('ix_transactions_buffer_ref_balance_from_active', 'transactions_buffer', ['ref_balance_from'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_buffer_ref_balance_to_active', 'transactions_buffer', ['ref_balance_to'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_buffer_ref_by_user_active', 'transactions_buffer', ['ref_by_user'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_transactions_buffer_state_active', 'transactions_buffer', ['state'], unique=False, postgresql_where=sa.text('deleted_at IS NULL'))
     op.create_index(op.f('ix_transactions_buffer_uid'), 'transactions_buffer', ['uid'], unique=True)
     op.create_index('uq_transactions_buffer_id', 'transactions_buffer', ['id'], unique=True)
     op.create_table('invoice_transactions',
@@ -524,7 +539,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['ref_comparison_value_historical'], ['comparation_values_historical.id'], ),
     sa.PrimaryKeyConstraint('uid', 'id')
     )
-    op.create_index('idx_values_meta_ref_comparison_value_historical', 'meta_comparison_values_historical', ['key', 'ref_comparison_value_historical'], unique=True)
+    op.create_index('idx_meta_comp_val_hist_ref_comp_val_hist', 'meta_comparison_values_historical', ['key', 'ref_comparison_value_historical'], unique=True)
     op.create_index(op.f('ix_meta_comparison_values_historical_id'), 'meta_comparison_values_historical', ['id'], unique=True)
     op.create_index(op.f('ix_meta_comparison_values_historical_uid'), 'meta_comparison_values_historical', ['uid'], unique=True)
     op.create_table('meta_transactions',
@@ -574,17 +589,25 @@ def downgrade() -> None:
     op.drop_table('meta_transactions')
     op.drop_index(op.f('ix_meta_comparison_values_historical_uid'), table_name='meta_comparison_values_historical')
     op.drop_index(op.f('ix_meta_comparison_values_historical_id'), table_name='meta_comparison_values_historical')
-    op.drop_index('idx_values_meta_ref_comparison_value_historical', table_name='meta_comparison_values_historical')
+    op.drop_index('idx_meta_comp_val_hist_ref_comp_val_hist', table_name='meta_comparison_values_historical')
     op.drop_table('meta_comparison_values_historical')
     op.drop_index(op.f('ix_invoice_transactions_uid'), table_name='invoice_transactions')
     op.drop_index(op.f('ix_invoice_transactions_id'), table_name='invoice_transactions')
     op.drop_table('invoice_transactions')
     op.drop_index('uq_transactions_buffer_id', table_name='transactions_buffer')
     op.drop_index(op.f('ix_transactions_buffer_uid'), table_name='transactions_buffer')
+    op.drop_index('ix_transactions_buffer_state_active', table_name='transactions_buffer', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_buffer_ref_by_user_active', table_name='transactions_buffer', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_buffer_ref_balance_to_active', table_name='transactions_buffer', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_buffer_ref_balance_from_active', table_name='transactions_buffer', postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index(op.f('ix_transactions_buffer_id'), table_name='transactions_buffer')
     op.drop_table('transactions_buffer')
     op.drop_index('uq_transactions_id', table_name='transactions')
     op.drop_index(op.f('ix_transactions_uid'), table_name='transactions')
+    op.drop_index('ix_transactions_reference_code_active', table_name='transactions', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_ref_by_user_active', table_name='transactions', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_ref_balance_to_active', table_name='transactions', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_transactions_ref_balance_from_active', table_name='transactions', postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index(op.f('ix_transactions_id'), table_name='transactions')
     op.drop_table('transactions')
     op.drop_index(op.f('ix_meta_users_uid'), table_name='meta_users')
@@ -609,6 +632,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_values_hierarchy_id'), table_name='values_hierarchy')
     op.drop_table('values_hierarchy')
     op.drop_index(op.f('ix_users_uid'), table_name='users')
+    op.drop_index('ix_users_role_ref_active', table_name='users', postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index('ix_user_tsv', table_name='users', postgresql_using='gin')
     op.drop_table('users')
@@ -639,8 +663,11 @@ def downgrade() -> None:
     op.drop_table('invoice_business_entities')
     op.drop_index('ix_comparison_values_value_to_context', table_name='comparation_values')
     op.drop_index('ix_comparison_values_value_from_context', table_name='comparation_values')
+    op.drop_index('ix_comparation_values_value_to_active', table_name='comparation_values', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_comparation_values_value_from_active', table_name='comparation_values', postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index(op.f('ix_comparation_values_uid'), table_name='comparation_values')
     op.drop_index(op.f('ix_comparation_values_id'), table_name='comparation_values')
+    op.drop_index('ix_comparation_values_context_active', table_name='comparation_values')
     op.drop_table('comparation_values')
     op.drop_index(op.f('ix_business_entities_hierarchy_uid'), table_name='business_entities_hierarchy')
     op.drop_index(op.f('ix_business_entities_hierarchy_id'), table_name='business_entities_hierarchy')
@@ -649,6 +676,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_business_entities_groups_connections_id'), table_name='business_entities_groups_connections')
     op.drop_table('business_entities_groups_connections')
     op.drop_index(op.f('ix_balances_uid'), table_name='balances')
+    op.drop_index('ix_balances_type_active', table_name='balances', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_balances_ref_value_active', table_name='balances', postgresql_where=sa.text('deleted_at IS NULL'))
     op.drop_index(op.f('ix_balances_id'), table_name='balances')
     op.drop_table('balances')
     op.drop_index(op.f('ix_values_uid'), table_name='values')
@@ -656,6 +685,7 @@ def downgrade() -> None:
     op.drop_index('ix_values_name_context_type', table_name='values')
     op.drop_index('ix_values_name_context', table_name='values')
     op.drop_index(op.f('ix_values_id'), table_name='values')
+    op.drop_index('ix_values_context_active', table_name='values')
     op.drop_table('values')
     op.drop_index(op.f('ix_roles_uid'), table_name='roles')
     op.drop_index(op.f('ix_roles_id'), table_name='roles')
