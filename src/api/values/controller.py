@@ -25,10 +25,8 @@ class ValuesController(Controller):
         type="endpoint",
         description="Creates a new value",
     )
-    async def create_value(
-        self, payload: RQValue, db: AsyncSession = Depends(get_async_db)
-    ):
-        return await self.ValuesService.create_value_with_meta(db, payload)
+    async def create_value(self, payload: RQValue):
+        return await self.ValuesService.create_value_with_meta(payload)
 
     @Post("/query")
     @Shield.need(
@@ -37,9 +35,7 @@ class ValuesController(Controller):
         type="endpoint",
         description="Query values dynamically",
     )
-    async def query_values(
-        self, payload: RQValueQuery, db: AsyncSession = Depends(get_async_db)
-    ):
+    async def query_values(self, payload: RQValueQuery):
         filters = {}
         if payload.type:
             filters["type"] = payload.type
@@ -47,7 +43,6 @@ class ValuesController(Controller):
             filters["context"] = payload.context
 
         values, total = await self.ValuesService.get_values_paginated(
-            db,
             page=payload.page,
             page_size=payload.page_size,
             order_by=payload.order_by,
