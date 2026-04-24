@@ -25,12 +25,10 @@ class ComparisonValuesController(Controller):
         type="endpoint",
         description="Read comparison values filtered by optional context query string",
     )
-    async def get_comparisons(
-        self, context: Optional[str] = None, db: AsyncSession = Depends(get_async_db)
-    ):
+    async def get_comparisons(self, context: Optional[str] = None):
         comparisons, total = (
             await self.ComparisonValuesService.get_comparisons_paginated(
-                db, page=1, page_size=1000, context=context
+                page=1, page_size=1000, context=context
             )
         )
         return {"data": comparisons, "total": total}
@@ -42,10 +40,8 @@ class ComparisonValuesController(Controller):
         type="endpoint",
         description="Creates a new comparison value exchange rate link",
     )
-    async def create_comparison(
-        self, payload: RQComparisonValue, db: AsyncSession = Depends(get_async_db)
-    ):
-        return await self.ComparisonValuesService.create_comparison(db, payload)
+    async def create_comparison(self, payload: RQComparisonValue):
+        return await self.ComparisonValuesService.create_comparison(payload)
 
     @Put("/id/{id}")
     @Shield.need(
@@ -54,13 +50,8 @@ class ComparisonValuesController(Controller):
         type="endpoint",
         description="Update an existing comparison value rate",
     )
-    async def update_comparison(
-        self,
-        id: str,
-        payload: RQComparisonValue,
-        db: AsyncSession = Depends(get_async_db),
-    ):
-        return await self.ComparisonValuesService.update_comparison(db, id, payload)
+    async def update_comparison(self, id: str, payload: RQComparisonValue):
+        return await self.ComparisonValuesService.update_comparison(id, payload)
 
     @Delete("/id/{id}")
     @Shield.need(
