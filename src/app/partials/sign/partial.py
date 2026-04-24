@@ -26,9 +26,9 @@ class SignPartial(Partial):
         password: Annotated[str, FastAPIForm()],
     ) -> HTMLResponse:
 
-        user = await self.AuthService.authenticade_user(username, password)
+        user, error = await self.AuthService.authenticate_user(username, password)
 
-        if user is None:
+        if error or user is None:
             content = to_xml(
                 Div(
                     "Incorrect username or password",
@@ -39,7 +39,7 @@ class SignPartial(Partial):
             return HTMLResponse(content=content, status_code=200)
 
         expires_time = 1200
-        access_token = self.AuthService.create_token(
+        access_token, error = self.AuthService.create_token(
             data={
                 "sub": user.username,
                 "email": user.email,
@@ -50,7 +50,7 @@ class SignPartial(Partial):
             expires_time=expires_time,
         )
 
-        refresh_token = self.AuthService.create_refresh_token(
+        refresh_token, error = self.AuthService.create_refresh_token(
             data={
                 "sub": user.username,
                 "email": user.email,

@@ -24,6 +24,18 @@ import pyotp
 import qrcode
 import base64
 
+from .exceptions import (
+    handle_service_errors,
+    handle_sync_errors,
+    ServiceResult,
+    AuthError,
+    AuthenticationError,
+    UserNotFoundError,
+    UserAlreadyExistsError,
+    TokenError,
+    TokenExpiredError
+)
+
 
 class HashContext:
     def hash(self, password: str) -> str:
@@ -84,75 +96,70 @@ class AuthService(Service):
         ).decode("utf-8")
 
     @injectable
+    @handle_service_errors
     async def get_user(
         self, username: str, db: AsyncSession = Depends(get_async_db)
-    ) -> User | None:
-        try:
-            query = await UserModel.find_by_colunm(db, "username", username)
-            user = query.scalar_one_or_none()
-            return user
-        except ValueError as e:
-            print(e)
-            return None
+    ) -> ServiceResult[User]:
+        query = await UserModel.find_by_colunm(db, "username", username)
+        user = query.scalar_one_or_none()
+        return user
 
-    def verify_password(self, plane_password: str, current_password: str) -> bool:
-        try:
-            return bcrypt.checkpw(
-                plane_password.encode("utf-8"),
-                current_password.encode("utf-8"),
-            )
-        except Exception:
-            return False
+    @handle_sync_errors
+    def verify_password(self, plane_password: str, current_password: str) -> ServiceResult[bool]:
+        return bcrypt.checkpw(
+            plane_password.encode("utf-8"),
+            current_password.encode("utf-8"),
+        )
 
     @injectable
-    async def authenticade_user(self, username: str, password: str) -> User | None:
-        try:
-            user = await self.get_user(username)
-            if user is None:
-                return None
-            same_passowords = self.verify_password(password, user.password)
-            if same_passowords is False:
-                return None
-            result = User(
-                uid=user.uid,
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                full_name=user.full_name,
-                role=user.role_ref,
-                otp_enabled=user.otp_enabled,
-            )
-            return result
-        except ValueError as e:
-            print(e)
-            return None
+    @handle_service_errors
+    async def authenticate_user(self, username: str, password: str) -> ServiceResult[User]:
+        user, error = await self.get_user(username)
+        if error:
+            return None, error
+        if user is None:
+            return None, UserNotFoundError()
 
-    async def create_user(self, db: AsyncSession, user_data: CreateUser) -> dict | None:
-        try:
+        is_valid, error = self.verify_password(password, user.password)
+        if error:
+            return None, error
+        if not is_valid:
+            return None, AuthenticationError()
 
-            user = await UserModel(
-                username=user_data.username,
-                password=bcrypt.hashpw(
-                    user_data.password.encode("utf-8"), bcrypt.gensalt()
-                ).decode("utf-8"),
-                email=user_data.email,
-                full_name=user_data.full_name,
-                role_ref=1,
-            ).save(db)
+        result = User(
+            uid=user.uid,
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            full_name=user.full_name,
+            role=user.role_ref,
+            otp_enabled=user.otp_enabled,
+        )
+        return result
 
-            return {
-                "uid": user.uid,
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "full_name": user.full_name,
-                "role": user.role_ref,
-            }
-        except ValueError as e:
-            print(e)
-            return None
+    @handle_service_errors
+    async def create_user(self, db: AsyncSession, user_data: CreateUser) -> ServiceResult[dict]:
+        user = await UserModel(
+            username=user_data.username,
+            password=bcrypt.hashpw(
+                user_data.password.encode("utf-8"), bcrypt.gensalt()
+            ).decode("utf-8"),
+            email=user_data.email,
+            full_name=user_data.full_name,
+            role_ref=1,
+        ).save(db)
 
-    def create_token(self, data: dict, expires_time: Union[float, None] = None) -> str:
+        return {
+            "uid": user.uid,
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role_ref,
+        }
+
+    @handle_sync_errors
+    def create_token(self, data: dict, expires_time: Union[float, None] = None) -> ServiceResult[str]:
         current_time = int(time.time())
         if expires_time is None:
             expires = current_time + (ACCESS_TOKEN_EXPIRE_MINUTES * 60)
@@ -167,9 +174,10 @@ class AuthService(Service):
         )
         return token_jwt
 
+    @handle_sync_errors
     def create_refresh_token(
         self, data: dict, expires_time: Union[float, None] = None
-    ) -> str:
+    ) -> ServiceResult[str]:
         current_time = int(time.time())
         if expires_time is None:
             expires = current_time + (REFRESH_TOKEN_EXPIRE_MINUTES * 60)
@@ -182,32 +190,34 @@ class AuthService(Service):
         )
         return token_jwt
 
-    def decode_token(self, token: str) -> TokenData | None:
-        try:
-            decode_cotent: dict = jwt.decode(
-                token, key=self.SECRET_KEY_JWT, algorithms=[self.USED_ALGORITHM]
-            )
-            exp_time = decode_cotent.get("exp", 0)
-            current_time = time.time()
-            is_valid_time = exp_time > current_time
-            if not is_valid_time:
-                return None
+    @handle_sync_errors
+    def decode_token(self, token: str) -> ServiceResult[TokenData]:
+        decode_cotent: dict = jwt.decode(
+            token, key=self.SECRET_KEY_JWT, algorithms=[self.USED_ALGORITHM]
+        )
+        exp_time = decode_cotent.get("exp", 0)
+        current_time = time.time()
+        is_valid_time = exp_time > current_time
+        if not is_valid_time:
+            raise TokenExpiredError()
 
-            return TokenData(**decode_cotent)
-        except Exception as e:
-            return None
+        return TokenData(**decode_cotent)
 
     @injectable
+    @handle_service_errors
     async def get_current_user(
         self,
         token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
         db: AsyncSession = Depends(get_async_db),
-    ) -> User | None:
-        payload = self.decode_token(token)
+    ) -> ServiceResult[User]:
+        payload, error = self.decode_token(token)
+        if error:
+            return None, error
         if not payload:
-            return None
+            return None, TokenError("Empty payload")
+
         query = await UserModel.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
         if not user:
-            return None
+            return None, UserNotFoundError()
         return user

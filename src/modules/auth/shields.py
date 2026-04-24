@@ -46,8 +46,8 @@ class AuthShieldApi(ResolverProvider):
                 if auth_source.lower().startswith("bearer ")
                 else auth_source
             )
-            payload = self.AuthService.decode_token(token)
-            if not payload:
+            payload, error = self.AuthService.decode_token(token)
+            if error or not payload:
                 raise HTTPException(status_code=401, detail="Invalid token")
 
             if payload.type != "access":
@@ -129,8 +129,8 @@ class AuthShieldApp(ResolverProvider):
                     headers={"Location": "/sign/in"},
                 )
 
-            payload = self.AuthService.decode_token(auth_header)
-            if not payload or payload.type != "access" or not payload.role:
+            payload, error = self.AuthService.decode_token(auth_header)
+            if error or not payload or payload.type != "access" or not payload.role:
                 raise HTTPException(
                     status_code=status.HTTP_302_FOUND,
                     detail="Invalid request",
