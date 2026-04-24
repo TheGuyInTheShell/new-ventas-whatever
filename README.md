@@ -2,103 +2,80 @@
 
 A complete, production-ready template for building modern web applications with FastAPI, including authentication, permission management, real-time WebSockets, and an administrative panel.
 
-## 🚀 Key Features
+### 🚀 Key Features
 
-### **Database and Modeling**
+### **Database and Performance**
 - **FastAPI**: Modern, high-performance web framework for building APIs with Python 3.11+
-- **SQLAlchemy**: Powerful ORM with support for both synchronous and asynchronous connections
-- **Alembic Migrations**: Database version control system
-- **PostgreSQL**: Relational database with full async/sync support
-- **Pydantic**: Data validation and automatic serialization
+- **SQLAlchemy 2.0**: Powerful ORM with support for both synchronous and asynchronous connections.
+- **Connection Pool Optimization**: Fine-tuned pooling (pre-ping, LIFO, size/overflow management) for high-concurrency environments.
+- **Database Warm-up**: Integrated `warm_up_async_db` logic to eliminate the initial request latency (~1.5s) on cold starts.
+- **Alembic Migrations**: Robust database version control system.
+- **PostgreSQL**: Relational database with full async/sync support.
+- **Pydantic 2.0**: High-speed data validation and automatic serialization.
+
+### **Frontend and Design**
+- **Tailwind CSS 4.0**: The latest utility-first CSS framework for lightning-fast styling.
+- **DaisyUI 5.0**: Premium UI component library for modern aesthetics.
+- **Alpine.js 3.x (Modular)**: Reactive frontend logic organized into maintainable JavaScript modules.
+- **HTMX 2.0**: High-power AJAX, WebSockets, and Server Sent Events directly in HTML.
+- **ApexCharts**: Interactive and responsive data visualizations.
+- **Lucide Icons**: Clean and consistent iconography.
+- **Rolldown**: Next-generation asset bundler for optimal performance.
+- **Jinja2 Templates**: Dynamic HTML generation with server-side rendering.
 
 ### **Authentication and Security**
-- **JWT (JSON Web Tokens)**: Token-based authentication system
-- **Refresh Tokens**: Support for session renewal using long-lived tokens (7 days by default)
-- **Two-Factor Authentication (2FA/OTP)**: Extra layer of security via Google Authenticator or similar apps
-- **OAuth2**: OAuth2 flow implementation with Password Bearer
-- **Roles and Permissions System**: Role-Based Access Control (RBAC)
-- **Automatic Permission Generation**: Permissions are automatically generated for each endpoint
-- **Verification Middleware**: JWT and role verification on every request
-
-### **Real-Time Communication**
-- **Socket.IO**: Bi-directional, event-based communication between client and server
-- **Asynchronous Events**: `ChannelEvent` system with dependency injection support (`DependsEvent`) and results
-- **WebSocket Support**: Full support for WebSocket connections
-- **Webhooks System**: Robust incoming and outgoing Webhooks system with automatic logging
-
-### **Extensions and AI** (usage example)
-- **AI Agents**: Integration with LangChain and LangGraph for complex logic "example"
-- **Agent Architecture**: Support for multi-agent graphs, custom tools, and memory "example"
-
-### **Administrative Panel**
-- **Admin Interface**: Web panel to manage API resources
-- **Tailwind CSS**: Utility-first CSS framework for custom designs
-- **Jinja2 Templates**: Template engine for generating dynamic HTML pages
-- **Menu Management**: Role-based dynamic menu system
+- **Shield Permission System**: Declarative security system that automatically scans routes and syncs permissions to the DB.
+- **JWT (JSON Web Tokens)**: Secure token-based authentication.
+- **Refresh Tokens**: Long-lived session management (7 days by default).
+- **Two-Factor Authentication (2FA/OTP)**: Native support for TOTP via Google Authenticator.
+- **Roles and Permissions (RBAC)**: Granular Role-Based Access Control.
+- **Verification Middleware**: Automatic JWT and role verification pipeline.
 
 ### **Modular Architecture**
-- **Module-based Structure**: Clear and scalable code organization
-- **Automatic Route Registration**: Routes are automatically registered following the folder structure
-- **Separation of Concerns**: Separate Controllers, Services, Models, and Schemas
+- **Business-First Modules**: Extensive library of modules for Finance, ERP, and Business management.
+- **Automatic Route Registration**: Zero-config API and Template route registration.
+- **Separation of Concerns**: Clean separation between Controllers, Services, Models, and Schemas.
 
 ### **Code Quality and Type Safety**
-- **PEP 561 Compliance**: The project includes `py.typed` markers for full editor and typing tool support
-- **Mypy Static Analysis**: Integrated `mypy` configuration to ensure type safety
-- **Standard Typing**: Use of `async_sessionmaker[AsyncSession]` and other modern Python types
-- **Prometheus**: Integrated application metrics and monitoring
-- **APScheduler**: Scheduling of asynchronous tasks and background jobs
-- **Redis**: Cache and session storage
-- **Nodemon**: Automatic reload during development
-- **Docker**: Full containerization with Docker and Docker Compose
+- **PEP 561 Compliance**: Full static typing support with `py.typed`.
+- **Mypy Static Analysis**: Integrated type checking configuration.
+- **Prometheus**: Real-time application metrics and monitoring.
+- **APScheduler**: Advanced scheduling for background jobs.
+- **Redis**: High-performance cache and session storage.
+- **Docker**: Full containerization with Docker and Docker Compose.
 
 ## 📁 Project Structure
 
 ```
-fastapi_template/
-├── core/                      # Application core
-│   ├── database/             # Database configuration
-│   │   ├── drivers/          # Database drivers
-│   │   │   └─── postgresql/   # PostgreSQL driver
-│   ├── py.typed              # PEP 561 typing marker
-│   └── utils/                # Database utilities (pagination, etc.)
-│   ├── middlewares/          # Custom middlewares
-│   │   ├── jwt_verify.py         # JWT token verification
-│   │   └── role_verify.py        # Role-based permission verification
-│   ├── jobs/                 # Tasks scheduled with APScheduler
-│   ├── routes/               # Main routes configuration
-│   ├── services/             # Shared services
-│   ├── schemas/              # Shared Pydantic schemas
-│   ├── cache/                # Cache system with Redis
-│   ├── event/                # Custom event system
-│   └── utils/                # General utilities
+.
+├── core/                      # Application core (Shared Logic)
+│   ├── database/             # Database configuration & drivers
+│   ├── security/             # Security & Shield permission system
+│   ├── lib/                  # Auto-registration & core utilities
+│   ├── middleware/           # FastAPI Middlewares
+│   └── events/               # ChannelEvent async system
 │
-├── app/                       # Main application directory
-│   ├── modules/               # Functional modules
-│   │   ├── auth/             # Authentication (sign-in, sign-up)
-│   │   ├── users/            # User management
-│   │   ├── roles/            # Role management
-│   │   ├── permissions/      # Permission management
-│   │   ├── tokens/           # API token management
-│   │   └── menu/             # Dynamic menu system
-│   │
-│   ├── sockets/               # WebSockets and Socket.IO
-│   │   ├── __init__.py       # Socket.IO event initialization
-│   │   └── live/             # Real-time events
-│   │
-│   └── public/                # Static public files
+├── src/                       # Source code
+│   ├── api/                  # API Controllers (FastAPI Routers)
+│   ├── app/                  # Web Frontend (Jinja2 + Alpine.js + HTMX)
+│   │   ├── templates/        # Page controllers
+│   │   ├── partials/         # Component controllers
+│   │   └── web/              # Static files & bundler output
+│   ├── modules/              # Domain-driven modules
+│   │   ├── auth/             # Authentication logic
+│   │   ├── balances/         # Finance: Balances management
+│   │   ├── invoices/         # Finance: Invoice management
+│   │   └── ...               # 20+ additional modules
+│   └── sockets/              # Real-time event handlers
 │
-├── admin/                     # Administrative panel
-│   ├── src/                  # Jinja2 templates
-│   ├── static/               # Static files (CSS, JS, images)
-│   ├── templates/            # Template configuration
-│   └── global/               # Global admin configuration
-├── logs/                      # Log files
+├── public/                    # Static assets (Favicon, etc.)
+├── plugins/                   # Extensible plugin system
 ├── main.py                    # Application entry point
 ├── requirements.txt           # Python dependencies
+├── package.json               # Frontend dependencies & scripts
+├── rolldown.config.mjs        # Asset bundling configuration
 ├── Dockerfile                 # Docker configuration
-├── docker-compose.yaml        # Service orchestration
-├── .env.example              # Environment variables example
-└── ER_db_diagram.dbml        # Database diagram
+└── docker-compose.yaml        # Service orchestration
 ```
 
 ## 🛠️ CLI - Module Generator
@@ -324,166 +301,54 @@ The configuration is in `mypy.ini`, which automatically excludes admin templates
 
 ## 📚 Modules and Features
 
-### 1. **Authentication Module** (`modules/auth/`)
+The system is organized into specialized modules, following a domain-driven design that separates core infrastructure from business logic.
 
-Manages user registration and login.
+### 1. **Core Infrastructure Modules**
 
-**Endpoints:**
-- `POST /auth/sign-up` - Register new user
-- `POST /auth/sign-in` - Login and obtain JWT token
-- `GET /auth/` - Verify token
+#### **Authentication & Security** (`src/modules/auth/`)
+- **Advanced JWT**: Secure token generation with custom claims.
+- **Refresh Tokens**: Automated session renewal via `/auth/refresh`.
+- **2FA/OTP**: native Google Authenticator support (QR generation and verification).
+- **Shield Guard**: Middleware-level verification of roles and permissions.
 
-**Features:**
-- Password encryption with bcrypt
-- JWT token generation with configurable expiration
-- Credential validation
-- Duplicate user prevention
-- **Refresh Tokens**: `/auth/refresh` endpoint to obtain new access tokens without re-authenticating
-- **2FA/OTP**: Support for two-factor authentication via:
-    - `GET /auth/2fa/setup` - Generates secret and QR code
-    - `POST /auth/2fa/enable` - Enables 2FA for the user
-    - `POST /auth/verify-otp` - Verifies OTP code during login
-    - `POST /auth/2fa/disable` - Disables 2FA
+#### **User & Role Management** (`src/modules/users/`, `src/modules/roles/`)
+- **Hierarchical RBAC**: Flexible role inheritance and permission assignment.
+- **User Profiles**: Full CRUD with automated pagination and filtering.
 
-### 2. **Users Module** (`modules/users/`)
+#### **Dynamic Menus** (`src/modules/menu/`)
+- **Role-Based Navigation**: Menus are filtered dynamically based on user permissions.
+- **Hierarchical Structure**: Supports nested menu items with icons and custom ordering.
 
-Full system user management.
+### 2. **Business & Finance Modules**
 
-**Endpoints:**
-- `GET /users/me` - Get authenticated user data
-- `GET /users/` - List all users (with pagination)
-- `GET /users/id/{id}` - Get user by ID
-- `PUT /users/id/{id}` - Update user
-- `DELETE /users/id/{id}` - Delete user
+#### **Balances & Transactions** (`src/modules/balances/`, `src/modules/transactions/`)
+- **Global Balances**: Real-time tracking of currency and asset balances.
+- **Transaction Ledger**: Atomic transaction processing with full audit trails.
+- **Buffer System**: `transactions_buffer` for high-frequency transaction ingestion.
 
-**Features:**
-- Automatic pagination
-- Filtering and searching
-- Role relationship
-- Data validation with Pydantic
+#### **Invoicing & Entities** (`src/modules/invoices/`, `src/modules/business_entities/`)
+- **Invoicing Engine**: Generate and manage invoices linked to business entities.
+- **Entity Management**: Manage Companies (`business_entities`) and Individuals (`persons`).
+- **Entity Groups**: Categorize and group entities for bulk processing.
 
-### 3. **Roles Module** (`modules/roles/`)
+#### **Comparison & Values** (`src/modules/values/`, `src/modules/comparison_values/`)
+- **Dynamic Metrics**: Track and compare values across different timeframes or entities.
+- **Historical Snapshots**: Automated snapshotting for trend analysis.
 
-Role system for access control.
+### 3. **Real-Time & Communication**
 
-**Endpoints:**
-- `GET /roles/` - List roles
-- `GET /roles/id/{id}` - Get role by ID
-- `POST /roles/` - Create new role
-- `PUT /roles/id/{id}` - Update role
-- `DELETE /roles/id/{id}` - Delete role
+#### **WebSockets (Socket.IO)** (`src/sockets/`)
+- **Event-Driven**: Bi-directional communication with custom namespaces and rooms.
+- **FastAPI Integration**: Seamless integration with the main application lifecycle.
 
-**Features:**
-- Hierarchical roles
-- Permission assignment to roles
-- Many-to-many relationship with permissions
+#### **Webhooks System** (`src/webhooks/`)
+- **Incoming/Outgoing**: Robust system for handling external integrations.
+- **ChannelEvent Hooks**: Decoupled processing via the internal event system.
 
-### 4. **Permissions Module** (`modules/permissions/`)
+### 4. **AI & Extensions** (`src/app/ext/`)
+- **AI Agents**: Multi-agent collaboration using LangChain and LangGraph.
+- **Custom Tools**: Domain-specific tools for agents to interact with the finance core.
 
-Granular permission management.
-
-**Endpoints:**
-- `GET /permissions/` - List permissions
-- `GET /permissions/id/{id}` - Get permission by ID
-- `POST /permissions/` - Create permission
-- `PUT /permissions/id/{id}` - Update permission
-- `DELETE /permissions/id/{id}` - Delete permission
-
-**Features:**
-- **Automatic generation**: Permissions are automatically created at application startup based on registered routes
-- Access control per endpoint
-- Flexible assignment to roles
-
-### 5. **API Tokens Module** (`modules/tokens/`)
-
-API token management for integrations.
-
-**Endpoints:**
-- `GET /tokens/` - List tokens
-- `GET /tokens/id/{id}` - Get token by ID
-- `POST /tokens/` - Create new token
-- `PUT /tokens/id/{id}` - Update token
-- `DELETE /tokens/id/{id}` - Delete token
-
-### 6. **Menus Module** (`modules/menu/`)
-
-Dynamic role-based menu system.
-
-**Endpoints:**
-- `GET /menu/` - List menus
-- `GET /menu/id/{id}` - Get menu by ID
-- `POST /menu/` - Create menu
-- `PUT /menu/id/{id}` - Update menu
-- `DELETE /menu/id/{id}` - Delete menu
-
-**Features:**
-- Hierarchical menus (parents and children)
-- Role assignment
-- Custom icons and ordering
-
-### 7. **WebSockets and Socket.IO** (`sockets/`)
-
-Real-time communication.
-
-**Features:**
-- Custom events
-- Rooms and namespaces
-- Connection authentication
-- Message broadcast
-- FastAPI integration
-
-**Usage Example:**
-```python
-# Server (sockets/live/events.py)
-@sio.on('message')
-async def handle_message(sid, data):
-    await sio.emit('response', {'data': 'received'}, room=sid)
-```
-
-### 8. **Cache System** (`core/cache/`)
-
-Redis-based cache to improve performance.
-
-**Features:**
-- Caching of frequent queries
-- Configurable TTL
-- Cache invalidation
-
-### 9. **Scheduled Tasks** (`core/jobs/`)
-
-Background task execution with APScheduler.
-
-**Features:**
-- Cron tasks
-- Interval tasks
-- One-time tasks
-- Lifecycle management
-
-### 10. **Webhooks System** (`app/webhooks/`)
-
-Centralized system for handling incoming and outgoing webhooks.
-
-**Structure:**
-- `in/`: Controllers for receiving webhooks from external services.
-- `out/`: Subscribers listening for internal events and sending data to external services.
-
-**Features:**
-- **Auto-discovery**: Controllers and subscribers are automatically loaded.
-- **Integrated ChannelEvent**: Full decoupling via events.
-- **Validation**: Pydantic used to validate incoming payloads.
-
-### 11. **Extensions and AI** (`app/ext/`)
-
-Folder dedicated to complex business logic and AI agents.
-
-**Structure (`app/ext/ia/`):**
-- `agents/`: Agent definitions (Researcher, Writer, etc.)
-- `graphs/`: Workflows with LangGraph (StateGraph, MultiAgentGraph)
-- `tools/`: Custom tools for agents
-- `chains/`: LangChain processing chains
-
-**Usage Example (LangGraph):**
-The system includes a multi-agent graph example where a researcher and a writer collaborate to generate content.
 
 ## 🔧 Architecture and Patterns
 
@@ -560,35 +425,25 @@ jwt_key = secrets.token_hex(32)
 print(jwt_key)
 ```
 
-## 📊 Database
+## 📊 Database and Performance
 
-### Main Models
+### **Connection Optimization**
+The project implements a high-performance database connection strategy:
+- **Pool Warm-up**: On application startup, a `warm_up_async_db` task is executed to establish initial connections, preventing the overhead on the first user request.
+- **Optimized Parameters**:
+    - `pool_size=10` / `max_overflow=20`
+    - `pool_pre_ping=True` (resilience against stale connections)
+    - `pool_use_lifo=True` (improves cache hit ratio)
+    - `pool_recycle=1800` (prevents DB-side connection timeouts)
 
-- **User**: System users
-- **Role**: User roles
-- **Permission**: Granular permissions
-- **Menu**: Menu elements
-- **MenuRole**: Menu-role relationship
-- **ApiToken**: API tokens
+### **Main Models**
+- **Finance Core**: `Balance`, `Transaction`, `Invoice`, `BusinessEntity`, `Person`.
+- **Identity & Access**: `User`, `Role`, `Permission`, `Menu`.
+- **System**: `Options` (Dynamic configuration), `ApiToken`.
 
-### Migrations
+### **Migrations**
+The project uses **Alembic** for schema versioning. Tables are automatically synchronized during the initial setup via the `Base.metadata.create_all` hook, but Alembic is recommended for production updates.
 
-The project creates tables automatically upon startup:
-
-```python
-# In main.py
-BaseSync.metadata.create_all(engineSync)
-BasicBaseAsync.metadata.create_all(engineSync)
-```
-
-For more advanced migrations, consider using **Alembic**:
-
-```bash
-pip install alembic
-alembic init alembic
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
-```
 
 ## 🎨 Administrative Panel
 
