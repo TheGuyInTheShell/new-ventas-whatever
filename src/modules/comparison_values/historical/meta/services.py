@@ -1,14 +1,18 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from .models import MetaComparisonValuesHistorical
 
 class ComparisonValuesHistoricalMetaService(Service):
+    @injectable
     async def create_meta_comparison_values_historical(
         self,
-        db: AsyncSession,
         key: str,
         value: str,
         ref_comparison_value_historical: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> MetaComparisonValuesHistorical:
         """
         Create a new meta comparison values historical in the database.

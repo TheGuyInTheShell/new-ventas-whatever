@@ -1,13 +1,17 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from .models import MetaTransaction
 from .schemas import RQMetaTransaction
 
 class TransactionsMetaService(Service):
+    @injectable
     async def create_meta_transaction(
         self,
-        db: AsyncSession,
         meta: RQMetaTransaction,
+        db: AsyncSession = Depends(get_async_db),
     ) -> MetaTransaction:
         """
         Create a new meta transaction in the database.

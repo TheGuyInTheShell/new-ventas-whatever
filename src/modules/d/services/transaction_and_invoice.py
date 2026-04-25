@@ -1,3 +1,6 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from fastapi import HTTPException
@@ -20,7 +23,8 @@ from ...balances_business_entities.models import BalanceBusinessEntity
 from ..schemas.transaction_and_invoice import InvoiceSales
 
 class DTransactionAndInvoiceService(Service):
-    async def create_transaction_and_invoice_service(self, db: AsyncSession, data: InvoiceSales) -> dict:
+    @injectable
+    async def create_transaction_and_invoice_service(self, data: InvoiceSales, db: AsyncSession = Depends(get_async_db)) -> dict:
         """
         Full sales flow: resolve balances -> create historical comparison -> create transaction -> create invoice -> link all.
         """
@@ -48,9 +52,9 @@ class DTransactionAndInvoiceService(Service):
                 balance_to_id = tx_data.ref_balance_to
 
                 if not balance_from_id:
-                    balance_from_id = await self._resolve_balance(db, tx_data.ref_value_from, data.business_entity_id)
+                    balance_from_id = await self._resolve_balance(tx_data.ref_value_from, data.business_entity_id)
                 if not balance_to_id:
-                    balance_to_id = await self._resolve_balance(db, tx_data.ref_value_to, data.business_entity_id)
+                    balance_to_id = await self._resolve_balance(tx_data.ref_value_to, data.business_entity_id)
 
                 # Resolve/Create Historical Comparison if needed
                 historical_id = tx_data.ref_comparation_values_historical
@@ -97,7 +101,8 @@ class DTransactionAndInvoiceService(Service):
             await db.rollback()
             raise HTTPException(status_code=400, detail=str(e))
 
-    async def _resolve_balance(self, db: AsyncSession, value_id: int, entity_id: int) -> int:
+    @injectable
+    async def _resolve_balance(self, value_id: int, entity_id: int, db: AsyncSession = Depends(get_async_db)) -> int:
         """Helper to find a balance for a value and business entity."""
         stmt = select(Balance.id).join(BalanceBusinessEntity).where(
             Balance.ref_value == value_id,
@@ -118,7 +123,8 @@ class DTransactionAndInvoiceService(Service):
             
         return balance_id
 
-    async def adjust_transaction_and_invoice_service(self, db: AsyncSession, data: RQAdjustBalance) -> dict:
+    @injectable
+    async def adjust_transaction_and_invoice_service(self, data: RQAdjustBalance, db: AsyncSession = Depends(get_async_db)) -> dict:
         """
         Adjust the stock (quantity) of an inventory Balance.
         If 'is_adjustment' is true, generate an Invoice and pseudo-Transaction for history.

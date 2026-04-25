@@ -1,13 +1,17 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from .models import TransactionBuffer
 from .schemas import RQTransactionBuffer
 
 class TransactionsBufferService(Service):
+    @injectable
     async def create_transaction_buffer(
         self,
-        db: AsyncSession,
         data: RQTransactionBuffer,
+        db: AsyncSession = Depends(get_async_db),
     ) -> TransactionBuffer:
         obj = TransactionBuffer(
             quantity=data.quantity,

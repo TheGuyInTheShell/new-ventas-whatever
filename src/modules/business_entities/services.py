@@ -1,13 +1,17 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from .models import BusinessEntity
 from .schemas import RQBusinessEntity
 
 class BusinessEntitiesService(Service):
+    @injectable
     async def create_business_entity(
         self,
-        db: AsyncSession,
-        entity_data: RQBusinessEntity
+        entity_data: RQBusinessEntity,
+        db: AsyncSession = Depends(get_async_db)
     ) -> BusinessEntity:
         entity = BusinessEntity(
             name=entity_data.name,

@@ -43,7 +43,7 @@ class OptionsController(Controller):
         description="Store a new platform option (e.g., main_fiat_currency)",
     )
     async def create_option(
-        self, payload: CreateOption, db: AsyncSession = Depends(get_async_db)
+        self, payload: CreateOption
     ):
         return await self.OptionsService.create_options(
             payload.name, payload.context, payload.value

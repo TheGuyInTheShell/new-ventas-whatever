@@ -1,3 +1,6 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import TYPE_CHECKING, List, Tuple
 from core.lib.register.service import Service
@@ -13,10 +16,11 @@ if TYPE_CHECKING:
 
 
 class InvoicesService(Service):
+    @injectable
     async def create_invoice(
         self,
-        db: AsyncSession,
         invoice_data: RQInvoice,
+        db: AsyncSession = Depends(get_async_db),
     ) -> Invoice:
         invoice = Invoice(
             context=invoice_data.context,
@@ -28,10 +32,11 @@ class InvoicesService(Service):
         await invoice.save(db)
         return invoice
 
+    @injectable
     async def process_invoice_bulk(
         self,
-        db: AsyncSession,
         data: "RQInvoiceBulk",
+        db: AsyncSession = Depends(get_async_db),
     ) -> RSInvoiceBulk:
         """
         Atomic operation:
@@ -112,10 +117,11 @@ class InvoicesService(Service):
             linked_business_entity_count=len(data.business_entity_ids),
         )
 
+    @injectable
     async def process_invoice_full_transaction_bulk(
         self,
-        db: AsyncSession,
         data: "RQInvoiceFullTransactionBulk",
+        db: AsyncSession = Depends(get_async_db),
     ) -> RSInvoiceBulk:
         """
         Atomic operation:

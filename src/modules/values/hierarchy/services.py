@@ -1,4 +1,7 @@
 from typing import List, Tuple
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -7,10 +10,11 @@ from .models import ValuesHierarchy
 from .schemas import RQValuesHierarchy
 
 class ValuesHierarchyService(Service):
+    @injectable
     async def create_values_hierarchy(
         self,
-        db: AsyncSession,
         data: RQValuesHierarchy,
+        db: AsyncSession = Depends(get_async_db),
     ) -> ValuesHierarchy:
         """
         Create a new parent-child hierarchy relationship between two values.
@@ -24,10 +28,11 @@ class ValuesHierarchyService(Service):
         await db.refresh(hierarchy)
         return hierarchy
 
+    @injectable
     async def get_children(
         self,
-        db: AsyncSession,
         value_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[ValuesHierarchy]:
         """
         Get all direct children of a value (where value is the top/parent).
@@ -40,10 +45,11 @@ class ValuesHierarchyService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_parents(
         self,
-        db: AsyncSession,
         value_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[ValuesHierarchy]:
         """
         Get all direct parents of a value (where value is the bottom/child).
@@ -56,13 +62,14 @@ class ValuesHierarchyService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_hierarchy_paginated(
         self,
-        db: AsyncSession,
         page: int = 1,
         page_size: int = 10,
         order: str = "asc",
         status: str = "exists",
+        db: AsyncSession = Depends(get_async_db),
     ) -> Tuple[List[ValuesHierarchy], int]:
         """
         Get paginated list of hierarchy relationships with total count.

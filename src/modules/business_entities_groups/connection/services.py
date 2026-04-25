@@ -1,4 +1,7 @@
 from typing import List, Tuple
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from core.lib.register.service import Service
@@ -7,10 +10,11 @@ from .models import BusinessEntitiesGroupConnection
 from .schemas import RQBusinessEntitiesGroupConnection
 
 class BusinessEntitiesGroupConnectionService(Service):
+    @injectable
     async def create_connection(
         self,
-        db: AsyncSession,
         data: RQBusinessEntitiesGroupConnection,
+        db: AsyncSession = Depends(get_async_db),
     ) -> BusinessEntitiesGroupConnection:
         """
         Create a new connection between a business entity and a group.
@@ -24,10 +28,11 @@ class BusinessEntitiesGroupConnectionService(Service):
         await db.refresh(connection)
         return connection
 
+    @injectable
     async def get_connections_by_group(
         self,
-        db: AsyncSession,
         group_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[BusinessEntitiesGroupConnection]:
         """
         Get all connections for a specific group.
@@ -40,10 +45,11 @@ class BusinessEntitiesGroupConnectionService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_connections_by_entity(
         self,
-        db: AsyncSession,
         entity_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[BusinessEntitiesGroupConnection]:
         """
         Get all connections for a specific business entity.
@@ -56,13 +62,14 @@ class BusinessEntitiesGroupConnectionService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_connections_paginated(
         self,
-        db: AsyncSession,
         page: int = 1,
         page_size: int = 10,
         order: str = "asc",
         status: str = "exists",
+        db: AsyncSession = Depends(get_async_db),
     ) -> Tuple[List[BusinessEntitiesGroupConnection], int]:
         """
         Get paginated list of connections with total count.

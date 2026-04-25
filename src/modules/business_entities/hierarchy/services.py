@@ -1,4 +1,7 @@
 from typing import List, Tuple
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from core.lib.register.service import Service
@@ -7,10 +10,11 @@ from .models import BusinessEntitiesHierarchy
 from .schemas import RQBusinessEntitiesHierarchy
 
 class BusinessEntitiesHierarchyService(Service):
+    @injectable
     async def create_entity_hierarchy(
         self,
-        db: AsyncSession,
         data: RQBusinessEntitiesHierarchy,
+        db: AsyncSession = Depends(get_async_db),
     ) -> BusinessEntitiesHierarchy:
         """
         Create a new parent-child hierarchy relationship between two business entities.
@@ -24,10 +28,11 @@ class BusinessEntitiesHierarchyService(Service):
         await db.refresh(hierarchy)
         return hierarchy
 
+    @injectable
     async def get_children(
         self,
-        db: AsyncSession,
         entity_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[BusinessEntitiesHierarchy]:
         """
         Get all direct children of an entity (where entity is the top/parent).
@@ -40,10 +45,11 @@ class BusinessEntitiesHierarchyService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_parents(
         self,
-        db: AsyncSession,
         entity_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[BusinessEntitiesHierarchy]:
         """
         Get all direct parents of an entity (where entity is the bottom/child).
@@ -56,13 +62,14 @@ class BusinessEntitiesHierarchyService(Service):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    @injectable
     async def get_hierarchy_paginated(
         self,
-        db: AsyncSession,
         page: int = 1,
         page_size: int = 10,
         order: str = "asc",
         status: str = "exists",
+        db: AsyncSession = Depends(get_async_db),
     ) -> Tuple[List[BusinessEntitiesHierarchy], int]:
         """
         Get paginated list of hierarchy relationships with total count.

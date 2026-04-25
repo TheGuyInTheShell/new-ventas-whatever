@@ -64,7 +64,7 @@ class ComparisonValuesService(Service):
 
         # Check if price (quantity_to) has changed
         if float(comparison.quantity_to) != float(data.quantity_to):
-            await self.create_historical_snapshot(comparison, db=db)
+            await self.create_historical_snapshot(comparison)
 
         update_data = {
             "quantity_from": data.quantity_from,
@@ -175,7 +175,7 @@ class ComparisonValuesService(Service):
         to_value = await Value.find_one(db, to_value_id)
 
         # Find the rate
-        rate_result = await self.find_comparison_rate(from_value_id, to_value_id, db=db)
+        rate_result = await self.find_comparison_rate(from_value_id, to_value_id)
 
         if not rate_result:
             return None

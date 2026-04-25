@@ -1,13 +1,17 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from .models import MetaPerson
 from .schemas import RQMetaPerson
 
 class PersonsMetaService(Service):
+    @injectable
     async def create_meta_person(
         self,
-        db: AsyncSession,
         meta: RQMetaPerson,
+        db: AsyncSession = Depends(get_async_db),
     ) -> MetaPerson:
         """
         Create a new meta person in the database.

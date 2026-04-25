@@ -1,3 +1,6 @@
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import TYPE_CHECKING, List
@@ -17,10 +20,11 @@ if TYPE_CHECKING:
 class TransactionsService(Service):
     ComparisonValuesService: ComparisonValuesService
 
+    @injectable
     async def create_transaction(
         self,
-        db: AsyncSession,
-        transaction_data: RQTransaction
+        transaction_data: RQTransaction,
+        db: AsyncSession = Depends(get_async_db),
     ) -> Transaction:
         transaction = Transaction(
             quantity=transaction_data.quantity,
@@ -40,10 +44,11 @@ class TransactionsService(Service):
         await db.refresh(transaction)
         return transaction
 
+    @injectable
     async def process_sale(
         self,
-        db: AsyncSession,
-        sale_data: "RQSale"
+        sale_data: "RQSale",
+        db: AsyncSession = Depends(get_async_db),
     ) -> List[Transaction]:
         """
         Process a sale:
@@ -67,7 +72,7 @@ class TransactionsService(Service):
                 raise ValueError(f"No price comparison found for value {item.value_id} to currency {sale_data.currency_id}")
                 
             # Create snapshot
-            historical = await self.ComparisonValuesService.create_historical_snapshot(db, comparison)
+            historical = await self.ComparisonValuesService.create_historical_snapshot(comparison)
             
             # Create Transaction
             transaction = Transaction(

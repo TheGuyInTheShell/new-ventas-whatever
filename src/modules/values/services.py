@@ -73,7 +73,7 @@ class ValuesService(Service):
         created_values = []
 
         for value_data in values_data:
-            value = await self.create_value_with_meta(value_data, db=db)
+            value = await self.create_value_with_meta(value_data)
             created_values.append(value)
 
         return created_values

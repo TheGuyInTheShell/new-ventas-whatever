@@ -1,4 +1,4 @@
-﻿from fastapi_injectable import injectable
+from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
@@ -141,9 +141,10 @@ class AuthService(Service):
         )
         return user
 
+    @injectable
     @handle_service_errors
     async def create_user(
-        self, db: AsyncSession, user_data: CreateUser
+        self, user_data: CreateUser, db: AsyncSession = Depends(get_async_db)
     ) -> ServiceResult[dict]:
         user = await UserModel(
             username=user_data.username,

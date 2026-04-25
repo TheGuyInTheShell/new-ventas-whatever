@@ -1,8 +1,10 @@
+from typing import List
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
-from typing import List
-
 from core.lib.register.service import Service
 
 from ..roles.models import Role
@@ -11,9 +13,12 @@ from .models import RolePermission
 from .schemas import RSPermissionDetail, RSRolePermissions
 
 class RolePermissionsService(Service):
+    @injectable
     async def assign_permission_to_role(
         self,
-        db: AsyncSession, role_id: int, permission_id: int
+        role_id: int,
+        permission_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> Role:
         """
         Assigns a permission to a role via the RolePermission pivot table.
@@ -41,9 +46,12 @@ class RolePermissionsService(Service):
 
         return role
 
+    @injectable
     async def remove_permission_from_role(
         self,
-        db: AsyncSession, role_id: int, permission_id: int
+        role_id: int,
+        permission_id: int,
+        db: AsyncSession = Depends(get_async_db),
     ) -> Role:
         """
         Removes a permission from a role by deleting the entry from the RolePermission pivot table.
@@ -64,7 +72,8 @@ class RolePermissionsService(Service):
 
         return role
 
-    async def get_role_permissions(self, db: AsyncSession, role_id: int) -> RSRolePermissions:
+    @injectable
+    async def get_role_permissions(self, role_id: int, db: AsyncSession = Depends(get_async_db)) -> RSRolePermissions:
         """
         Gets all permissions for a role, returning full Permission objects.
         """

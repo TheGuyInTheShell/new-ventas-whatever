@@ -1,4 +1,7 @@
 from typing import List, Tuple, Optional
+from fastapi import Depends
+from fastapi_injectable import injectable
+from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -8,10 +11,11 @@ from .models import BusinessEntitiesGroup
 from .schemas import RQBusinessEntitiesGroup
 
 class BusinessEntitiesGroupsService(Service):
+    @injectable
     async def create_business_entities_group(
         self,
-        db: AsyncSession,
         group_data: RQBusinessEntitiesGroup,
+        db: AsyncSession = Depends(get_async_db),
     ) -> BusinessEntitiesGroup:
         """
         Create a new business entities group.
@@ -25,11 +29,12 @@ class BusinessEntitiesGroupsService(Service):
         await db.refresh(group)
         return group
 
+    @injectable
     async def update_business_entities_group(
         self,
-        db: AsyncSession,
         group_id: int | str,
         group_data: RQBusinessEntitiesGroup,
+        db: AsyncSession = Depends(get_async_db),
     ) -> BusinessEntitiesGroup:
         """
         Update a business entities group.
@@ -41,13 +46,14 @@ class BusinessEntitiesGroupsService(Service):
         result = await BusinessEntitiesGroup.update(db, group_id, update_data)
         return result
 
+    @injectable
     async def get_groups_paginated(
         self,
-        db: AsyncSession,
         page: int = 1,
         page_size: int = 10,
         order: str = "asc",
         status: str = "exists",
+        db: AsyncSession = Depends(get_async_db),
     ) -> Tuple[List[BusinessEntitiesGroup], int]:
         """
         Get paginated list of business entities groups with total count.
