@@ -39,7 +39,7 @@ class TestPermissionsServiceUnitaries:
         
         # We need to mock the permission's own save method since it calls BaseModel save
         with patch("src.modules.permissions.models.Permission.save", new_callable=AsyncMock) as mock_save:
-            result = await permissions_service.create_permission(mock_db, create_dto)
+            result = await permissions_service.create_permission(create_dto, db=mock_db)
             
             assert result.name == "test_perm"
             assert result.action == "read"
@@ -93,7 +93,9 @@ class TestPermissionsServiceUnitaries:
         
         mock_db.execute.return_value = mock_result
         
-        result = await permissions_service.get_permission("test", "global", "read", "API", db=mock_db)
+        result = await permissions_service.get_permission(
+            name="test", context="global", action="read", type_str="API", db=mock_db
+        )
         
         assert result is not None
         assert result.name == "test"
@@ -125,7 +127,7 @@ class TestPermissionsServiceIntegration:
         
         meta_input = {"key1": "value1", "key2": {"nested": "value"}}
         
-        result = await permissions_service._sync_permission_metadata(mock_db, 1, meta_input)
+        result = await permissions_service._sync_permission_metadata(1, meta_input, db=mock_db)
         
         assert result == meta_input
         # Verify db.add was called twice (for key1 and key2)
@@ -164,7 +166,7 @@ class TestPermissionsServiceIntegration:
                 with patch("src.modules.permissions.models.Permission.uid", new_callable=PropertyMock) as mock_uid:
                     mock_id.return_value = 1
                     mock_uid.return_value = "uid-1234"
-                    results, success, errors = await permissions_service.create_bulk_permissions_with_roles(mock_db, bulk_data)
+                    results, success, errors = await permissions_service.create_bulk_permissions_with_roles(bulk_data, db=mock_db)
                     
                     assert success == 1
                     assert errors == 0
@@ -192,10 +194,6 @@ class TestPermissionsServiceIntegration:
             ]
         }
         
-        # Create a fake sessionAsync callable that returns our mock_db
-        def session_maker():
-            return mock_db
-            
         # Mock the queries executed by _process_shield_permissions
         # 1. Option query
         # 2. Existing perms query
@@ -222,7 +220,7 @@ class TestPermissionsServiceIntegration:
         
         with patch("src.modules.permissions.models.Permission.id", new_callable=PropertyMock) as mock_id:
             mock_id.return_value = 1
-            await permissions_service._process_shield_permissions(registry_dict, session_maker)
+            await permissions_service._process_shield_permissions(registry_dict, db=mock_db)
         
         # Verify db logic was traversed correctly
         assert mock_db.commit.call_count == 1
