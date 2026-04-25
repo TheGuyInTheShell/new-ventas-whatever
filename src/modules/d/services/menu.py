@@ -103,7 +103,9 @@ class MenuService(Service):
         return filtered_result
 
     async def get_menu_component(self, request: Request) -> str:
-        user = await self.UsersService.get_current_user_app(request)
+        user, error = await self.UsersService.get_current_user_app(request)
+        if error or not user:
+            return ""
 
         role_id = int(user.role)
 

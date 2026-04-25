@@ -26,8 +26,8 @@ class MenuPartial(Partial):
         description="Permite renderizar dinámicamente la barra de navegación del menú",
     )
     async def get_menu_partial(self, request: Request) -> HTMLResponse:
-        user = await self.UsersService.get_current_user_app(request)
-        if not user:
+        user, error = await self.UsersService.get_current_user_app(request)
+        if error or not user:
             return HTMLResponse(content="", status_code=200)
 
         role_id = int(user.role)

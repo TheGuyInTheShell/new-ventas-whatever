@@ -38,12 +38,12 @@ class SysPartials(Partial):
         """
         Intersepta el formulario de creación del primer usuario y procede con la inicialización.
         """
-        try:
-            # Crear el usuario owner usando el servicio inyectado
-            await self.UsersService.create_owner(
-                username=username, password=password, email=email, full_name=full_name
-            )
+        # Crear el usuario owner usando el servicio inyectado
+        user, error = await self.UsersService.create_owner(
+            username=username, password=password, email=email, full_name=full_name
+        )
 
+        if not error:
             # Fragmento de éxito con estética premium
             response = to_xml(
                 Div(
@@ -89,8 +89,7 @@ class SysPartials(Partial):
                     id="init-success",
                 )
             )
-        except Exception as e:
-            print(e)
+        else:
             # Manejo de error con fragmento HTML
             response = to_xml(
                 Div(
@@ -100,7 +99,7 @@ class SysPartials(Partial):
                         cls="text-xl font-black mb-1 uppercase tracking-wider",
                     ),
                     P(
-                        str(e),
+                        error.message,
                         cls="text-sm font-medium opacity-90 bg-black/20 p-4 rounded-xl border border-white/10 mt-2",
                     ),
                     cls="error-msg text-white rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center w-full bg-gradient-to-br from-red-600 to-rose-700 border border-red-400/50 animate-shake",

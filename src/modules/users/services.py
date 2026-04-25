@@ -1,5 +1,5 @@
 from fastapi import Request
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
 from core.lib.decorators.services import Services
@@ -12,6 +12,8 @@ from .schemas import User as UserSchema
 from ..auth.services import AuthService
 from ..roles.services import RolesService
 from ..options.services import OptionsService
+from ..auth.exceptions import TokenError, AuthError, UserNotFoundError
+from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 
 
 @Services(AuthService, RolesService, OptionsService)
@@ -21,30 +23,29 @@ class UsersService(Service):
     OptionsService: OptionsService
 
     @injectable
+    @handle_service_errors
     async def get_current_user_app(
         self,
         request: Request,
         db: AsyncSession = Depends(get_async_db),
-    ) -> UserSchema | None:
+    ) -> ServiceResult[UserSchema]:
         """
         Obtiene el usuario actual desde el token JWT de la request.
         """
-        # Decodificar el token JWT
-
         auth_header = request.cookies.get("access_token")
         if not auth_header:
             return None
 
-        payload = self.AuthService.decode_token(auth_header)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Token inválido")
+        payload, error = self.AuthService.decode_token(auth_header)
+        if error or not payload:
+            return None, TokenError("Token inválido")
 
         # Buscar el usuario en la base de datos
         query = await UserModel.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
 
         if not user:
-            return None
+            return None, UserNotFoundError()
 
         # Retornar el schema Pydantic con los datos del usuario
         return UserSchema(
@@ -58,25 +59,26 @@ class UsersService(Service):
         )
 
     @injectable
+    @handle_service_errors
     async def get_current_user_api(
         self,
         token: str = Depends(OAuth2PasswordBearer("auth/sign-in")),
         db: AsyncSession = Depends(get_async_db),
-    ) -> UserSchema | None:
+    ) -> ServiceResult[UserSchema]:
         """
         Obtiene el usuario actual desde el token JWT de la request.
         """
         # Decodificar el token JWT
-        payload = self.AuthService.decode_token(token)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Token inválido")
+        payload, error = self.AuthService.decode_token(token)
+        if error or not payload:
+            return None, TokenError("Token inválido")
 
         # Buscar el usuario en la base de datos
         query = await UserModel.find_by_colunm(db, "username", payload.sub)
         user = query.scalar_one_or_none()
 
         if not user:
-            return None
+            return None, UserNotFoundError()
 
         # Retornar el schema Pydantic con los datos del usuario
         return UserSchema(
@@ -90,6 +92,7 @@ class UsersService(Service):
         )
 
     @injectable
+    @handle_service_errors
     async def create_owner(
         self,
         username: str,
@@ -97,7 +100,7 @@ class UsersService(Service):
         email: str,
         full_name: str,
         db: AsyncSession = Depends(get_async_db),
-    ) -> UserModel:
+    ) -> ServiceResult[UserModel]:
         """
         Crea el primer usuario owner del sistema y marca la inicialización como lista.
         """
@@ -108,9 +111,7 @@ class UsersService(Service):
             # pero lo ideal es que el rol Owner esté pre-creado.
             role = await self.RolesService.get_role_by_name("admin")
             if not role:
-                raise HTTPException(
-                    status_code=400, detail="Owner role not found in system"
-                )
+                return None, AuthError("Owner role not found in system")
 
         # 2. Hashear password
         hashed_password = self.AuthService.hash_context.hash(password)
