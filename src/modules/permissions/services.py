@@ -25,13 +25,77 @@ from .meta.models import MetaPermissions
 from ..options.models import Options
 
 
+def with_permission_hash_guard(func: Callable):
+    """
+    Decorator that checks if the permission routes have changed before executing
+     the initialization logic.
+    Assumes the decorated function is a method of PermissionsService.
+    """
 
+    @functools.wraps(func)
+    async def wrapper(
+        self,
+        routes: List[BaseRoute],
+        sessionAsync: async_sessionmaker[AsyncSession],
+        type: str,
+        *args,
+        **kwargs,
+    ):
+        db: AsyncSession = sessionAsync()
+        try:
+            api_routes = self._collect_api_routes(routes)
+            if not api_routes:
+                return await func(self, routes, sessionAsync, type, *args, **kwargs)
+
+            # Generate current hash
+            current_hash = self._generate_permissions_hash(api_routes, type)
+            context_name = "system_init"
+            option_name = f"permissions_hash_{type}"
+
+            # Check for existing hash in database
+            query = await db.execute(
+                select(Options).where(
+                    Options.context == context_name, Options.name == option_name
+                )
+            )
+            option_record = query.scalar_one_or_none()
+
+            if option_record and option_record.value == current_hash:
+                print(f"[Permissions] No changes detected for '{type}' permissions (Hash: {current_hash[:8]}...). Skipping sync.")  # type: ignore
+                return
+
+            # If hash is different or missing, proceed with the original function
+            print(
+                f"[Permissions] Changes detected or initial run for '{type}'. Syncing permissions..."
+            )
+            result = await func(self, routes, sessionAsync, type, *args, **kwargs)
+
+            # Update or create the hash record after successful execution
+            if option_record:
+                option_record.value = current_hash
+            else:
+                new_option = Options(
+                    context=context_name, name=option_name, value=current_hash
+                )
+                db.add(new_option)
+
+            await db.commit()
+            print(f"[Permissions] Updated hash for '{type}' permissions.")
+            return result
+
+        except Exception as e:
+            print(f"[Permissions] Error in hash guard for '{type}': {e}")
+            # Fallback: execute original function if something goes wrong with hashing
+            return await func(self, routes, sessionAsync, type, *args, **kwargs)
+        finally:
+            await db.close()
+
+    return wrapper
 
 
 class PermissionsService(Service):
-    @injectable
     async def create_permission(
-        self, create_permission: CreatePermission, db: AsyncSession = Depends(get_async_db)
+        self, db: AsyncSession, create_permission: CreatePermission
     ) -> Permission:
         """
         Crea un solo permiso en la base de datos.
@@ -45,9 +109,8 @@ class PermissionsService(Service):
         await permission.save(db)
         return permission
 
-    @injectable
     async def create_bulk_permissions_with_roles(
-        self, permissions_data: List[BulkPermission], db: AsyncSession = Depends(get_async_db)
+        self, db: AsyncSession, permissions_data: List[BulkPermission]
     ) -> tuple[List[BulkPermissionResult], int, int]:
         """
         Crea múltiples permisos y los asigna a sus roles correspondientes.
@@ -117,7 +180,7 @@ class PermissionsService(Service):
 
                 # 3. Update MetaPermissions (EAV)
                 current_meta = await self._sync_permission_metadata(
-                    permission_id, perm_data.meta
+                    db, permission_id, perm_data.meta
                 )
                 await db.commit()
 
@@ -163,9 +226,8 @@ class PermissionsService(Service):
 
         return results, success_count, error_count
 
-    @injectable
     async def _sync_permission_metadata(
-        self, permission_id: int, meta: dict | list | None, db: AsyncSession = Depends(get_async_db)
+        self, db: AsyncSession, permission_id: int, meta: dict | list | None
     ) -> Dict[str, Any]:
         """
         Sincroniza la metadata de un permiso (EAV).
@@ -250,13 +312,13 @@ class PermissionsService(Service):
         hash_string = json.dumps(hash_payload, sort_keys=True)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    @injectable
     async def create_permissions_api(
         self,
         routes: List[BaseRoute],
+        sessionAsync: async_sessionmaker[AsyncSession],
         type: str,
-        db: AsyncSession = Depends(get_async_db),
     ):
+        db: AsyncSession = sessionAsync()
         try:
             api_routes = self._collect_api_routes(routes)
             print(f"[Permissions] Found {len(api_routes)} API routes of type '{type}'")
@@ -348,7 +410,7 @@ class PermissionsService(Service):
             await db.close()
 
     def get_shield_sync_callback(
-        self
+        self, sessionAsync: async_sessionmaker[AsyncSession]
     ) -> Callable[[Dict[str, Any]], Any]:
         """
         Retorna la función callback que se debe proveer a Shield.scan.
@@ -359,21 +421,21 @@ class PermissionsService(Service):
         def callback(registry_dict: Dict[str, Any]):
             # Lanzamos el proceso en el background
             asyncio.create_task(
-                self._process_shield_permissions(registry_dict)
+                self._process_shield_permissions(registry_dict, sessionAsync)
             )
 
         return callback
 
-    @injectable
     async def _process_shield_permissions(
         self,
         registry_dict: Dict[str, Any],
-        db: AsyncSession = Depends(get_async_db),
+        sessionAsync: async_sessionmaker[AsyncSession],
     ):
         """
         Procesa el diccionario de Shield en background, compara el hash y persiste
         los permisos nuevos en la base de datos vinculándolos al rol owner.
         """
+        db: AsyncSession = sessionAsync()
         try:
             # 1. Generar hash del registro
             hash_string = json.dumps(registry_dict, sort_keys=True)
@@ -386,7 +448,7 @@ class PermissionsService(Service):
             # Si es el primer run, la tabla "options" podría no existir todavía. Implementamos un retry.
             from sqlalchemy.exc import ProgrammingError
             import asyncio
-            
+
             option_record = None
             max_retries = 5
             for attempt in range(max_retries):
@@ -402,14 +464,17 @@ class PermissionsService(Service):
                     await db.rollback()
                     if "does not exist" in str(e) or "UndefinedTableError" in str(e):
                         if attempt < max_retries - 1:
-                            print(f"[Shield Sync] Tabla 'options' no encontrada (intento {attempt + 1}/{max_retries}). Esperando a que las migraciones terminen...")
+                            print(
+                                f"[Shield Sync] Tabla 'options' no encontrada (intento {attempt + 1}/{max_retries}). Esperando a que las migraciones terminen..."
+                            )
                             await asyncio.sleep(3)
                         else:
-                            print("[Shield Sync] Las tablas de la base de datos no existen después de varios reintentos. Omitiendo sincronización.")
+                            print(
+                                "[Shield Sync] Las tablas de la base de datos no existen después de varios reintentos. Omitiendo sincronización."
+                            )
                             return
                     else:
                         raise e
-
 
             if option_record and option_record.value == current_hash:
                 print(
@@ -475,7 +540,7 @@ class PermissionsService(Service):
             for p_name, p_data in route_map.items():
                 perm = existing_perms.get(p_name)
                 if perm and p_data.get("meta"):
-                    await self._sync_permission_metadata(perm.id, p_data["meta"])
+                    await self._sync_permission_metadata(db, perm.id, p_data["meta"])
 
             # 7. Sincronizar permisos con los roles principales
             # Se asegura que el rol 'owner' exista con nivel 1 (máximo) y se vinculan todos los permisos.

@@ -1,4 +1,4 @@
-from core.lib.decorators import Post, Services
+from core.lib.decorators import Post, Get, Services
 from core.lib.register import Partial
 
 from src.modules.auth.services import AuthService
@@ -87,4 +87,13 @@ class SignPartial(Partial):
         )
 
         response.headers["Location"] = "/dashboard"
+        return response
+
+    @Get("/out", response_class=HTMLResponse)
+    def sign_out_partial(self) -> HTMLResponse:
+
+        response = HTMLResponse(content="", status_code=200)
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+        response.headers["Location"] = "/sign/in/"
         return response
