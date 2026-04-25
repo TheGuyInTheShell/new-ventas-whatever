@@ -1,4 +1,4 @@
-from fastapi_injectable import injectable
+﻿from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
@@ -113,7 +113,6 @@ class AuthService(Service):
             current_password.encode("utf-8"),
         )
 
-    @injectable
     @handle_service_errors
     async def authenticate_user(
         self, username: str, password: str
@@ -141,10 +140,9 @@ class AuthService(Service):
         )
         return user
 
-    @injectable
     @handle_service_errors
     async def create_user(
-        self, user_data: CreateUser, db: AsyncSession = Depends(get_async_db)
+        self, db: AsyncSession, user_data: CreateUser
     ) -> ServiceResult[dict]:
         user = await UserModel(
             username=user_data.username,
