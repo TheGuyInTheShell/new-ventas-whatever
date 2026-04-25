@@ -29,7 +29,7 @@
                 </nav>
             </div>
 
-            <div class="flex-none gap-2">
+            <div class="flex-1 flex justify-end items-center gap-2">
                 <div class="relative hidden sm:block">
                     <input type="text" placeholder="Search..."
                         class="w-64 h-9 pl-9 pr-4 text-xs bg-base-200 border-transparent focus:border-primary focus:ring-0 rounded-lg transition-all text-base-content">
@@ -46,12 +46,89 @@
 
                 <div class="h-6 w-px bg-base-300 mx-1"></div>
 
-                <button
-                    class="p-2 md:p-1 flex items-center gap-2 hover:bg-base-200 rounded-lg transition-premium hover:shadow-sm">
-                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
-                        class="w-8 h-8 rounded-lg shadow-sm border border-base-300">
-                    <i data-lucide="chevron-down" class="hidden md:block size-4 text-base-content/40"></i>
-                </button>
+                <div x-data="{ isOpen: false, openedWithKeyboard: false }"
+                    x-on:keydown.esc.window="isOpen = false, openedWithKeyboard = false" class="relative">
+                    <!-- Toggle Button -->
+                    <button type="button" x-on:click="isOpen = ! isOpen"
+                        x-on:keydown.space.prevent="openedWithKeyboard = true"
+                        x-on:keydown.enter.prevent="openedWithKeyboard = true"
+                        x-on:keydown.down.prevent="openedWithKeyboard = true"
+                        class="p-2 md:p-1 flex items-center gap-2 hover:bg-base-200 rounded-lg transition-premium hover:shadow-sm"
+                        x-bind:class="isOpen || openedWithKeyboard ? 'bg-base-200 shadow-inner' : ''"
+                        x-bind:aria-expanded="isOpen || openedWithKeyboard" aria-haspopup="true">
+                        <i data-lucide="user" class="size-5 text-base-content/40"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="hidden md:block size-4 text-base-content/40 transition-transform duration-300"
+                            x-bind:class="isOpen || openedWithKeyboard ? 'rotate-180' : ''">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div x-cloak x-show="isOpen || openedWithKeyboard"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 scale-95 -translate-y-2" x-trap="openedWithKeyboard"
+                        x-on:click.outside="isOpen = false, openedWithKeyboard = false"
+                        x-on:keydown.down.prevent="$focus.wrap().next()"
+                        x-on:keydown.up.prevent="$focus.wrap().previous()"
+                        class="absolute right-0 top-12 z-50 flex w-60 flex-col divide-y divide-base-300 overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-2xl"
+                        role="menu">
+
+                        <!-- User Info Section -->
+                        <div class="flex flex-col px-4 py-3 bg-base-200/50">
+                            <p class="text-xs font-bold text-base-content">John Doe</p>
+                            <p class="text-[10px] text-base-content/50 truncate">john@financepro.com</p>
+                        </div>
+
+                        <!-- Links Section -->
+                        <div class="flex flex-col py-1.5">
+                            <a href="#"
+                                class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-base-content/80 hover:bg-base-200 hover:text-base-content focus-visible:bg-base-200 focus-visible:outline-none transition-colors"
+                                role="menuitem">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-4 opacity-60">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                                My Profile
+                            </a>
+                            <a href="#"
+                                class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-base-content/80 hover:bg-base-200 hover:text-base-content focus-visible:bg-base-200 focus-visible:outline-none transition-colors"
+                                role="menuitem">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-4 opacity-60">
+                                    <path
+                                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                Settings
+                            </a>
+                        </div>
+
+                        <!-- Logout Section -->
+                        <div class="flex flex-col py-1.5">
+                            <a href="/partials/sign/out"
+                                class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-error hover:bg-error/10 transition-colors focus-visible:bg-error/10 focus-visible:outline-none"
+                                role="menuitem">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-4">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                    <polyline points="16 17 21 12 16 7" />
+                                    <line x1="21" x2="9" y1="12" y2="12" />
+                                </svg>
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -101,7 +178,7 @@
                     class="flex items-center w-full gap-3 p-1 rounded-xl hover:bg-base-300 transition-colors overflow-hidden group is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
                     data-tip="Profile: John Doe">
                     <div class="relative shrink-0">
-                        <img src="https://ui-avatars.com/api/?name=John+Doe&background=00C16A&color=fff"
+                        <img src="/app-static/images/default_avatar.png"
                             class="w-8 h-8 rounded-full border border-base-100 shadow-sm" alt="User avatar">
                         <div
                             class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-base-200 shadow-xs">

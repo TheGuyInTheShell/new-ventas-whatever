@@ -92,7 +92,7 @@ class SignPartial(Partial):
     @Get("/out", response_class=HTMLResponse)
     def sign_out_partial(self) -> HTMLResponse:
 
-        response = HTMLResponse(content="", status_code=200)
+        response = HTMLResponse(content="", status_code=303)
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
         response.headers["Location"] = "/sign/in/"
