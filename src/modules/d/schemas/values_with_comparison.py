@@ -9,6 +9,7 @@ class RQValueWithComparison(BaseModel):
     comparison_value: RQComparisonValue
     ref_super_values_ids: Optional[List[int]] = []
     business_entity_ids: Optional[List[int]] = []
+    balance_type: Optional[str] = None
 
 
 class RSValueWithComparison(BaseModel):

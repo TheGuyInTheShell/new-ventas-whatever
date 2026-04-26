@@ -82,7 +82,7 @@ class ComparisonValuesService(Service):
                 selectinload(ComparisonValue.source_value),
                 selectinload(ComparisonValue.target_value),
             )
-            .where(ComparisonValue.id == int(comparison_id))
+            .where(ComparisonValue.id == comparison.id)
         )
 
         result = await db.execute(stmt)

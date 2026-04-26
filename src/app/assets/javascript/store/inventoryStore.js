@@ -147,7 +147,8 @@ export const inventoryActions = {
                     context: 'inventory'
                 },
                 ref_super_values_ids: [],
-                business_entity_ids: []
+                business_entity_ids: [],
+                balance_type: 'inventory'
             };
 
             // Hierarchy and Meta logic

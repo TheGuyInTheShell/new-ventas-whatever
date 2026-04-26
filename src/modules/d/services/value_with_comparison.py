@@ -62,13 +62,14 @@ class DValueWithComparisonService(Service):
                 )
                 db.add(hierarchy)
 
-            # 2. Balance: auto-create an inventory balance for this value
-            new_balance = Balance(quantity=0, type="Basic", ref_value=saved_value.id)
-            db.add(new_balance)
-            await db.flush()  # flush to get new_balance.id
+            # 2. Balance: auto-create a balance for this value using the provided type
+            if data.balance_type:
+                new_balance = Balance(quantity=0, type=data.balance_type, ref_value=saved_value.id)
+                db.add(new_balance)
+                await db.flush()  # flush to get new_balance.id
 
             # 3. BalanceBusinessEntity: link the balance to the specific entities
-            if data.business_entity_ids:
+            if data.balance_type and data.business_entity_ids:
                 for entity_id in data.business_entity_ids:
                     bal_ent = BalanceBusinessEntity(
                         ref_balance=new_balance.id, ref_business_entity=entity_id
@@ -127,6 +128,8 @@ class DValueWithComparisonService(Service):
             existing_comparison = result.scalars().first()
 
             if existing_comparison:
+                if data.comparison_value.value_from is None:
+                    data.comparison_value.value_from = updated_value.id
                 updated_comparison = (
                     await self.ComparisonValuesService.update_comparison(
                         existing_comparison.uid, data.comparison_value
@@ -161,7 +164,7 @@ class DValueWithComparisonService(Service):
             balance_stmt = (
                 select(Balance)
                 .where(Balance.ref_value == updated_value.id)
-                .where(Balance.type == "inventory")
+                .where(Balance.type == data.balance_type)
             )
             bal_result = await db.execute(balance_stmt)
             existing_balance = bal_result.scalars().first()
@@ -182,7 +185,7 @@ class DValueWithComparisonService(Service):
             elif not existing_balance:
                 # Create a balance if it didn't exist for some reason
                 new_balance = Balance(
-                    currency="unit", type="inventory", ref_value=updated_value.id
+                    quantity=0, type=data.balance_type, ref_value=updated_value.id
                 )
                 db.add(new_balance)
                 await db.flush()
