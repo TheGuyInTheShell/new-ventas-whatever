@@ -38,7 +38,6 @@ class SignPartial(Partial):
             )
             return HTMLResponse(content=content, status_code=200)
 
-        expires_time = 1200
         access_token, error = self.AuthService.create_token(
             data={
                 "sub": user.username,
@@ -46,8 +45,7 @@ class SignPartial(Partial):
                 "role": user.role,
                 "full_name": user.full_name,
                 "id": user.id,
-            },
-            expires_time=expires_time,
+            }
         )
 
         refresh_token, error = self.AuthService.create_refresh_token(
