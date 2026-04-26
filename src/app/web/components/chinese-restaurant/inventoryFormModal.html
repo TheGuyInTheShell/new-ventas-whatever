@@ -53,6 +53,8 @@
                         <option value="ingredient">Ingredient</option>
                         <option value="utensil">Utensil</option>
                         <option value="consumable">Consumable</option>
+                        <option value="by-product">By-product</option>
+                        <option value="made-from">Made-from</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
@@ -62,6 +64,53 @@
                     <input type="text" x-model="formData.expression" placeholder="kg, unit, l"
                         class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11"
                         required />
+                </div>
+            </div>
+
+            <!-- Made From Section (Preparations) -->
+            <div x-show="formData.type === 'made-from'" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                class="space-y-4">
+                <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2 text-primary">Composition Details</div>
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold">Ingredients & Components</span></label>
+                    <select multiple x-model="formData.ingredients"
+                        class="select select-bordered w-full h-32 focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 py-2">
+                        <template x-for="item in inventoryContext.eligibleItems" :key="item.id">
+                            <option :value="item.id" x-text="item.name"></option>
+                        </template>
+                    </select>
+                    <label class="label"><span class="label-text-alt text-base-content/50">Hold Ctrl (Cmd) to select multiple ingredients for this preparation.</span></label>
+                </div>
+            </div>
+
+            <!-- By-product Section -->
+            <div x-show="formData.type === 'by-product'" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                class="space-y-4">
+                <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2 text-secondary">By-product Details</div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label pt-0"><span class="label-text font-semibold">Source Ingredient</span></label>
+                        <select x-model="formData.source_id"
+                            class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11">
+                            <option value="">Select source...</option>
+                            <template x-for="item in inventoryContext.eligibleItems" :key="item.id">
+                                <option :value="item.id" x-text="item.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label pt-0"><span class="label-text font-semibold">Value Ratio / Price</span></label>
+                        <input type="number" step="0.01" x-model.number="formData.value_ratio" placeholder="0.00"
+                            class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11" />
+                    </div>
+                </div>
+                <div class="alert bg-secondary/10 border border-secondary/20 rounded-xl py-3 flex items-start gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-secondary mt-0.5"></i>
+                    <span class="text-xs text-base-content/80 leading-relaxed">
+                        Define which ingredient this sub-product comes from (e.g., Whey as a byproduct of Milk) and its relative market value.
+                    </span>
                 </div>
             </div>
 

@@ -24,6 +24,8 @@
             <option value="ingredient">Ingredient</option>
             <option value="utensil">Utensil</option>
             <option value="consumable">Consumable</option>
+            <option value="by-product">By-product</option>
+            <option value="made-from">Made-from</option>
             <option value="other">Other</option>
         </select>
         <button class="btn btn-outline" @click="toggleSort">
@@ -68,6 +70,8 @@
                                     'badge-primary': item.type === 'ingredient',
                                     'badge-neutral': item.type === 'utensil',
                                     'badge-success': item.type === 'consumable',
+                                    'badge-secondary': item.type === 'by-product',
+                                    'badge-accent': item.type === 'made-from',
                                     'badge-warning': item.type === 'other'
                                 }" x-text="item.type"></div>
                             </td>

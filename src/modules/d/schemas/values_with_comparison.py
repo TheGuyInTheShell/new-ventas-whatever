@@ -1,7 +1,8 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel
 from src.modules.values.schemas import RQValue, RSValue
 from src.modules.comparison_values.schemas import RQComparisonValue, RSComparisonValue
+
 
 class RQValueWithComparison(BaseModel):
     value: RQValue
@@ -19,17 +20,19 @@ class RSValueWithComparison(BaseModel):
 
 class QueryValue(BaseModel):
     id: Optional[int] = None
+    context: Optional[str] = ""
     name: Optional[str] = None
     expression: Optional[str] = None
-    type: Optional[str] = None
+    type: Optional[Union[str, List[str]]] = None
     identifier: Optional[str] = None
     price: Optional[float] = None
     meta: Optional[List[int]] = None
     full_meta: bool = False
 
 
-
 class QueryComparisonValue(BaseModel):
+    id: Optional[int] = None
+    context: Optional[str] = ""
     quantity_from: Optional[float] = None
     quantity_to: Optional[float] = None
     value_from: Optional[int] = None
@@ -42,13 +45,14 @@ class QueryValuesWithComparison(BaseModel):
     value: Optional[QueryValue] = None
     comparison_value: Optional[QueryComparisonValue] = None
     context: Optional[str] = ""
-    ref_super_values_ids: Optional[List[int]] = None  # filter: only values that are children of these parents
-
-
+    ref_super_values_ids: Optional[List[int]] = (
+        None  # filter: only values that are children of these parents
+    )
 
 
 class RSValueWithHierarchy(RSValue):
     """RSValue extended with its parent hierarchy IDs."""
+
     ref_super_values_ids: List[int] = []
 
 

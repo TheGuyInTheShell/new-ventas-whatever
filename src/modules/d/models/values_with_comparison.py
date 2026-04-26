@@ -6,7 +6,12 @@ from typing import Optional, List
 from src.modules.values.models import Value
 from src.modules.comparison_values.models import ComparisonValue
 from src.modules.values.hierarchy.models import ValuesHierarchy
-from src.modules.d.schemas.values_with_comparison import QueryValuesWithComparison, ResultValueWithComparison, RSValueWithHierarchy
+from src.modules.d.schemas.values_with_comparison import (
+    QueryValuesWithComparison,
+    ResultValueWithComparison,
+    RSValueWithHierarchy,
+)
+
 
 class BuilderValueWithComparison:
     def __init__(self, db: AsyncSession):
@@ -15,14 +20,16 @@ class BuilderValueWithComparison:
         self.stmt = select(Value, ComparisonValue)
         self.query_params: Optional[QueryValuesWithComparison] = None
 
-    def set_query(self, query: QueryValuesWithComparison) -> "BuilderValueWithComparison":
+    def set_query(
+        self, query: QueryValuesWithComparison
+    ) -> "BuilderValueWithComparison":
         self.query_params = query
         return self
 
     def _apply_value_filters(self):
         if not self.query_params or not self.query_params.value:
             return
-            
+
         vq = self.query_params.value
         if vq.id is not None:
             self.stmt = self.stmt.where(Value.id == vq.id)
@@ -31,12 +38,15 @@ class BuilderValueWithComparison:
         if vq.expression is not None:
             self.stmt = self.stmt.where(Value.expression == vq.expression)
         if vq.type is not None:
-            self.stmt = self.stmt.where(Value.type == vq.type)
+            if isinstance(vq.type, list):
+                self.stmt = self.stmt.where(Value.type.in_(vq.type))
+            else:
+                self.stmt = self.stmt.where(Value.type == vq.type)
         if vq.context is not None:
             self.stmt = self.stmt.where(Value.context == vq.context)
         if vq.identifier is not None:
             self.stmt = self.stmt.where(Value.identifier == vq.identifier)
-            
+
         # Handle soft deletes
         self.stmt = self.stmt.where(Value.is_deleted == False)
 
@@ -46,7 +56,9 @@ class BuilderValueWithComparison:
 
         cq = self.query_params.comparison_value
         if cq.quantity_from is not None:
-            self.stmt = self.stmt.where(ComparisonValue.quantity_from == cq.quantity_from)
+            self.stmt = self.stmt.where(
+                ComparisonValue.quantity_from == cq.quantity_from
+            )
         if cq.quantity_to is not None:
             self.stmt = self.stmt.where(ComparisonValue.quantity_to == cq.quantity_to)
         if cq.value_from is not None:
@@ -55,76 +67,61 @@ class BuilderValueWithComparison:
             self.stmt = self.stmt.where(ComparisonValue.value_to == cq.value_to)
         if cq.context is not None:
             self.stmt = self.stmt.where(ComparisonValue.context == cq.context)
-            
+
         self.stmt = self.stmt.where(ComparisonValue.is_deleted == False)
 
     def _apply_context_filter(self):
         if self.query_params and self.query_params.context:
-            self.stmt = self.stmt.where(ComparisonValue.context == self.query_params.context)
+            self.stmt = self.stmt.where(
+                ComparisonValue.context == self.query_params.context
+            )
 
     def _apply_eager_loading(self):
         if not self.query_params:
             return
-            
+
         if self.query_params.value and self.query_params.value.full_meta:
             self.stmt = self.stmt.options(selectinload(Value.meta))
-            
-        if self.query_params.comparison_value and self.query_params.comparison_value.full_meta:
+
+        if (
+            self.query_params.comparison_value
+            and self.query_params.comparison_value.full_meta
+        ):
             self.stmt = self.stmt.options(selectinload(ComparisonValue.meta))
 
     def _apply_join(self):
-        has_v = self.query_params and self.query_params.value is not None
-        has_c = self.query_params and self.query_params.comparison_value is not None
+        has_v = bool(self.query_params and self.query_params.value)
+        has_c = bool(self.query_params and self.query_params.comparison_value)
 
-        if has_v and has_c:
-            if self.query_params.value.id is not None and self.query_params.comparison_value.value_from is None:
-                self.stmt = select(Value, ComparisonValue).join(
-                    ComparisonValue, 
-                    Value.id == ComparisonValue.value_from,
-                    isouter=True
-                )
-            elif self.query_params.value.id is None and self.query_params.comparison_value.value_from is not None:
-                self.stmt = select(Value, ComparisonValue).join(
-                    ComparisonValue, 
-                    Value.id == ComparisonValue.value_from,
-                    isouter=True
-                )
-            else:
-                self.stmt = select(Value, ComparisonValue).join(
-                    ComparisonValue, 
-                    Value.id == ComparisonValue.value_from
-                )
-        elif has_v:
-            # We want Value with optional ComparisonValues
-            self.stmt = select(Value, ComparisonValue).join(
-                ComparisonValue, 
-                Value.id == ComparisonValue.value_from,
-                isouter=True
-            )
-        elif has_c:
-            # We want ComparisonValue and its source Value (to satisfy the return format)
-            self.stmt = select(Value, ComparisonValue).join(
-                Value, 
-                Value.id == ComparisonValue.value_from,
-                isouter=True
-            )
-        else:
-            # Default fallback when no explicit entity params are provided
-            self.stmt = select(Value, ComparisonValue).join(
-                ComparisonValue, 
-                Value.id == ComparisonValue.value_from,
-                isouter=True
-            )
+        has_v_id = has_v and self.query_params.value.id is not None
+        has_c_v_from = has_c and self.query_params.comparison_value.value_from is not None
 
+        match (has_v, has_c):
+            case (False, True):
+                # We want ComparisonValue and its source Value (to satisfy the return format)
+                self.stmt = select(Value, ComparisonValue).join(
+                    Value, Value.id == ComparisonValue.value_from, isouter=True
+                )
+            case (True, True) if has_v_id == has_c_v_from:
+                # Exact match between Value and ComparisonValue
+                self.stmt = select(Value, ComparisonValue).join(
+                    ComparisonValue, Value.id == ComparisonValue.value_from
+                )
+            case _:
+                # Default fallback: Value with optional ComparisonValues
+                self.stmt = select(Value, ComparisonValue).join(
+                    ComparisonValue, Value.id == ComparisonValue.value_from, isouter=True
+                )
 
     def _apply_hierarchy_filter(self):
         """If ref_super_values_ids is given, restrict results to values that are children of those parents."""
         if not self.query_params or not self.query_params.ref_super_values_ids:
             return
         self.stmt = self.stmt.join(
-            ValuesHierarchy,
-            ValuesHierarchy.ref_value_bottom == Value.id
-        ).where(ValuesHierarchy.ref_value_top.in_(self.query_params.ref_super_values_ids))
+            ValuesHierarchy, ValuesHierarchy.ref_value_bottom == Value.id
+        ).where(
+            ValuesHierarchy.ref_value_top.in_(self.query_params.ref_super_values_ids)
+        )
 
     def build(self) -> "BuilderValueWithComparison":
         self._apply_join()
@@ -138,28 +135,33 @@ class BuilderValueWithComparison:
     async def execute(self) -> ResultValueWithComparison:
         from sqlalchemy.orm.attributes import instance_state
         from src.modules.values.schemas import RSMetaValue
-        from src.modules.comparison_values.schemas import RSComparisonValue, RSComparisonValueSimple
-        
+        from src.modules.comparison_values.schemas import (
+            RSComparisonValue,
+            RSComparisonValueSimple,
+        )
+
         result = await self.db.execute(self.stmt)
         rows = result.unique().all()
-        
+
         values = []
         comparisons = []
-        
+
         # Collect all value IDs so we can batch-load hierarchy parents
         seen_values: dict[int, RSValueWithHierarchy] = {}
         seen_comparisons = set()
-        
+
         for value_obj, comp_obj in rows:
             if value_obj and value_obj.id not in seen_values:
                 unloaded = instance_state(value_obj).unloaded
-                
+
                 meta_list = None
                 if "meta" not in unloaded:
                     meta_list = []
                     for m in getattr(value_obj, "meta", []):
-                        meta_list.append(RSMetaValue(uid=m.uid, id=m.id, key=m.key, value=m.value))
-                        
+                        meta_list.append(
+                            RSMetaValue(uid=m.uid, id=m.id, key=m.key, value=m.value)
+                        )
+
                 rv = RSValueWithHierarchy(
                     uid=value_obj.uid,
                     id=value_obj.id,
@@ -169,45 +171,47 @@ class BuilderValueWithComparison:
                     context=value_obj.context,
                     identifier=value_obj.identifier,
                     meta=meta_list,
-                    ref_super_values_ids=[]
+                    ref_super_values_ids=[],
                 )
                 seen_values[value_obj.id] = rv
                 values.append(rv)
-                
+
             if comp_obj and comp_obj.id not in seen_comparisons:
                 unloaded_c = instance_state(comp_obj).unloaded
-                
+
                 sv = None
                 if "source_value" not in unloaded_c and comp_obj.source_value:
                     sv = RSComparisonValueSimple(
                         id=comp_obj.source_value.id,
                         uid=comp_obj.source_value.uid,
                         name=comp_obj.source_value.name,
-                        expression=comp_obj.source_value.expression
+                        expression=comp_obj.source_value.expression,
                     )
-                    
+
                 tv = None
                 if "target_value" not in unloaded_c and comp_obj.target_value:
                     tv = RSComparisonValueSimple(
                         id=comp_obj.target_value.id,
                         uid=comp_obj.target_value.uid,
                         name=comp_obj.target_value.name,
-                        expression=comp_obj.target_value.expression
+                        expression=comp_obj.target_value.expression,
                     )
-                
-                comparisons.append(RSComparisonValue(
-                    uid=comp_obj.uid,
-                    id=comp_obj.id,
-                    quantity_from=comp_obj.quantity_from,
-                    quantity_to=comp_obj.quantity_to,
-                    value_from=comp_obj.value_from,
-                    value_to=comp_obj.value_to,
-                    context=comp_obj.context,
-                    source_value=sv,
-                    target_value=tv
-                ))
+
+                comparisons.append(
+                    RSComparisonValue(
+                        uid=comp_obj.uid,
+                        id=comp_obj.id,
+                        quantity_from=comp_obj.quantity_from,
+                        quantity_to=comp_obj.quantity_to,
+                        value_from=comp_obj.value_from,
+                        value_to=comp_obj.value_to,
+                        context=comp_obj.context,
+                        source_value=sv,
+                        target_value=tv,
+                    )
+                )
                 seen_comparisons.add(comp_obj.id)
-        
+
         # Batch-load parent hierarchy IDs for the returned values
         if seen_values:
             hier_stmt = select(ValuesHierarchy).where(
@@ -216,9 +220,11 @@ class BuilderValueWithComparison:
             hier_result = await self.db.execute(hier_stmt)
             for h in hier_result.scalars().all():
                 if h.ref_value_bottom in seen_values:
-                    seen_values[h.ref_value_bottom].ref_super_values_ids.append(h.ref_value_top)
-                
+                    seen_values[h.ref_value_bottom].ref_super_values_ids.append(
+                        h.ref_value_top
+                    )
+
         return ResultValueWithComparison(
             value=values if values else None,
-            comparison_value=comparisons if comparisons else None
+            comparison_value=comparisons if comparisons else None,
         )

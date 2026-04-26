@@ -64,7 +64,10 @@ document.addEventListener('alpine:init', () => {
             type: 'ingredient',
             expression: 'unit',
             price: 0,
-            currency_id: null
+            currency_id: null,
+            ingredients: [],
+            source_id: null,
+            value_ratio: 0
         },
 
         /** @type {Object} */
@@ -102,6 +105,15 @@ document.addEventListener('alpine:init', () => {
 
             this.$nextTick(() => {
                 createIcons({ icons });
+            });
+
+            // Watch for type changes to fetch eligible items for composition
+            this.$watch('formData.type', async (newType) => {
+                if (newType === 'made-from' || newType === 'by-product') {
+                    if (this.inventoryContext.eligibleItems.length === 0) {
+                        await inventoryActions.fetchEligibleItems();
+                    }
+                }
             });
         },
 
@@ -201,7 +213,10 @@ document.addEventListener('alpine:init', () => {
                 type: 'ingredient',
                 expression: 'unit',
                 price: 0,
-                currency_id: this.fiatContext.mainFiatId
+                currency_id: this.fiatContext.mainFiatId,
+                ingredients: [],
+                source_id: null,
+                value_ratio: 0
             };
             this.formModalOpen = true;
             this.$nextTick(() => { createIcons({ icons }); });
@@ -218,7 +233,10 @@ document.addEventListener('alpine:init', () => {
                 type: item.type,
                 expression: item.expression,
                 price: item.quantity_to || 0,
-                currency_id: item.value_to || this.fiatContext.mainFiatId
+                currency_id: item.value_to || this.fiatContext.mainFiatId,
+                ingredients: item.type === 'made-from' ? item.ref_super_values_ids : [],
+                source_id: item.type === 'by-product' ? item.ref_super_values_ids[0] : null,
+                value_ratio: item.type === 'by-product' ? (item.meta.find(m => m.key === 'value_ratio')?.value || 0) : 0
             };
             this.formModalOpen = true;
             this.$nextTick(() => { createIcons({ icons }); });

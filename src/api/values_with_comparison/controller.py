@@ -10,6 +10,7 @@ from core.lib.decorators.services import Services
 from src.modules.d.schemas.values_with_comparison import (
     RQValueWithComparison,
     QueryValuesWithComparison,
+    ResultValueWithComparison,
 )
 from src.modules.d.services.value_with_comparison import DValueWithComparisonService
 
@@ -61,7 +62,7 @@ class ValuesWithComparisonController(Controller):
     async def query_values_with_comparison(
         self,
         payload: QueryValuesWithComparison,
-    ):
+    ) -> ResultValueWithComparison:
         return (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
                 payload

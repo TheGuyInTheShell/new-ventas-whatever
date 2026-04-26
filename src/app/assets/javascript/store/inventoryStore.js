@@ -3,6 +3,7 @@ import { createStore } from '@xstate/store';
 /**
  * @typedef {Object} InventoryStoreContext
  * @property {Array} items - List of inventory items.
+ * @property {Array} eligibleItems - List of items eligible for composition.
  * @property {boolean} loading - Global loading state indicator.
  * @property {string|null} error - Error message if a request fails.
  */
@@ -15,12 +16,14 @@ const API_BASE = '/api/v1';
 export const inventoryStore = createStore({
     context: {
         items: [],
+        eligibleItems: [],
         loading: false,
         error: null
     },
     on: {
         setLoading: (context, event) => ({ ...context, loading: event.value }),
         setItems: (context, event) => ({ ...context, items: event.data }),
+        setEligibleItems: (context, event) => ({ ...context, eligibleItems: event.data }),
         setError: (context, event) => ({ ...context, error: event.message })
     }
 });
@@ -61,7 +64,9 @@ export const inventoryActions = {
                         quantity_from: comp ? comp.quantity_from : 1,
                         quantity_to: comp ? comp.quantity_to : 0,
                         value_to: comp ? comp.value_to : null,
-                        balance: 0 // Mock balance for now, expand via balances API if required
+                        balance: 0, // Mock balance for now, expand via balances API if required
+                        ref_super_values_ids: val.ref_super_values_ids || [],
+                        meta: val.meta || []
                     });
                 });
             }
@@ -75,6 +80,43 @@ export const inventoryActions = {
     },
 
     /**
+     * Fetches items eligible for composition (ingredients, made-from, by-product) from the backend.
+     * @async
+     * @returns {Promise<void>}
+     */
+    async fetchEligibleItems() {
+        try {
+            const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    value: {
+                        type: ['ingredient', 'made-from', 'by-product']
+                    },
+                    context: 'inventory'
+                })
+            });
+            const result = await res.json();
+
+            const eligibleItems = [];
+            if (result.value) {
+                result.value.forEach(val => {
+                    eligibleItems.push({
+                        id: val.id,
+                        uid: val.uid,
+                        name: val.name,
+                        type: val.type,
+                        expression: val.expression
+                    });
+                });
+            }
+            inventoryStore.trigger.setEligibleItems({ data: eligibleItems });
+        } catch (error) {
+            console.error("Failed to fetch eligible items: ", error);
+        }
+    },
+
+    /**
      * Creates or updates an inventory item with its comparison data.
      * @async
      * @param {Object|null} editingItem - The item to update, or null to create.
@@ -83,7 +125,11 @@ export const inventoryActions = {
      */
     async saveItem(editingItem, formData) {
         try {
-            // Capitalize logically like the old Nuxt composable
+            /**
+             * Capitalize logically like the old Nuxt composable
+             * @param {string} s - String to capitalize
+             * @returns {string} Capitalized string
+             */
             const capitalize = (s) => (s && typeof s === 'string' ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
             const body = {
@@ -91,7 +137,8 @@ export const inventoryActions = {
                     name: capitalize(formData.name),
                     expression: formData.expression,
                     type: formData.type,
-                    context: 'inventory'
+                    context: 'inventory',
+                    meta: []
                 },
                 comparison_value: {
                     quantity_from: 1,
@@ -99,8 +146,24 @@ export const inventoryActions = {
                     value_to: formData.currency_id || null,
                     context: 'inventory'
                 },
+                ref_super_values_ids: [],
                 business_entity_ids: []
             };
+
+            // Hierarchy and Meta logic
+            if (formData.type === 'made-from' && formData.ingredients) {
+                body.ref_super_values_ids = formData.ingredients.map(id => parseInt(id));
+            } else if (formData.type === 'by-product') {
+                if (formData.source_id) {
+                    body.ref_super_values_ids = [parseInt(formData.source_id)];
+                }
+                if (formData.value_ratio) {
+                    body.value.meta.push({
+                        key: 'value_ratio',
+                        value: formData.value_ratio.toString()
+                    });
+                }
+            }
 
             const url = editingItem
                 ? `${API_BASE}/values_with_comparison/id/${editingItem.uid}`

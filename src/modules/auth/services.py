@@ -100,9 +100,15 @@ class AuthService(Service):
     async def get_user(
         self, username: str, db: AsyncSession = Depends(get_async_db)
     ) -> ServiceResult[User]:
-        query = await UserModel.find_by_colunm(db, "username", username)
-        user = query.scalar_one_or_none()
-        return user
+        try:
+            query = await UserModel.find_by_colunm(db, "username", username)
+            user = query.scalar_one_or_none()
+            if user is None:
+                return None, UserNotFoundError()
+            return user, None
+        except Exception as e:
+            print(f"UserNotFoundError: {e}")
+            return None, UserNotFoundError(str(e))
 
     @handle_sync_errors
     def verify_password(
