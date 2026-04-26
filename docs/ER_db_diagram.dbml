@@ -60,9 +60,16 @@ Table meta_permissions{
 Table values{ // values are the units of measurement for the finances app "can be any kind of value that can be compared with another value"
   ~shared
   name varchar // dolar, Hummer H2, stock
-  type varchar // vehicle, crypto, supply, fiat
-  expresion varchar // usd, btc, kg, mt, mt^2, CAR denomination or something like that
+  context varchar // "vehicle", "crypto", "supply", "fiat", "ingredient", "made-from", "by-product"
+  type varchar // vehicle, crypto, supply, fiat, ingredient, made-from, by-product
+  expression varchar // usd, btc, kg, mt, mt^2, CAR denomination or something like that
   identifier varchar // 2016, "some text that not repeat beetween names like 'date, especification'  can be null"
+}
+
+Table values_hierarchy {
+  ~shared
+  ref_value_top int [ref: - values.id, not null]
+  ref_value_bottom int [ref: - values.id, not null]
 }
 
 Table meta_values{
@@ -87,8 +94,9 @@ Table business_entities_groups {
 
 Table balances {
   ~shared
-  currency varchar
-  value_ref varchar [ref: - values.id, not null]
+  type varchar // Basic, inventory
+  quantity float [default: 0.0]
+  ref_value varchar [ref: - values.id, not null]
 }
 
 Table transactions {
@@ -192,10 +200,10 @@ Table meta_comparation_values{
 Table comparation_values{ // comparation values are the values that are compared with another value
   ~shared
   context varchar
-  quantity_from int // 1
-  quantity_to varcahr //  465.7
-  value_from varchar [ref: - values.id, not null] // USD
-  value_to varchar [ref: - values.id, not null] // Bs
+  quantity_from int [default: 1]
+  quantity_to float
+  value_from varchar [ref: - values.id, not null] // Item ID
+  value_to varchar [ref: - values.id, not null] // Currency ID (e.g. USD)
 }
 
 Table comparation_values_historical{
@@ -223,4 +231,26 @@ TablePartial meta {
   id int [pk, increment]
   key varchar
   value varchar
+}
+
+Table taxonomies {
+  ~shared
+  name varchar [not null]
+  slug varchar [unique, not null]
+  description text
+  context varchar [note: "e.g. inventory, blog, products"]
+}
+
+Table terms {
+  ~shared
+  name varchar [not null]
+  slug varchar [not null]
+  description text
+  ref_taxonomy int [ref: - taxonomies.id, not null]
+  parent_id int [ref: - terms.id, note: "Self-reference for nested categories"]
+}
+
+Table meta_terms {
+  ~meta
+  ref_term int [ref: - terms.id, not null]
 }
