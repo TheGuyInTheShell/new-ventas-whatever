@@ -21,10 +21,8 @@ class RSValueWithComparison(BaseModel):
 
 class QueryValue(BaseModel):
     id: Optional[int] = None
-    context: Optional[str] = ""
     name: Optional[str] = None
     expression: Optional[str] = None
-    type: Optional[Union[str, List[str]]] = None
     identifier: Optional[str] = None
     price: Optional[float] = None
     meta: Optional[List[int]] = None
@@ -33,7 +31,7 @@ class QueryValue(BaseModel):
 
 class QueryComparisonValue(BaseModel):
     id: Optional[int] = None
-    context: Optional[str] = ""
+    ref_business_entity: Optional[int] = None
     quantity_from: Optional[float] = None
     quantity_to: Optional[float] = None
     value_from: Optional[int] = None
@@ -45,7 +43,7 @@ class QueryComparisonValue(BaseModel):
 class QueryValuesWithComparison(BaseModel):
     value: Optional[QueryValue] = None
     comparison_value: Optional[QueryComparisonValue] = None
-    context: Optional[str] = ""
+    ref_business_entity: Optional[int] = None
     ref_super_values_ids: Optional[List[int]] = (
         None  # filter: only values that are children of these parents
     )

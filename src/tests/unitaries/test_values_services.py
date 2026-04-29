@@ -1,0 +1,141 @@
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.modules.values.services import ValuesService
+from src.modules.values.schemas import RQValue, RQMetaValue
+from src.modules.values.models import Value
+from src.modules.values.meta.models import MetaValue
+from src.modules.comparison_values.models import ComparisonValue
+from src.modules.comparison_values.meta.models import MetaComparisonValue
+from src.modules.balances.models import Balance
+from src.modules.business_entities.models import BusinessEntity
+from src.modules.business_entities.meta.models import MetaBusinessEntity
+from src.modules.business_entities_groups.models import BusinessEntitiesGroup
+from src.modules.business_entities_groups.connection.models import BusinessEntitiesGroupConnection
+
+@pytest.fixture
+def mock_db():
+    db = AsyncMock(spec=AsyncSession)
+    db.commit = AsyncMock()
+    db.rollback = AsyncMock()
+    db.add = MagicMock()
+    db.flush = AsyncMock()
+    db.refresh = AsyncMock()
+    return db
+
+@pytest.fixture
+def values_service():
+    return ValuesService()
+
+@pytest.mark.asyncio
+class TestValuesServiceUnitaries:
+    
+    async def test_create_value_with_meta(self, values_service, mock_db):
+        meta_data = [RQMetaValue(key="test_key", value="test_value")]
+        create_dto = RQValue(
+            name="Test Value",
+            expression="USD",
+            type="currency",
+            ref_business_entity=1,
+            identifier="test-123",
+            meta=meta_data,
+            price=None,
+            currency_id=None
+        )
+        
+        # Mock the db.execute for the selectinload refresh
+        mock_result = MagicMock()
+        mock_value = MagicMock()
+        mock_value.id = 1
+        mock_value.name = "Test Value"
+        mock_value.ref_business_entity = 1
+        mock_result.scalar_one.return_value = mock_value
+        mock_db.execute.return_value = mock_result
+        
+        result = await values_service.create_value_with_meta(create_dto, db=mock_db)
+        
+        assert result.name == "Test Value"
+        assert result.ref_business_entity == 1
+        
+        # We expect db.add to be called twice: once for Value, once for MetaValue
+        assert mock_db.add.call_count == 2
+        assert mock_db.flush.call_count == 2
+        mock_db.commit.assert_called_once()
+        mock_db.refresh.assert_called_once()
+
+    async def test_create_value_with_price_comparison(self, values_service, mock_db):
+        create_dto = RQValue(
+            name="Test Item",
+            expression="ITEM",
+            type="inventory",
+            ref_business_entity=2,
+            price=10.5,
+            currency_id=1
+        )
+        
+        mock_result = MagicMock()
+        mock_value = MagicMock()
+        mock_value.id = 5
+        mock_result.scalar_one.return_value = mock_value
+        mock_db.execute.return_value = mock_result
+        
+        await values_service.create_value_with_meta(create_dto, db=mock_db)
+        
+        # Called add twice: once for Value, once for ComparisonValue (no meta)
+        assert mock_db.add.call_count == 2
+        
+        # Get the arguments passed to db.add
+        add_calls = mock_db.add.call_args_list
+        # Second call should be ComparisonValue
+        comparison_obj = add_calls[1][0][0]
+        
+        from src.modules.comparison_values.models import ComparisonValue
+        assert isinstance(comparison_obj, ComparisonValue)
+        assert comparison_obj.quantity_to == 10.5
+        assert comparison_obj.value_to == 1
+        assert comparison_obj.ref_business_entity == 2 # Assuming it takes it from Value or sets it? Wait!
+
+    @patch("src.modules.values.models.Value.update", new_callable=AsyncMock)
+    @patch("src.modules.values.meta.models.MetaValue.find_all", new_callable=AsyncMock)
+    @patch("src.modules.values.meta.models.MetaValue.delete", new_callable=AsyncMock)
+    @patch("src.modules.values.meta.models.MetaValue.save", new_callable=AsyncMock)
+    async def test_update_value_with_meta(self, mock_meta_save, mock_meta_delete, mock_meta_find_all, mock_value_update, values_service, mock_db):
+        update_dto = RQValue(
+            name="Updated Value",
+            expression="UPD",
+            type="currency",
+            ref_business_entity=1,
+            meta=[RQMetaValue(key="new_key", value="new_val")]
+        )
+        
+        mock_value = MagicMock()
+        mock_value.id = 1
+        mock_value.name = "Updated Value"
+        mock_value_update.return_value = mock_value
+        
+        mock_existing_meta = MagicMock()
+        mock_existing_meta.id = 10
+        mock_meta_find_all.return_value = [mock_existing_meta]
+        
+        result = await values_service.update_value_with_meta(1, update_dto, db=mock_db)
+        
+        mock_value_update.assert_called_once()
+        mock_meta_find_all.assert_called_once()
+        mock_meta_delete.assert_called_once_with(mock_db, 10)
+        mock_meta_save.assert_called_once()
+        
+        mock_db.commit.assert_called_once()
+        mock_db.refresh.assert_called_once_with(mock_value)
+
+    @patch("src.modules.values.models.Value.find_some", new_callable=AsyncMock)
+    @patch("src.modules.values.models.Value.find_all", new_callable=AsyncMock)
+    async def test_get_values_paginated(self, mock_find_all, mock_find_some, values_service, mock_db):
+        mock_find_some.return_value = [MagicMock(), MagicMock()]
+        mock_find_all.return_value = [MagicMock(), MagicMock(), MagicMock()] # Total 3
+        
+        values, total = await values_service.get_values_paginated(page=1, page_size=2, db=mock_db)
+        
+        assert len(values) == 2
+        assert total == 3
+        mock_find_some.assert_called_once()
+        mock_find_all.assert_called_once()

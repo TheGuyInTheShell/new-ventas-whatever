@@ -26,7 +26,7 @@ class ValuesService(Service):
             name=value_data.name,
             expression=value_data.expression,
             type=value_data.type,
-            context=value_data.context,
+            ref_business_entity=value_data.ref_business_entity,
             identifier=value_data.identifier,
         )
         db.add(value)
@@ -48,6 +48,7 @@ class ValuesService(Service):
                 quantity_to=value_data.price,
                 value_from=value.id,  # The item we just created
                 value_to=value_data.currency_id,  # The currency (e.g. USD)
+                ref_business_entity=value_data.ref_business_entity,
             )
             db.add(comparison)
             await db.flush()

@@ -25,7 +25,7 @@ class ComparisonValuesService(Service):
             quantity_to=data.quantity_to,
             value_from=data.value_from,
             value_to=data.value_to,
-            context=data.context,
+            ref_business_entity=data.ref_business_entity,
         )
         await comparison.save(db)
 
@@ -71,7 +71,7 @@ class ComparisonValuesService(Service):
             "quantity_to": data.quantity_to,
             "value_from": data.value_from,
             "value_to": data.value_to,
-            "context": data.context,
+            "ref_business_entity": data.ref_business_entity,
         }
         await ComparisonValue.update(db, comparison_id, update_data)
 
@@ -98,7 +98,7 @@ class ComparisonValuesService(Service):
         status: Literal["exists", "deleted", "all"] = "exists",
         value_from: Optional[int | str] = None,
         value_to: Optional[int | str] = None,
-        context: Optional[str] = None,
+        ref_business_entity: Optional[int] = None,
         db: AsyncSession = Depends(get_async_db),
     ) -> Tuple[List[ComparisonValue], int]:
         """Get paginated list of comparisons with total count"""
@@ -108,8 +108,8 @@ class ComparisonValuesService(Service):
             filters["value_from"] = value_from
         if value_to is not None:
             filters["value_to"] = value_to
-        if context is not None:
-            filters["context"] = context
+        if ref_business_entity is not None:
+            filters["ref_business_entity"] = ref_business_entity
 
         comparisons = await ComparisonValue.find_some(
             db, pag=page, order_by=order_by, ord=order, status=status, filters=filters
@@ -202,7 +202,7 @@ class ComparisonValuesService(Service):
             quantity_to=comparison.quantity_to,
             value_from=comparison.value_from,
             value_to=comparison.value_to,
-            context=comparison.context,
+            ref_business_entity=comparison.ref_business_entity,
             original_comparison_id=comparison.id,
         )
         await historical.save(db)

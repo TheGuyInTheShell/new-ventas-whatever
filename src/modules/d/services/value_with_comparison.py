@@ -87,7 +87,7 @@ class DValueWithComparisonService(Service):
                     name=saved_value.name,
                     expression=saved_value.expression,
                     type=saved_value.type,
-                    context=saved_value.context,
+                    ref_business_entity=saved_value.ref_business_entity,
                     identifier=saved_value.identifier,
                 ),
                 comparison_value=RSComparisonValue(
@@ -97,7 +97,7 @@ class DValueWithComparisonService(Service):
                     quantity_to=saved_comparison.quantity_to,
                     value_from=saved_comparison.value_from,
                     value_to=saved_comparison.value_to,
-                    context=saved_comparison.context,
+                    ref_business_entity=saved_comparison.ref_business_entity,
                 ),
             )
         except Exception as e:
@@ -207,7 +207,7 @@ class DValueWithComparisonService(Service):
                     name=updated_value.name,
                     expression=updated_value.expression,
                     type=updated_value.type,
-                    context=updated_value.context,
+                    ref_business_entity=updated_value.ref_business_entity,
                     identifier=updated_value.identifier,
                 ),
                 comparison_value=RSComparisonValue(
@@ -217,7 +217,7 @@ class DValueWithComparisonService(Service):
                     quantity_to=updated_comparison.quantity_to,
                     value_from=updated_comparison.value_from,
                     value_to=updated_comparison.value_to,
-                    context=updated_comparison.context,
+                    ref_business_entity=updated_comparison.ref_business_entity,
                 ),
             )
 

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from src.modules.balances.models import Balance
     from src.modules.values.schemas import RQValueQuery
     from sqlalchemy.ext.asyncio import AsyncSession
+    from src.modules.business_entities.models import BusinessEntity
 
 
 class Value(BasicBaseAsync):
@@ -21,7 +22,7 @@ class Value(BasicBaseAsync):
     __tablename__ = "values"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    context: Mapped[str] = mapped_column(String(100), nullable=False)
+    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False)
     expression: Mapped[str] = mapped_column(String(50), nullable=False)
     type: Mapped[str] = mapped_column(String(100), nullable=False)
     identifier: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -52,13 +53,15 @@ class Value(BasicBaseAsync):
         cascade="all, delete-orphan",
     )
 
+    business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity")
+
     __table_args__ = (
-        Index("ix_values_context_active", "context"),
-        Index("ix_values_name_context", "name", "context"),
+        Index("ix_values_ref_business_entity_active", "ref_business_entity"),
+        Index("ix_values_name_ref_business_entity", "name", "ref_business_entity"),
         Index("ix_values_name_type", "name", "type"),
-        Index("ix_values_name_context_type", "name", "context", "type"),
+        Index("ix_values_name_ref_business_entity_type", "name", "ref_business_entity", "type"),
         UniqueConstraint(
-            "name", "context", "type", name="uix_values_name_context_type"
+            "name", "ref_business_entity", "type", name="uix_values_name_ref_business_entity_type"
         ),
     )
 
@@ -95,8 +98,8 @@ class Value(BasicBaseAsync):
             stmt = stmt.where(cls.expression == q.expression)
         if q.type is not None:
             stmt = stmt.where(cls.type == q.type)
-        if q.context is not None:
-            stmt = stmt.where(cls.context == q.context)
+        if q.ref_business_entity is not None:
+            stmt = stmt.where(cls.ref_business_entity == q.ref_business_entity)
         if q.identifier is not None:
             stmt = stmt.where(cls.identifier == q.identifier)
 
@@ -146,7 +149,7 @@ class Value(BasicBaseAsync):
             stmt = stmt.options(selectinload(cls.balances))
 
         # ---- ordering ----
-        order_col = getattr(cls, q.order_by, cls.name)
+        order_col = getattr(cls, q.order_by if q.order_by != "context" else "ref_business_entity", cls.name)
         if q.order == "desc":
             stmt = stmt.order_by(sa_desc(order_col))
         else:

@@ -11,7 +11,7 @@ class ComparisonValueHistorical(BasicBaseAsync):
     """
     __tablename__ = "comparation_values_historical"
 
-    context: Mapped[str] = mapped_column(String, nullable=False)
+    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False)
 
     quantity_from: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     quantity_to: Mapped[float] = mapped_column(Float, nullable=False)

@@ -37,13 +37,7 @@ class BuilderValueWithComparison:
             self.stmt = self.stmt.where(Value.name.ilike(f"%{vq.name}%"))
         if vq.expression is not None:
             self.stmt = self.stmt.where(Value.expression == vq.expression)
-        if vq.type is not None:
-            if isinstance(vq.type, list):
-                self.stmt = self.stmt.where(Value.type.in_(vq.type))
-            else:
-                self.stmt = self.stmt.where(Value.type == vq.type)
-        if vq.context is not None:
-            self.stmt = self.stmt.where(Value.context == vq.context)
+        # type and context removed from QueryValue
         if vq.identifier is not None:
             self.stmt = self.stmt.where(Value.identifier == vq.identifier)
 
@@ -65,15 +59,18 @@ class BuilderValueWithComparison:
             self.stmt = self.stmt.where(ComparisonValue.value_from == cq.value_from)
         if cq.value_to is not None:
             self.stmt = self.stmt.where(ComparisonValue.value_to == cq.value_to)
-        if cq.context is not None:
-            self.stmt = self.stmt.where(ComparisonValue.context == cq.context)
+        if cq.ref_business_entity is not None:
+            self.stmt = self.stmt.where(
+                ComparisonValue.ref_business_entity == cq.ref_business_entity
+            )
 
         self.stmt = self.stmt.where(ComparisonValue.is_deleted == False)
 
-    def _apply_context_filter(self):
-        if self.query_params and self.query_params.context:
+    def _apply_business_entity_filter(self):
+        if self.query_params and self.query_params.ref_business_entity is not None:
             self.stmt = self.stmt.where(
-                ComparisonValue.context == self.query_params.context
+                ComparisonValue.ref_business_entity
+                == self.query_params.ref_business_entity
             )
 
     def _apply_eager_loading(self):
@@ -90,11 +87,17 @@ class BuilderValueWithComparison:
             self.stmt = self.stmt.options(selectinload(ComparisonValue.meta))
 
     def _apply_join(self):
-        has_v = bool(self.query_params and self.query_params.value)
-        has_c = bool(self.query_params and self.query_params.comparison_value)
+        if not self.query_params:
+            return
 
-        has_v_id = has_v and self.query_params.value.id is not None
-        has_c_v_from = has_c and self.query_params.comparison_value.value_from is not None
+        if not self.query_params.value and not self.query_params.comparison_value:
+            return
+
+        has_v = getattr(self.query_params.value, "id", None) is not None
+        has_c = getattr(self.query_params.comparison_value, "id", None) is not None
+
+        has_v_id = has_v if has_v else None
+        has_c_v_from = has_c if has_c else None
 
         match (has_v, has_c):
             case (False, True):
@@ -110,7 +113,9 @@ class BuilderValueWithComparison:
             case _:
                 # Default fallback: Value with optional ComparisonValues
                 self.stmt = select(Value, ComparisonValue).join(
-                    ComparisonValue, Value.id == ComparisonValue.value_from, isouter=True
+                    ComparisonValue,
+                    Value.id == ComparisonValue.value_from,
+                    isouter=True,
                 )
 
     def _apply_hierarchy_filter(self):
@@ -127,7 +132,7 @@ class BuilderValueWithComparison:
         self._apply_join()
         self._apply_value_filters()
         self._apply_comparison_filters()
-        self._apply_context_filter()
+        self._apply_business_entity_filter()
         self._apply_hierarchy_filter()
         self._apply_eager_loading()
         return self
@@ -168,7 +173,7 @@ class BuilderValueWithComparison:
                     name=value_obj.name,
                     expression=value_obj.expression,
                     type=value_obj.type,
-                    context=value_obj.context,
+                    ref_business_entity=value_obj.ref_business_entity,
                     identifier=value_obj.identifier,
                     meta=meta_list,
                     ref_super_values_ids=[],
@@ -205,7 +210,7 @@ class BuilderValueWithComparison:
                         quantity_to=comp_obj.quantity_to,
                         value_from=comp_obj.value_from,
                         value_to=comp_obj.value_to,
-                        context=comp_obj.context,
+                        ref_business_entity=comp_obj.ref_business_entity,
                         source_value=sv,
                         target_value=tv,
                     )

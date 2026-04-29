@@ -16,7 +16,7 @@ class RQValueQuery(BaseModel):
     name: Optional[str] = None
     expression: Optional[str] = None
     type: Optional[str] = None
-    context: Optional[str] = None
+    ref_business_entity: Optional[int] = None
     identifier: Optional[str] = None
     meta: Optional[bool] = False
     comparison: Optional[bool] = False
@@ -27,7 +27,7 @@ class RQValueQuery(BaseModel):
     page: int = 1
     page_size: int = 10
     order: Literal["asc", "desc"] = "asc"
-    order_by: Literal["name", "expression", "type", "context", "identifier"] = "name"
+    order_by: Literal["name", "expression", "type", "ref_business_entity", "identifier"] = "name"
     status: Literal["deleted", "exists", "all"] = "exists"
 
 
@@ -60,7 +60,7 @@ class RQValue(BaseModel):
     name: str
     expression: str
     type: str
-    context: Optional[str] = ""
+    ref_business_entity: int
     identifier: Optional[str] = None
     # Optional price information for inventory items
     price: Optional[float] = None
@@ -75,7 +75,7 @@ class RSValue(BaseModel):
     name: str
     expression: str
     type: str
-    context: str
+    ref_business_entity: int
     identifier: Optional[str] = None
     meta: Optional[List[RSMetaValue]] = None
     balances: Optional[List[RSBalance]] = None

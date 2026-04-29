@@ -18,7 +18,7 @@ class RQComparisonValue(BaseModel):
     quantity_to: float
     value_from: Optional[int] = None  # ID of source value
     value_to: int    # ID of target value
-    context: str
+    ref_business_entity: int
     meta: Optional[List[RQMetaComparisonValue]] = None
 
 
@@ -41,7 +41,7 @@ class RSComparisonValue(BaseModel):
     quantity_to: float
     value_from: int
     value_to: int
-    context: str
+    ref_business_entity: int
     source_value: Optional[RSComparisonValueSimple] = None
     target_value: Optional[RSComparisonValueSimple] = None
 
