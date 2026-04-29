@@ -60,7 +60,7 @@ Table meta_permissions{
 Table values{ // values are the units of measurement for the finances app "can be any kind of value that can be compared with another value"
   ~shared
   name varchar // dolar, Hummer H2, stock
-  business_entity_ref int [ref: - business_entities.id]
+  business_entity_ref int [ref: - business_entities.id] // invetory-site-1, invetory-factory-1, invoice-store-1, caja-mercadopago-1, banco-bofa-1
   type varchar // vehicle, crypto, supply, fiat, ingredient, made-from, by-product
   expression varchar // usd, btc, kg, mt, mt^2, CAR denomination or something like that
   identifier varchar // 2016, "some text that not repeat beetween names like 'date, especification'  can be null"
@@ -79,7 +79,7 @@ Table meta_values{
 }
 
 
-Table business_entities {
+Table business_entities { // business entity is a group of entities that are related to each other and answers the question "who", "what", "when", "where" and "why" of a transaction
   ~shared
   name varchar [not null] 
   description varchar
@@ -90,7 +90,7 @@ Table meta_business_entities {
   ref_business_entity int [ref: - business_entities.id]
 }
 
-Table business_entities_hierarchy {
+Table business_entities_hierarchy { // allows the grouping of business entities like  (restaurant "have"-> inventory, bank_account, invoices, cash_desk, delivery_service)
   ~shared
   ref_entity_top int [ref: - business_entities.id, not null]
   ref_entity_bottom int [ref: - business_entities.id, not null] 
@@ -98,7 +98,7 @@ Table business_entities_hierarchy {
 
 
 
-Table balances {
+Table balances { // balances are the units of measurement for the finances app "can be any kind of value that can be compared with another value"
   ~shared
   type varchar // Basic, inventory
   quantity float [default: 0.0]
@@ -106,7 +106,7 @@ Table balances {
 }
 
 
-Table transactions {
+Table transactions { // transactions are the movements of the balances and are the core of the finances app
   ~shared
   quantity varchar
   operation_type enum("+", "-")
@@ -206,7 +206,7 @@ Table meta_comparation_values{
 
 Table comparation_values{ // comparation values are the values that are compared with another value
   ~shared
-  context varchar
+  ref_business_entity int [ref: - business_entities.id, not null]
   quantity_from int [default: 1]
   quantity_to float
   value_from varchar [ref: - values.id, not null] // Item ID

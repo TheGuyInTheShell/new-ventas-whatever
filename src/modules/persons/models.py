@@ -19,7 +19,7 @@ class Person(BasicBaseAsync):
     type_identifier: Mapped[str] = mapped_column(String(50), nullable=True)
     
     ref_business_entity: Mapped[int] = mapped_column(
-        Integer, ForeignKey("business_entities.id"), nullable=False
+        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False
     )
     
     business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity")

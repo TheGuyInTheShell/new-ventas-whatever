@@ -13,7 +13,7 @@ class BalanceBusinessEntity(BasicBaseAsync):
     __tablename__ = "balances_business_entities"
 
     ref_business_entity: Mapped[int] = mapped_column(
-        Integer, ForeignKey("business_entities.id"), nullable=False
+        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False
     )
     ref_balance: Mapped[int] = mapped_column(
         Integer, ForeignKey("balances.id"), nullable=False

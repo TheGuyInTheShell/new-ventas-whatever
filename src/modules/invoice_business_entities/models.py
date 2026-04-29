@@ -16,7 +16,7 @@ class InvoiceBusinessEntity(BasicBaseAsync):
         Integer, ForeignKey("invoices.id"), nullable=False
     )
     ref_business_entity: Mapped[int] = mapped_column(
-        Integer, ForeignKey("business_entities.id"), nullable=False
+        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False
     )
 
     # Relationships

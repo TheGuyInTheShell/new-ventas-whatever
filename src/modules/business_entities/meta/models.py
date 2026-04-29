@@ -12,7 +12,7 @@ class MetaBusinessEntity(BasicBaseAsync):
     __tablename__ = "meta_business_entities"
     key: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)
-    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id"), nullable=False)
+    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False)
     business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity", foreign_keys=[ref_business_entity])
 
     __table_args__ = (

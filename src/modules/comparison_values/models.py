@@ -7,6 +7,7 @@ from core.database import BasicBaseAsync
 if TYPE_CHECKING:
     from src.modules.values.models import Value
     from src.modules.comparison_values.meta.models import MetaComparisonValue
+    from src.modules.business_entities.models import BusinessEntity
 
 
 class ComparisonValue(BasicBaseAsync):
@@ -17,7 +18,9 @@ class ComparisonValue(BasicBaseAsync):
 
     __tablename__ = "comparation_values"
 
-    context: Mapped[str] = mapped_column(String, nullable=False)
+    ref_business_entity: Mapped[int] = mapped_column(
+        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False
+    )
 
     quantity_from: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     quantity_to: Mapped[float] = mapped_column(Float, nullable=False)
@@ -41,16 +44,18 @@ class ComparisonValue(BasicBaseAsync):
         "MetaComparisonValue", back_populates="comparison_value"
     )
 
+    business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity")
+
     __table_args__ = (
-        Index("ix_comparation_values_context_active", "context"),
+        Index("ix_comparation_values_ref_business_entity_active", "ref_business_entity"),
         Index("ix_comparation_values_value_from_active", "value_from", postgresql_where=(text("deleted_at IS NULL"))),
         Index("ix_comparation_values_value_to_active", "value_to", postgresql_where=(text("deleted_at IS NULL"))),
-        Index("ix_comparison_values_value_to_context", "value_to", "context"),
-        Index("ix_comparison_values_value_from_context", "value_from", "context"),
+        Index("ix_comparison_values_value_to_ref_business_entity", "value_to", "ref_business_entity"),
+        Index("ix_comparison_values_value_from_ref_business_entity", "value_from", "ref_business_entity"),
         UniqueConstraint(
             "value_from",
             "value_to",
-            "context",
+            "ref_business_entity",
             name="uix_comparison_values_value_from_value_to",
         ),
     )
