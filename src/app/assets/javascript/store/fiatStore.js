@@ -7,6 +7,7 @@
  */
 
 import { createStore } from '@xstate/store';
+import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store.js';
 
 /**
  * @typedef {Object} Fiat
@@ -30,7 +31,7 @@ import { createStore } from '@xstate/store';
  * @property {Fiat[]} fiats - List of all registered fiat currencies.
  * @property {number|null} mainFiatId - ID of the primary/main currency.
  * @property {Comparison[]} comparisons - List of all currency comparisons/rates.
- * @property {Object.<number, number>} exchangeRates - Derived rates mapped by target fiat ID.
+ * @property {Record<number, number>} exchangeRates - Derived rates mapped by target fiat ID.
  * @property {boolean} loading - Global loading state indicator.
  */
 
@@ -52,6 +53,7 @@ const persistedState = loadPersistedState();
 
 /**
  * The XState Store instance for Fiat management.
+ * @type {import('@xstate/store').Store<StoreContext>}
  */
 export const fiatStore = createStore({
     context: {
@@ -90,24 +92,28 @@ export const fiatActions = {
     async fetchFiats() {
         fiatStore.trigger.setLoading({ value: true });
         try {
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+
             const res = await fetch(`${API_BASE}/values/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'fiat', context: 'global', page_size: 100, balances: true })
+                body: JSON.stringify({
+                    type: 'fiat',
+                    page_size: 100,
+                    balances: true,
+                    ref_business_entity: entityId || 1
+                })
             });
             const data = res.ok ? await res.json() : [];
             const fiatList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
             fiatStore.trigger.setFiats({ data: fiatList });
 
-            // Fetch Main and Custom comparisons
-            const [mainRes, customRes] = await Promise.all([
-                fetch(`${API_BASE}/comparison_values/?context=main`),
-                fetch(`${API_BASE}/comparison_values/?context=custom`)
-            ]);
-            const mainComps = mainRes.ok ? (await mainRes.json()).data || [] : [];
-            const customComps = customRes.ok ? (await customRes.json()).data || [] : [];
+            // Fetch comparisons
+            const compsRes = await fetch(`${API_BASE}/comparison_values/?ref_business_entity=${entityId}`);
+            const compsData = compsRes.ok ? (await compsRes.json()).data || [] : [];
             /** @type {Comparison[]} */
-            const comps = Array.isArray(mainComps) && Array.isArray(customComps) ? [...mainComps, ...customComps] : [];
+            const comps = Array.isArray(compsData) ? compsData : [];
             fiatStore.trigger.setComparisons({ data: comps });
 
             // Fetch main fiat option
@@ -123,7 +129,8 @@ export const fiatActions = {
             const mainFiatId = fiatStore.getSnapshot().context.mainFiatId;
             if (comps && mainFiatId) {
                 comps.forEach(comp => {
-                    if (comp.context === 'main') {
+                    // It is a main comparison if it involves the main fiat currency
+                    if (comp.value_from === mainFiatId || comp.value_to === mainFiatId) {
                         if (comp.value_from === mainFiatId) {
                             rates[comp.value_to] = comp.quantity_to / comp.quantity_from;
                         } else if (comp.value_to === mainFiatId) {
@@ -182,10 +189,18 @@ export const fiatActions = {
      */
     async createFiat(name, expression) {
         try {
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+
             await fetch(`${API_BASE}/values/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, expression, type: 'fiat', context: 'global' })
+                body: JSON.stringify({
+                    name,
+                    expression,
+                    type: 'fiat',
+                    ref_business_entity: entityId || 1
+                })
             });
             await this.fetchFiats();
         } catch (error) {
@@ -202,12 +217,21 @@ export const fiatActions = {
      * @param {string} [context='main'] - Operation context.
      * @returns {Promise<void>}
      */
-    async createLink(fromId, toId, rate, context = 'main') {
+    async createLink(fromId, toId, rate) {
         try {
-            const comps = fiatStore.getSnapshot().context.comparisons;
-            const existing = comps.find(c => c.value_from === fromId && c.value_to === toId && c.context === context);
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
 
-            const body = { quantity_from: 1, quantity_to: rate, value_from: fromId, value_to: toId, context };
+            const comps = fiatStore.getSnapshot().context.comparisons;
+            const existing = comps.find(c => c.value_from === fromId && c.value_to === toId);
+
+            const body = {
+                quantity_from: 1,
+                quantity_to: rate,
+                value_from: fromId,
+                value_to: toId,
+                ref_business_entity: entityId || 1
+            };
 
             if (existing) {
                 await fetch(`${API_BASE}/comparison_values/id/${existing.id}`, {
@@ -253,12 +277,21 @@ export const fiatActions = {
      * @param {string} [context='custom'] - Operation context.
      * @returns {Promise<void>}
      */
-    async updateComparison(compId, fromId, toId, rate, context = 'custom') {
+    async updateComparison(compId, fromId, toId, rate) {
         try {
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+
             await fetch(`${API_BASE}/comparison_values/id/${compId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ quantity_from: 1, quantity_to: rate, value_from: fromId, value_to: toId, context })
+                body: JSON.stringify({
+                    quantity_from: 1,
+                    quantity_to: rate,
+                    value_from: fromId,
+                    value_to: toId,
+                    ref_business_entity: entityId || 1
+                })
             });
             await this.fetchFiats();
         } catch (error) {

@@ -11,6 +11,7 @@ from .models import Value
 from .meta.models import MetaValue
 from .schemas import RQValue, RQMetaValue
 from ..comparison_values.models import ComparisonValue
+from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix mapper initialization
 
 
 class ValuesService(Service):

@@ -100,6 +100,16 @@ class SettingsTemplate(Template):
     @enqueue_js(
         js_tag=str(
             Script(
+                src="/app-static/javascript/store/chinese-restaurant-store.js",
+                type="module",
+                defer=True,
+            )
+        ),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
+        js_tag=str(
+            Script(
                 src="/app-static/javascript/store/fiatStore.js",
                 type="module",
                 defer=True,

@@ -54,8 +54,9 @@ class MenuService(Service):
             filtered = self._filter_menu_tree(raw_menu, allowed_names)
 
             return filtered
-        finally:
-            await db.close()
+        except Exception as e:
+            print(f"Error in get_resolved_menu: {e}")
+            raise e
 
     def _filter_menu_tree(
         self,

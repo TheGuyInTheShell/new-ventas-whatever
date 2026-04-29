@@ -1,9 +1,28 @@
 import { createStore } from '@xstate/store';
+import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store.js';
+
+/**
+ * @typedef {Object} InventoryItem
+ * @property {number} id - Unique identifier.
+ * @property {string} uid - Unique string identifier.
+ * @property {string} name - Item name.
+ * @property {string} type - Item type (e.g., ingredient, utensil).
+ * @property {string} expression - Unit expression (e.g., kg, units).
+ * @property {string} [context] - Data context.
+ * @property {string} [identifier] - Internal identifier.
+ * @property {number|null} comparison_id - Associated comparison ID.
+ * @property {number} quantity_from - Base quantity for price comparison.
+ * @property {number} quantity_to - Target quantity/price for comparison.
+ * @property {number|null} value_to - Fiat currency ID for the price.
+ * @property {number} balance - Current stock quantity.
+ * @property {number[]} ref_super_values_ids - Parent item IDs.
+ * @property {Array} meta - Metadata attributes.
+ */
 
 /**
  * @typedef {Object} InventoryStoreContext
- * @property {Array} items - List of inventory items.
- * @property {Array} eligibleItems - List of items eligible for composition.
+ * @property {InventoryItem[]} items - List of inventory items.
+ * @property {InventoryItem[]} eligibleItems - List of items eligible for composition.
  * @property {boolean} loading - Global loading state indicator.
  * @property {string|null} error - Error message if a request fails.
  */
@@ -12,6 +31,7 @@ const API_BASE = '/api/v1';
 
 /**
  * The XState Store instance for Inventory management.
+ * @type {import('@xstate/store').Store<InventoryStoreContext>}
  */
 export const inventoryStore = createStore({
     context: {
@@ -41,10 +61,14 @@ export const inventoryActions = {
         inventoryStore.trigger.setLoading({ value: true });
         inventoryStore.trigger.setError({ message: null });
         try {
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+            if (!entityId) throw new Error("Could not load business entity for inventory context");
+
             const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ context: 'inventory' })
+                body: JSON.stringify({ ref_business_entity: entityId || 1 })
             });
             const result = await res.json();
 
@@ -86,30 +110,34 @@ export const inventoryActions = {
      */
     async fetchEligibleItems() {
         try {
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+
             const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    value: {
-                        type: ['ingredient', 'made-from', 'by-product']
-                    },
-                    context: 'inventory'
+                    ref_business_entity: entityId || 1
                 })
             });
             const result = await res.json();
 
             const eligibleItems = [];
             if (result.value) {
+                const allowedTypes = ['ingredient', 'made-from', 'by-product'];
                 result.value.forEach(val => {
-                    eligibleItems.push({
-                        id: val.id,
-                        uid: val.uid,
-                        name: val.name,
-                        type: val.type,
-                        expression: val.expression
-                    });
+                    if (allowedTypes.includes(val.type)) {
+                        eligibleItems.push({
+                            id: val.id,
+                            uid: val.uid,
+                            name: val.name,
+                            type: val.type,
+                            expression: val.expression
+                        });
+                    }
                 });
             }
+
             inventoryStore.trigger.setEligibleItems({ data: eligibleItems });
         } catch (error) {
             console.error("Failed to fetch eligible items: ", error);
@@ -132,22 +160,25 @@ export const inventoryActions = {
              */
             const capitalize = (s) => (s && typeof s === 'string' ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
+            await businessEntityActions.fetchEntity();
+            const entityId = businessEntityStore.getSnapshot().context.entityId;
+
             const body = {
                 value: {
                     name: capitalize(formData.name),
                     expression: formData.expression,
                     type: formData.type,
-                    context: 'inventory',
+                    ref_business_entity: entityId || 1,
                     meta: []
                 },
                 comparison_value: {
                     quantity_from: 1,
                     quantity_to: parseFloat(formData.price) || 0,
                     value_to: formData.currency_id || null,
-                    context: 'inventory'
+                    ref_business_entity: entityId || 1
                 },
                 ref_super_values_ids: [],
-                business_entity_ids: [],
+                business_entity_ids: entityId ? [entityId] : [1],
                 balance_type: 'inventory'
             };
 

@@ -25,10 +25,10 @@ class ComparisonValuesController(Controller):
         type="endpoint",
         description="Read comparison values filtered by optional context query string",
     )
-    async def get_comparisons(self, context: Optional[str] = None):
+    async def get_comparisons(self, ref_business_entity: Optional[int] = None):
         comparisons, total = (
             await self.ComparisonValuesService.get_comparisons_paginated(
-                page=1, page_size=1000, context=context
+                page=1, page_size=1000, ref_business_entity=ref_business_entity
             )
         )
         return {"data": comparisons, "total": total}
