@@ -100,3 +100,21 @@ class BusinessEntitiesHierarchyService(Service):
 
         return items, total
 
+    @injectable
+    async def get_hierarchy_link(
+        self,
+        ref_entity_top: int,
+        ref_entity_bottom: int,
+        db: AsyncSession = Depends(get_async_db),
+    ) -> BusinessEntitiesHierarchy | None:
+        """
+        Check if a parent-child relationship already exists.
+        """
+        stmt = (
+            select(BusinessEntitiesHierarchy)
+            .where(BusinessEntitiesHierarchy.ref_entity_top == ref_entity_top)
+            .where(BusinessEntitiesHierarchy.ref_entity_bottom == ref_entity_bottom)
+            .where(BusinessEntitiesHierarchy.is_deleted == False)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().first()

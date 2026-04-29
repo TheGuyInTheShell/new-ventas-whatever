@@ -2,6 +2,7 @@ from fastapi import Depends
 from fastapi_injectable import injectable
 from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from core.lib.register.service import Service
 from .models import BusinessEntity
 from .schemas import RQBusinessEntity
@@ -18,4 +19,14 @@ class BusinessEntitiesService(Service):
         )
         await entity.save(db)
         return entity
+    @injectable
+    async def get_entity_by_name(
+        self,
+        name: str,
+        db: AsyncSession = Depends(get_async_db)
+    ) -> BusinessEntity | None:
+        stmt = select(BusinessEntity).where(BusinessEntity.name == name)
+        result = await db.execute(stmt)
+        return result.scalars().first()
+
 
