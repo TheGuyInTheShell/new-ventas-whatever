@@ -12,6 +12,7 @@ from .historical import ComparisonValueHistorical
 from .schemas import RQComparisonValue
 from ..values.models import Value
 from .meta.models import MetaComparisonValue
+from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix mapper initialization
 
 
 class ComparisonValuesService(Service):

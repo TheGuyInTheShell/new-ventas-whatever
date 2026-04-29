@@ -26,13 +26,14 @@ window.Alpine = Alpine;
  * @property {string} name - Item name.
  * @property {string} type - Item type (e.g., ingredient, utensil).
  * @property {string} expression - Unit expression (e.g., kg, units).
- * @property {string} context - Data context.
- * @property {string} identifier - Internal identifier.
+ * @property {string} [identifier] - Internal identifier.
  * @property {number|null} comparison_id - Associated comparison ID.
  * @property {number} quantity_from - Base quantity for price comparison.
  * @property {number} quantity_to - Target quantity/price for comparison.
  * @property {number|null} value_to - Fiat currency ID for the price.
  * @property {number} balance - Current stock quantity.
+ * @property {number[]} ref_super_values_ids - Parent item IDs.
+ * @property {Array} meta - Metadata attributes.
  */
 
 document.addEventListener('alpine:init', () => {

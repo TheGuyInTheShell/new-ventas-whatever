@@ -39,8 +39,6 @@ class ValuesController(Controller):
         filters = {}
         if payload.type:
             filters["type"] = payload.type
-        if payload.context:
-            filters["context"] = payload.context
 
         values, total = await self.ValuesService.get_values_paginated(
             page=payload.page,
