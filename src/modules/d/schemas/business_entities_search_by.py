@@ -9,6 +9,11 @@ class RQBusinessEntitiesSearch(BaseModel):
     parent_id: Optional[int] = None
     child_id: Optional[int] = None
     is_deleted: Optional[bool] = False
+    
+    # New flags
+    hierarchy: bool = False
+    groups: bool = False
+    
     page: int = 1
     page_size: int = 10
 
@@ -18,6 +23,7 @@ class RSBusinessEntitiesSearchItem(BaseModel):
     uid: str
     name: str
     groups: List[str] = []
+    children: Optional[List["RSBusinessEntitiesSearchItem"]] = None
     
     class Config:
         from_attributes = True
