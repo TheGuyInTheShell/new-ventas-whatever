@@ -1,6 +1,7 @@
-from fastapi import HTTPException, Depends
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.lib.register.service import Service
+from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 
 from fastapi_injectable import injectable
 from core.database import get_async_db
@@ -10,29 +11,30 @@ from .models import Role
 from .schemas import RQRole, RSRole
 from ..role_permissions.models import RolePermission
 
+
 class RolesService(Service):
+    @handle_service_errors
     @injectable
-    async def create_role(self, rq_role: RQRole, db: AsyncSession = Depends(get_async_db)) -> RSRole:
-        try:
+    async def create_role(
+        self, rq_role: RQRole, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSRole]:
+        role = await Role(**rq_role.model_dump()).save(db)
 
-            role = await Role(**rq_role.model_dump()).save(db)
-
-            return RSRole(
+        return (
+            RSRole(
                 id=role.id,
                 uid=role.uid,
                 name=role.name,
                 description=role.description,
-                level=role.level
-            )
+                level=role.level,
+            ),
+            None,
+        )
 
-        except Exception as e:
-            raise e
-
+    @handle_service_errors
     @injectable
-    async def get_role_by_name(self, name: str, db: AsyncSession = Depends(get_async_db)) -> Role | None:
-        try:
-            result = await Role.find_by_colunm(db, "name", name)
-            return result.scalar_one_or_none()
-        except Exception as e:
-            raise e
-
+    async def get_role_by_name(
+        self, name: str, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[Role | None]:
+        result = await Role.find_by_colunm(db, "name", name)
+        return result.scalar_one_or_none(), None

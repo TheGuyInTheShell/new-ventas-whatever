@@ -3,7 +3,8 @@ from fastapi_injectable import injectable
 from core.database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from fastapi import HTTPException
+from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
+from core.database.exceptions import DatabaseError, DatabaseQueryError
 from typing import TYPE_CHECKING
 import json
 from core.lib.register.service import Service
@@ -23,8 +24,9 @@ from ...balances_business_entities.models import BalanceBusinessEntity
 from ..schemas.transaction_and_invoice import InvoiceSales
 
 class DTransactionAndInvoiceService(Service):
+    @handle_service_errors
     @injectable
-    async def create_transaction_and_invoice_service(self, data: InvoiceSales, db: AsyncSession = Depends(get_async_db)) -> dict:
+    async def create_transaction_and_invoice_service(self, data: InvoiceSales, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[dict]:
         """
         Full sales flow: resolve balances -> create historical comparison -> create transaction -> create invoice -> link all.
         """
@@ -89,8 +91,6 @@ class DTransactionAndInvoiceService(Service):
                 
                 created_transactions.append(transaction.id)
 
-            await db.commit()
-
             return {
                 "success": True,
                 "invoice_id": invoice.id,
@@ -98,11 +98,11 @@ class DTransactionAndInvoiceService(Service):
             }
 
         except Exception as e:
-            await db.rollback()
-            raise HTTPException(status_code=400, detail=str(e))
+            raise e
 
+    @handle_service_errors
     @injectable
-    async def _resolve_balance(self, value_id: int, entity_id: int, db: AsyncSession = Depends(get_async_db)) -> int:
+    async def _resolve_balance(self, value_id: int, entity_id: int, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[int]:
         """Helper to find a balance for a value and business entity."""
         stmt = select(Balance.id).join(BalanceBusinessEntity).where(
             Balance.ref_value == value_id,
@@ -119,12 +119,13 @@ class DTransactionAndInvoiceService(Service):
             balance_id = result_any.scalars().first()
             
         if not balance_id:
-            raise HTTPException(status_code=404, detail=f"No balance found for value_id {value_id}")
+            raise DatabaseQueryError(f"No balance found for value_id {value_id}")
             
         return balance_id
 
+    @handle_service_errors
     @injectable
-    async def adjust_transaction_and_invoice_service(self, data: RQAdjustBalance, db: AsyncSession = Depends(get_async_db)) -> dict:
+    async def adjust_transaction_and_invoice_service(self, data: RQAdjustBalance, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[dict]:
         """
         Adjust the stock (quantity) of an inventory Balance.
         If 'is_adjustment' is true, generate an Invoice and pseudo-Transaction for history.
@@ -136,7 +137,7 @@ class DTransactionAndInvoiceService(Service):
             balance = result.scalars().first()
             
             if not balance:
-                raise HTTPException(status_code=404, detail="Inventory Balance not found for the given value.")
+                raise DatabaseQueryError("Inventory Balance not found for the given value.")
 
             if not data.is_adjustment:
                 # Direct edit
@@ -269,8 +270,6 @@ class DTransactionAndInvoiceService(Service):
                     balance.quantity = _round_quantity(data.new_quantity)
                     adj_balance.quantity = _round_quantity(adj_balance.quantity - delta)
                 
-            await db.commit()
-            await db.refresh(balance)
             
             return {
                 "success": True,
@@ -278,9 +277,6 @@ class DTransactionAndInvoiceService(Service):
                 "new_quantity": _round_quantity(balance.quantity)
             }
 
-        except HTTPException:
-            raise
         except Exception as e:
-            await db.rollback()
-            raise HTTPException(status_code=400, detail=str(e))
+            raise e
 

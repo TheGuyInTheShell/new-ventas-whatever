@@ -38,7 +38,9 @@ export const inventoryActions = {
             const items: InventoryItem[] = [];
             if (result.value) {
                 result.value.forEach((val: any) => {
-                    const comp = result.comparison_value ? result.comparison_value.find((c: any) => c.value_from === val.id) : null;
+                    const comps = result.comparison_value ? result.comparison_value.filter((c: any) => c.value_from === val.id) : [];
+                    const primaryComp = comps.length > 0 ? comps[0] : null;
+                    
                     items.push({
                         id: val.id,
                         uid: val.uid,
@@ -46,13 +48,19 @@ export const inventoryActions = {
                         type: val.type,
                         expression: val.expression,
                         identifier: val.identifier,
-                        comparison_id: comp ? comp.id : null,
-                        quantity_from: comp ? comp.quantity_from : 1,
-                        quantity_to: comp ? comp.quantity_to : 0,
-                        value_to: comp ? comp.value_to : null,
+                        comparison_id: primaryComp ? primaryComp.id : null,
+                        quantity_from: primaryComp ? primaryComp.quantity_from : 1,
+                        quantity_to: primaryComp ? primaryComp.quantity_to : 0,
+                        value_to: primaryComp ? primaryComp.value_to : null,
                         balance: 0,
                         ref_super_values_ids: val.ref_super_values_ids || [],
-                        meta: val.meta || []
+                        meta: val.meta || [],
+                        prices: comps.map((c: any) => ({
+                            comparison_id: c.id,
+                            quantity_to: c.quantity_to,
+                            quantity_from: c.quantity_from,
+                            fiat_id: c.value_to
+                        }))
                     });
                 });
             }

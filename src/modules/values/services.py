@@ -9,9 +9,11 @@ from core.database import get_async_db
 
 from .models import Value
 from .meta.models import MetaValue
-from .schemas import RQValue, RQMetaValue
+from .schemas import RQValue, RSValueList, RSValue
 from ..comparison_values.models import ComparisonValue
-from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix mapper initialization
+from src.modules.business_entities.meta.models import (
+    MetaBusinessEntity,
+)  # Fix mapper initialization
 from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 
 
@@ -65,7 +67,7 @@ class ValuesService(Service):
 
         await db.commit()
         await db.refresh(value)
-        return value
+        return value, None
 
     @handle_service_errors
     @injectable
@@ -81,7 +83,7 @@ class ValuesService(Service):
             value = await self.create_value_with_meta(value_data)
             created_values.append(value)
 
-        return created_values
+        return created_values, None
 
     @handle_service_errors
     @injectable
@@ -127,11 +129,19 @@ class ValuesService(Service):
         order_by: str = "id",
         order: str = "asc",
         filters: Optional[dict] = None,
+        load_meta: bool = False,
+        load_balances: bool = False,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Tuple[List[Value], int]]:
+    ) -> ServiceResult[RSValueList]:
         """
         Get paginated list of values with total count.
         """
+        options = []
+        if load_meta:
+            options.append(selectinload(Value.meta))
+        if load_balances:
+            options.append(selectinload(Value.balances))
+
         values = await Value.find_some(
             db,
             pag=page,
@@ -139,9 +149,32 @@ class ValuesService(Service):
             ord=order,
             status="exists",
             filters=filters or {},
+            options=options,
         )
         # Count total matching filters
         all_values = await Value.find_all(db, status="exists", filters=filters or {})
         total = len(all_values)
 
-        return values, total
+        return (
+            RSValueList(
+                data=[
+                    RSValue(
+                        id=value.id,
+                        uid=value.uid,
+                        name=value.name,
+                        expression=value.expression,
+                        type=value.type,
+                        ref_business_entity=value.ref_business_entity,
+                        identifier=value.identifier,
+                    )
+                    for value in values
+                ],
+                total=total,
+                page=page,
+                page_size=page_size,
+                total_pages=total // page_size + 1 if total > 0 else 1,
+                has_prev=page > 1,
+                has_next=page < total // page_size + 1 if total > 0 else False,
+            ),
+            None,
+        )

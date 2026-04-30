@@ -49,6 +49,8 @@ class ValuesController(Controller):
             order_by=payload.order_by,
             order=payload.order,
             filters=filters,
+            load_meta=payload.meta,
+            load_balances=payload.balances,
         )
         if error:
             return error.to_response()
