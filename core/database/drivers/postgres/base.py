@@ -1,35 +1,29 @@
-import asyncio
 import uuid
 from datetime import datetime
-from functools import wraps
-import json
-from typing import Any, List, Literal, Self, Sequence, Set, Union
+from typing import Any, List, Literal, Self, Sequence, Union, Optional
 
 from sqlalchemy import (
     TIMESTAMP,
     UUID,
     Boolean,
     Column,
-    ColumnElement,
     Integer,
     String,
     Table,
-    desc,
     func,
     select,
     text,
     update,
-    Row,
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError, OperationalError, ProgrammingError, DataError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, OperationalError
 
 
-from sqlalchemy_utils import create_view, get_mapper # type: ignore
+from sqlalchemy_utils import create_view, get_mapper  # type: ignore
 
 from sqlalchemy import MetaData
 
@@ -37,7 +31,7 @@ from .async_connection import SessionAsync
 
 from .sync_connection import SessionSync
 
-from core.database.exceptions import DatabaseError, DatabaseConnectionError, DatabaseQueryError, DatabaseIntegrityError, DatabaseDataError, DatabaseOperationalError, DatabaseProgrammingError # type: ignore
+from core.database.exceptions import DatabaseError, DatabaseConnectionError, DatabaseQueryError, DatabaseIntegrityError, DatabaseDataError, DatabaseOperationalError, DatabaseProgrammingError  # type: ignore
 
 from .async_connection import engineAsync
 
@@ -47,7 +41,6 @@ from .sync_connection import engineSync
 from .async_connection import get_async_db
 
 from .sync_connection import get_sync_db
-
 
 
 def generate_uuid():
@@ -109,33 +102,48 @@ class BasicBaseAsync(DeclarativeBase):
                     return
 
                 sync_conn = SessionSync()
-                
+
                 # Enable Row Level Security (RLS)
-                sync_conn.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;"))
-                
+                sync_conn.execute(
+                    text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;")
+                )
+
                 # Drop policy if exists to recreate
-                sync_conn.execute(text(f"DROP POLICY IF EXISTS {table_name}_active_policy ON {table_name};"))
-                
+                sync_conn.execute(
+                    text(
+                        f"DROP POLICY IF EXISTS {table_name}_active_policy ON {table_name};"
+                    )
+                )
+
                 # Create Policy for SELECT ensuring deleted_at IS NULL
-                sync_conn.execute(text(f"""
+                sync_conn.execute(
+                    text(
+                        f"""
                     CREATE POLICY {table_name}_active_policy ON {table_name}
                     FOR SELECT
                     USING (deleted_at IS NULL);
-                """))
-                
+                """
+                    )
+                )
+
                 # Create Partial Index (Crucial for performance optimization)
-                sync_conn.execute(text(f"""
+                sync_conn.execute(
+                    text(
+                        f"""
                     CREATE INDEX IF NOT EXISTS idx_{table_name}_active
                     ON {table_name} (id) 
                     WHERE deleted_at IS NULL;
-                """))
-                
+                """
+                    )
+                )
+
                 sync_conn.commit()
                 sync_conn.close()
             except Exception as e:
-                pass # Suppress warning spam when running alembic auto-generator
+                pass  # Suppress warning spam when running alembic auto-generator
 
         import threading
+
         threading.Thread(target=create, args=(cls,), daemon=True).start()
 
     def __init_subclass__(cls) -> None:
@@ -143,10 +151,12 @@ class BasicBaseAsync(DeclarativeBase):
         super().__init_subclass__()
 
     @classmethod
-    async def count(cls, db: AsyncSession, status: Literal["exists", "deleted", "all"] = "exists") -> int:
+    async def count(
+        cls, db: AsyncSession, status: Literal["exists", "deleted", "all"] = "exists"
+    ) -> int:
         try:
             query = select(func.count()).select_from(cls)
-            
+
             if status == "exists":
                 query = query.where(cls.deleted_at.is_(None))
             elif status == "deleted":
@@ -155,17 +165,18 @@ class BasicBaseAsync(DeclarativeBase):
                 pass
             else:
                 raise DatabaseQueryError("Invalid status")
-                
+
             result = (await db.execute(query)).scalar()
             return int(result) if result is not None else 0
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 
-    async def save(self, db: AsyncSession) -> Self:
+    async def save(self, db: AsyncSession, auto_commit: bool = True) -> Self:
         try:
             db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(self)
             return self
         except IntegrityError as e:
             await db.rollback()
@@ -178,7 +189,7 @@ class BasicBaseAsync(DeclarativeBase):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def delete(cls, db: AsyncSession, id: int | str):
+    async def delete(cls, db: AsyncSession, id: int | str, auto_commit: bool = True):
         reg = await cls.find_one(db, id)
 
         if reg is None or reg.is_deleted:
@@ -196,8 +207,9 @@ class BasicBaseAsync(DeclarativeBase):
                 query = update(cls).where(cls.uid == id).values(**data)
 
             await db.execute(query)
-            await db.commit()
-            
+            if auto_commit:
+                await db.commit()
+
             # Update memory object since db.refresh(reg) might fail with RLS enabled
             reg.is_deleted = is_deleted
             reg.deleted_at = deleted_at
@@ -211,7 +223,9 @@ class BasicBaseAsync(DeclarativeBase):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def update(cls, db: AsyncSession, id: int | str, data: dict):
+    async def update(
+        cls, db: AsyncSession, id: int | str, data: dict, auto_commit: bool = True
+    ):
         updated_at = datetime.now()
         data.update({"updated_at": updated_at})
 
@@ -228,8 +242,9 @@ class BasicBaseAsync(DeclarativeBase):
                 query = update(cls).where(cls.uid == id).values(**data)
 
             await db.execute(query)
-            await db.commit()
-            await db.refresh(reg)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(reg)
 
             return reg
         except IntegrityError as e:
@@ -240,7 +255,9 @@ class BasicBaseAsync(DeclarativeBase):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def find_one(cls, db: AsyncSession, id: Union[int, str]) -> Self:
+    async def find_one(
+        cls, db: AsyncSession, id: Union[int, str], options: Optional[List[Any]] = None
+    ) -> Self:
         try:
             try:
                 val_id = int(str(id))
@@ -248,10 +265,16 @@ class BasicBaseAsync(DeclarativeBase):
             except ValueError:
                 query = select(cls).where(cls.uid == id)
 
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+
             result = (await db.execute(query)).scalar_one_or_none()
 
             if result is None:
-                raise DatabaseQueryError(f"Not exists the register in {cls.__tablename__}")
+                raise DatabaseQueryError(
+                    f"Not exists the register in {cls.__tablename__}"
+                )
 
             if result.is_deleted:
                 raise DatabaseQueryError(f"The register {cls.__tablename__} is deleted")
@@ -265,6 +288,7 @@ class BasicBaseAsync(DeclarativeBase):
         db: AsyncSession,
         status: Literal["deleted", "exists", "all"] = "all",
         filters: dict = dict(),
+        options: Optional[List[Any]] = None,
     ) -> List[Self]:
         try:
             query = select(cls).filter_by(**filters)
@@ -273,6 +297,10 @@ class BasicBaseAsync(DeclarativeBase):
                 query = query.where(cls.deleted_at.is_not(None))
             elif status == "exists":
                 query = query.where(cls.deleted_at.is_(None))
+
+            if options:
+                for opt in options:
+                    query = query.options(opt)
 
             result = (await db.execute(query)).scalars().all()
             return list(result)
@@ -293,6 +321,7 @@ class BasicBaseAsync(DeclarativeBase):
         ord: str = "asc",
         status: Literal["deleted", "exists", "all"] = "all",
         filters: dict = {},
+        options: Optional[List[Any]] = None,
     ) -> List[Self]:
         try:
             query = select(cls).filter_by(**filters)
@@ -316,6 +345,10 @@ class BasicBaseAsync(DeclarativeBase):
 
             query = query.limit(10).offset((pag - 1) * 10)
 
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+
             result = (await db.execute(query)).scalars().all()
             return list(result)
         except SQLAlchemyError as e:
@@ -336,7 +369,6 @@ class BasicBaseAsync(DeclarativeBase):
             return result
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
-
 
 
 class BaseAsync(DeclarativeBase):
@@ -367,10 +399,12 @@ class BaseAsync(DeclarativeBase):
     is_deleted: Mapped[bool] = mapped_column(default=False)
 
     @classmethod
-    async def count(cls, db: AsyncSession, status: Literal["exists", "deleted", "all"] = "exists") -> int:
+    async def count(
+        cls, db: AsyncSession, status: Literal["exists", "deleted", "all"] = "exists"
+    ) -> int:
         try:
             query = select(func.count())
-            
+
             if status == "exists":
                 query = query.select_from(cls.get_exists())
             elif status == "deleted":
@@ -379,7 +413,7 @@ class BaseAsync(DeclarativeBase):
                 query = query.select_from(cls)
             else:
                 raise DatabaseQueryError("Invalid status")
-                
+
             result = (await db.execute(query)).scalar()
             return int(result) if result is not None else 0
         except Exception as e:
@@ -387,12 +421,12 @@ class BaseAsync(DeclarativeBase):
 
     @classmethod
     def get_deleted(cls) -> Table:
-        return cls.deleted # type: ignore
+        return cls.deleted  # type: ignore
 
     @classmethod
     def get_exists(cls) -> Table:
 
-        return cls.exists # type: ignore
+        return cls.exists  # type: ignore
 
     @classmethod
     def touple_to_dict(cls, arr: Sequence[Self]) -> List[Self]:
@@ -408,18 +442,18 @@ class BaseAsync(DeclarativeBase):
 
             for i, column in enumerate(colums):
 
-                obj.__setattr__(column.name, touple[i]) # type: ignore
+                obj.__setattr__(column.name, touple[i])  # type: ignore
 
             result.append(obj)
         return result
 
-    async def save(self, db: AsyncSession):
+    async def save(self, db: AsyncSession, auto_commit: bool = True):
         try:
             db.add(self)
 
-            await db.commit()
-
-            await db.refresh(self)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(self)
             return self
         except IntegrityError as e:
             await db.rollback()
@@ -438,9 +472,13 @@ class BaseAsync(DeclarativeBase):
             try:
                 sync_conn = SessionSync()
 
-                sync_conn.execute(text(generate_dll_view(model_cls.__tablename__, "true")))
+                sync_conn.execute(
+                    text(generate_dll_view(model_cls.__tablename__, "true"))
+                )
 
-                sync_conn.execute(text(generate_dll_view(model_cls.__tablename__, "false")))
+                sync_conn.execute(
+                    text(generate_dll_view(model_cls.__tablename__, "false"))
+                )
 
                 sync_conn.commit()
 
@@ -461,6 +499,7 @@ class BaseAsync(DeclarativeBase):
                 pass
 
         import threading
+
         threading.Thread(target=create, args=(cls,), daemon=True).start()
 
     def __init_subclass__(cls) -> None:
@@ -470,7 +509,7 @@ class BaseAsync(DeclarativeBase):
         return super().__init_subclass__()
 
     @classmethod
-    async def delete(cls, db: AsyncSession, id: int | str):
+    async def delete(cls, db: AsyncSession, id: int | str, auto_commit: bool = True):
 
         reg = await cls.find_one(db, id)
 
@@ -493,9 +532,9 @@ class BaseAsync(DeclarativeBase):
 
             await db.execute(query)
 
-            await db.commit()
-
-            await db.refresh(reg)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(reg)
 
             return reg
         except IntegrityError as e:
@@ -506,7 +545,9 @@ class BaseAsync(DeclarativeBase):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def update(cls, db: AsyncSession, id: int | str, data: dict):
+    async def update(
+        cls, db: AsyncSession, id: int | str, data: dict, auto_commit: bool = True
+    ):
 
         updated_at = datetime.now()
 
@@ -527,9 +568,9 @@ class BaseAsync(DeclarativeBase):
 
             await db.execute(query)
 
-            await db.commit()
-
-            await db.refresh(reg)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(reg)
 
             return reg
         except IntegrityError as e:
@@ -540,7 +581,9 @@ class BaseAsync(DeclarativeBase):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def find_one(cls, db: AsyncSession, id: Union[int, str]) -> Self:
+    async def find_one(
+        cls, db: AsyncSession, id: Union[int, str], options: Optional[List[Any]] = None
+    ) -> Self:
 
         try:
             try:
@@ -549,11 +592,17 @@ class BaseAsync(DeclarativeBase):
             except ValueError:
                 query = select(cls).where(cls.uid == id)
 
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+
             result = (await db.execute(query)).scalar_one_or_none()
 
             if result is None:
 
-                raise DatabaseQueryError(f"Not exists the register in {cls.__tablename__}")
+                raise DatabaseQueryError(
+                    f"Not exists the register in {cls.__tablename__}"
+                )
 
             if result.is_deleted:
 
@@ -568,6 +617,7 @@ class BaseAsync(DeclarativeBase):
         db: AsyncSession,
         status: Literal["deleted", "exists", "all"] = "all",
         filters: dict = dict(),
+        options: Optional[List[Any]] = None,
     ) -> List[Self]:
         try:
             base_query = select(cls).filter_by(**filters)
@@ -580,12 +630,16 @@ class BaseAsync(DeclarativeBase):
 
                 base_query = cls.get_exists().select().filter_by(**filters)
 
+            if options:
+                for opt in options:
+                    base_query = base_query.options(opt)
+
             result = (
                 (await db.execute(base_query)).scalars().all()
                 if status == "all"
                 else (await db.execute(base_query)).all()
             )
-            return result # type: ignore
+            return result  # type: ignore
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 
@@ -605,6 +659,7 @@ class BaseAsync(DeclarativeBase):
         ord: str = "asc",
         status: Literal["deleted", "exists", "all"] = "all",
         filters: dict = {},
+        options: Optional[List[Any]] = None,
     ) -> List[Self]:
         try:
             # Determine the source and initial query
@@ -623,7 +678,7 @@ class BaseAsync(DeclarativeBase):
 
             else:  # status == 'all'
 
-                selectable = cls.__table__ # type: ignore
+                selectable = cls.__table__  # type: ignore
 
                 base_query = select(cls).filter_by(**filters)
 
@@ -681,10 +736,13 @@ class BaseAsync(DeclarativeBase):
 
             query = base_query.limit(10).offset((pag - 1) * 10)
 
+            if options:
+                for opt in options:
+                    query = query.options(opt)
 
             exec_result = await db.execute(query)
             rows = exec_result.scalars().all() if status == "all" else exec_result.all()
-            return rows if status == "all" else cls.touple_to_dict(rows) # type: ignore
+            return rows if status == "all" else cls.touple_to_dict(rows)  # type: ignore
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 

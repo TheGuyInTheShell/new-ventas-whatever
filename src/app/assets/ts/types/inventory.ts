@@ -12,6 +12,12 @@ export interface InventoryItem {
     balance: number;
     ref_super_values_ids: number[];
     meta: Array<{ key: string; value: string }>;
+    prices?: Array<{
+        comparison_id: number;
+        quantity_to: number;
+        quantity_from: number;
+        fiat_id: number;
+    }>;
 }
 
 export interface InventoryStoreContext {

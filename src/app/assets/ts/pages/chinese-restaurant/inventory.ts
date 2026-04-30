@@ -39,6 +39,7 @@ document.addEventListener('alpine:init', () => {
 
         fiatContext: fiatStore.getSnapshot().context,
         inventoryContext: inventoryStore.getSnapshot().context,
+        viewFiatId: null as number | null,
 
         async init() {
             fiatStore.subscribe((snapshot) => {
@@ -51,6 +52,10 @@ document.addEventListener('alpine:init', () => {
 
             if (this.fiatContext.fiats.length === 0) {
                 await fiatActions.fetchFiats();
+            }
+            
+            if (!this.viewFiatId) {
+                this.viewFiatId = this.fiatContext.mainFiatId;
             }
 
             if (initialItems && initialItems.length > 0 && this.inventoryContext.items.length === 0) {
@@ -100,10 +105,10 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
-        getMainFiatExpression(): string {
-            const mainId = this.fiatContext.mainFiatId;
-            if (!mainId) return '';
-            const fiat = this.fiatContext.fiats.find(f => f.id === mainId);
+        getViewFiatExpression(): string {
+            const fiatId = this.viewFiatId || this.fiatContext.mainFiatId;
+            if (!fiatId) return '';
+            const fiat = this.fiatContext.fiats.find(f => f.id === fiatId);
             return fiat ? fiat.expression : '';
         },
 
@@ -117,15 +122,44 @@ document.addEventListener('alpine:init', () => {
         calculatePrice(item: InventoryItem): number | string {
             if (!item.quantity_to || item.quantity_to <= 0) return '-';
 
-            const mainId = this.fiatContext.mainFiatId;
-            if (!mainId) return item.quantity_to;
+            const viewId = this.viewFiatId || this.fiatContext.mainFiatId;
+            if (!viewId) return item.quantity_to;
 
+            // 1. Try to find an exact price match in the prices array
+            if (item.prices && item.prices.length > 0) {
+                const exactMatch = item.prices.find(p => p.fiat_id === viewId);
+                if (exactMatch) {
+                    return parseFloat((exactMatch.quantity_to / exactMatch.quantity_from).toFixed(2));
+                }
+            }
+
+            // 2. Fallback to conversion logic
             let price = item.quantity_to / item.quantity_from;
 
-            if (item.value_to && item.value_to !== mainId) {
-                const rate = this.fiatContext.exchangeRates[item.value_to];
-                if (rate) {
-                    price = price / rate;
+            // If item primary currency is different from view currency
+            if (item.value_to && item.value_to !== viewId) {
+                const mainId = this.fiatContext.mainFiatId;
+                if (!mainId) return '-';
+
+                let priceInMain = price;
+                if (item.value_to !== mainId) {
+                    const rateToMain = this.fiatContext.exchangeRates[item.value_to];
+                    if (rateToMain) {
+                        priceInMain = price / rateToMain;
+                    } else {
+                        return '-';
+                    }
+                }
+
+                if (viewId === mainId) {
+                    price = priceInMain;
+                } else {
+                    const rateToView = this.fiatContext.exchangeRates[viewId];
+                    if (rateToView) {
+                        price = priceInMain * rateToView;
+                    } else {
+                        return '-';
+                    }
                 }
             }
 
