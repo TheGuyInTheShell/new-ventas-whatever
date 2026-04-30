@@ -32,16 +32,8 @@ class BusinessEntitiesSearchByController(Controller):
         Busca una entidad por su nombre exacto. Permite obtener opcionalmente
         la jerarquía completa y/o los grupos asociados.
         """
-        search_query = RQBusinessEntitiesSearch(
-            name=query.name,
-            hierarchy=query.hierarchy,
-            groups=query.groups,
-            is_deleted=query.is_deleted,
-            page=query.page,
-            page_size=query.page_size,
-        )
-        result, error = await self.BusinessEntitiesSearchByService.search_business_entities(
-            search_query
+        result, error = await self.BusinessEntitiesSearchByService.search_entity_by_name(
+            query
         )
 
         if error:
@@ -60,16 +52,8 @@ class BusinessEntitiesSearchByController(Controller):
         """
         Busca entidades que pertenecen a uno o más grupos especificados.
         """
-        search_query = RQBusinessEntitiesSearch(
-            name=query.name,
-            group_names=query.group_names,
-            groups=True,  # Siempre devolver grupos en este endpoint
-            is_deleted=query.is_deleted,
-            page=query.page,
-            page_size=query.page_size,
-        )
-        result, error = await self.BusinessEntitiesSearchByService.search_business_entities(
-            search_query
+        result, error = await self.BusinessEntitiesSearchByService.search_entity_by_groups(
+            query
         )
 
         if error:
@@ -89,15 +73,8 @@ class BusinessEntitiesSearchByController(Controller):
         Busca una entidad por su nombre y una asociación específica con un hijo por su nombre.
         La respuesta incluirá los datos de ambos.
         """
-        search_query = RQBusinessEntitiesSearch(
-            name=query.name,
-            child_name=query.child_name,
-            is_deleted=query.is_deleted,
-            page=query.page,
-            page_size=query.page_size,
-        )
-        result, error = await self.BusinessEntitiesSearchByService.search_business_entities(
-            search_query
+        result, error = await self.BusinessEntitiesSearchByService.search_entity_by_child(
+            query
         )
 
         if error:
