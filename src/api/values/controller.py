@@ -54,10 +54,8 @@ class ValuesController(Controller):
         )
         if error:
             return error.to_response()
-            
-        values, total = result
-        # Returns raw list of values ensuring JS can parse directly
-        return values
+
+        return result
 
     @Delete("/id/{id}")
     @Shield.need(
