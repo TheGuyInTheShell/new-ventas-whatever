@@ -30,21 +30,22 @@ export const businessEntityActions = {
         const promise = (async () => {
             businessEntityStore.trigger.setLoading({ value: true });
             try {
-                const res = await fetch(`${API_BASE}/business_entities_search_by/search`, {
+                const res = await fetch(`${API_BASE}/business_entities/search/child`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: ENTITY_NAME, child_name: "inventory" })
                 });
                 const data = await res.json();
-                if (data && data.data && data.data.length > 0) {
-                    const entity = data.data.find((e: any) => e.name === ENTITY_NAME) || data.data[0];
+                
+                if (data && data.parent) {
+                    const entity = data.parent;
                     businessEntityStore.trigger.setEntityId({ id: entity.id });
                     
-                    if (entity.child && entity.child.name === 'inventory') {
-                        businessEntityStore.trigger.setInventoryId({ id: entity.child.id });
+                    if (data.child && data.child.name === 'inventory') {
+                        businessEntityStore.trigger.setInventoryId({ id: data.child.id });
                     }
                 } else {
-                    console.warn(`Business entity '${ENTITY_NAME}' not found.`);
+                    console.warn(`Business entity relationship not found for '${ENTITY_NAME}'.`);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch business entity: ", error);
