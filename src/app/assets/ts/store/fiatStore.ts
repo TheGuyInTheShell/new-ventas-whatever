@@ -93,7 +93,7 @@ export const fiatActions = {
         }
     },
 
-    async setMainFiat(id: number): Promise<void> {
+    async setMainFiat(id: number): Promise<boolean> {
         try {
             const optRes = await fetch(`${API_BASE}/options/?context=global`);
             const optData = await optRes.json();
@@ -114,18 +114,20 @@ export const fiatActions = {
             }
             fiatStore.trigger.setMainFiat({ id });
             await this.fetchFiats();
+            return true;
         } catch (error) {
             console.error("Failed to set main fiat: ", error);
+            return false;
         }
     },
 
-    async createFiat(name: string, expression: string): Promise<void> {
+    async createFiat(name: string, expression: string): Promise<boolean> {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
             if (!entityId) throw new Error("Business entity ID required to create fiat");
 
-            await fetch(`${API_BASE}/values/`, {
+            const res = await fetch(`${API_BASE}/values/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -135,13 +137,16 @@ export const fiatActions = {
                     ref_business_entity: entityId
                 })
             });
+            if (!res.ok) throw new Error("Server error creating currency");
             await this.fetchFiats();
+            return true;
         } catch (error) {
             console.error("Failed to create fiat: ", error);
+            throw error;
         }
     },
 
-    async createLink(fromId: number, toId: number, rate: number): Promise<void> {
+    async createLink(fromId: number, toId: number, rate: number): Promise<boolean> {
         try {
             // Ensure data is fresh before checking for existing links
             await this.fetchFiats();
@@ -161,31 +166,38 @@ export const fiatActions = {
                 ref_business_entity: entityId
             };
 
+            let res;
             if (existing) {
-                await fetch(`${API_BASE}/comparison_values/id/${existing.id}`, {
+                res = await fetch(`${API_BASE}/comparison_values/id/${existing.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
             } else {
-                await fetch(`${API_BASE}/comparison_values/`, {
+                res = await fetch(`${API_BASE}/comparison_values/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
             }
+            if (!res.ok) throw new Error("Server error creating exchange rate");
             await this.fetchFiats();
+            return true;
         } catch (error) {
             console.error("Failed to create link: ", error);
+            throw error;
         }
     },
 
-    async deleteFiat(id: number): Promise<void> {
+    async deleteFiat(id: number): Promise<boolean> {
         try {
-            await fetch(`${API_BASE}/values/id/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/values/id/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Server error deleting currency");
             await this.fetchFiats();
+            return true;
         } catch (error) {
             console.error("Failed to delete fiat: ", error);
+            throw error;
         }
     },
 
@@ -212,12 +224,15 @@ export const fiatActions = {
         }
     },
 
-    async deleteComparison(id: number): Promise<void> {
+    async deleteComparison(id: number): Promise<boolean> {
         try {
-            await fetch(`${API_BASE}/comparison_values/id/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/comparison_values/id/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Server error deleting comparison");
             await this.fetchFiats();
+            return true;
         } catch (error) {
             console.error("Failed to delete comparison: ", error);
+            throw error;
         }
     }
 };
