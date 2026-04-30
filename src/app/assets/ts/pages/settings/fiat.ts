@@ -4,6 +4,7 @@ import focus from '@alpinejs/focus';
 import collapse from '@alpinejs/collapse';
 import "htmx.org";
 import { fiatStore, fiatActions } from "../../store/fiatStore";
+import { notifySuccess, notifyError, notifyWarning } from "../../includes/toast";
 
 (window as any).Alpine = Alpine;
 
@@ -35,47 +36,86 @@ document.addEventListener('alpine:init', () => {
         async onAddFiat() {
             if (this.newFiat.name && this.newFiat.expression) {
                 this.isAddingFiat = true;
-                await fiatActions.createFiat(this.newFiat.name, this.newFiat.expression);
-                this.newFiat.name = '';
-                this.newFiat.expression = '';
-                this.isAddingFiat = false;
+                try {
+                    const success = await fiatActions.createFiat(this.newFiat.name, this.newFiat.expression);
+                    if (success) {
+                        notifySuccess(`Currency ${this.newFiat.name} added`, 'Settings');
+                        this.newFiat.name = '';
+                        this.newFiat.expression = '';
+                    } else {
+                        notifyError('Failed to add currency', 'Error');
+                    }
+                } catch (e: any) {
+                    notifyError(e.message || 'Error adding currency', 'Error');
+                } finally {
+                    this.isAddingFiat = false;
+                }
             }
         },
 
         async onSetMainFiat(id: number) {
-            await fiatActions.setMainFiat(id);
+            try {
+                await fiatActions.setMainFiat(id);
+                notifySuccess('Main currency updated', 'Settings');
+            } catch (e: any) {
+                notifyError('Failed to set main currency', 'Error');
+            }
         },
 
         async onSetRate(fiatId: number, rate: string | number) {
             if (this.mainFiatId && rate) {
-                await fiatActions.createLink(this.mainFiatId, fiatId, typeof rate === 'string' ? parseFloat(rate) : rate);
+                try {
+                    await fiatActions.createLink(this.mainFiatId, fiatId, typeof rate === 'string' ? parseFloat(rate) : rate);
+                    notifySuccess('Exchange rate updated', 'Settings');
+                } catch (e: any) {
+                    notifyError('Failed to update rate', 'Error');
+                }
             }
         },
 
         async onAddComparison() {
             if (this.newComparison.fromId && this.newComparison.toId && this.newComparison.rate) {
                 if (this.newComparison.fromId === this.newComparison.toId) {
-                    alert('Cannot compare a currency with itself');
+                    notifyWarning('Cannot compare a currency with itself', 'Settings');
                     return;
                 }
-                await fiatActions.createLink(
-                    this.newComparison.fromId,
-                    this.newComparison.toId,
-                    this.newComparison.rate
-                );
-                this.newComparison = { fromId: null, toId: null, rate: null };
+                try {
+                    const success = await fiatActions.createLink(
+                        this.newComparison.fromId,
+                        this.newComparison.toId,
+                        this.newComparison.rate
+                    );
+                    if (success) {
+                        notifySuccess('Comparison added', 'Settings');
+                        this.newComparison = { fromId: null, toId: null, rate: null };
+                    } else {
+                        notifyError('Failed to add comparison', 'Error');
+                    }
+                } catch (e: any) {
+                    notifyError(e.message || 'Error adding comparison', 'Error');
+                }
             }
         },
 
         async onDeleteFiat(id: number) {
             if (confirm('Are you sure you want to delete this currency?')) {
-                await fiatActions.deleteFiat(id);
+                try {
+                    await fiatActions.deleteFiat(id);
+                    notifySuccess('Currency deleted', 'Settings');
+                } catch (e: any) {
+                    notifyError('Failed to delete currency', 'Error');
+                }
             }
         },
 
         async onDeleteComparison(id: number) {
             if (confirm('Are you sure you want to delete this comparison?')) {
-                await fiatActions.deleteComparison(id);
+                try {
+                    await fiatActions.deleteComparison(id);
+                    notifySuccess('Comparison deleted', 'Settings');
+                } catch (e: any) {
+                    notifyError('Failed to delete comparison', 'Error');
+                }
             }
         },
 

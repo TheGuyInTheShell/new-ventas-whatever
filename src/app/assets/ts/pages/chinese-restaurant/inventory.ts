@@ -51,7 +51,11 @@ document.addEventListener('alpine:init', () => {
             });
 
             if (this.fiatContext.fiats.length === 0) {
-                await fiatActions.fetchFiats();
+                try {
+                    await fiatActions.fetchFiats();
+                } catch (e: any) {
+                    notifyError('Failed to load currency data', 'Error');
+                }
             }
             
             if (!this.viewFiatId) {
@@ -61,7 +65,11 @@ document.addEventListener('alpine:init', () => {
             if (initialItems && initialItems.length > 0 && this.inventoryContext.items.length === 0) {
                 inventoryStore.trigger.setItems({ data: initialItems });
             } else if (this.inventoryContext.items.length === 0) {
-                await inventoryActions.fetchItems();
+                try {
+                    await inventoryActions.fetchItems();
+                } catch (e: any) {
+                    notifyError('Failed to load inventory items', 'Error');
+                }
             }
 
             this.$nextTick(() => {
@@ -231,11 +239,18 @@ document.addEventListener('alpine:init', () => {
         async confirmDelete() {
             if (!this.itemToDelete) return;
 
-            const success = await inventoryActions.deleteItem(this.itemToDelete.id, this.itemToDelete.comparison_id);
+            try {
+                const success = await inventoryActions.deleteItem(this.itemToDelete.id, this.itemToDelete.comparison_id);
 
-            if (success) {
-                this.deleteModalOpen = false;
-                this.itemToDelete = null;
+                if (success) {
+                    this.deleteModalOpen = false;
+                    this.itemToDelete = null;
+                    notifySuccess('Item deleted successfully', 'Inventory');
+                } else {
+                    notifyError('Failed to delete item', 'Error');
+                }
+            } catch (e: any) {
+                notifyError(e.message || 'Error deleting item', 'Error');
             }
         }
     }));

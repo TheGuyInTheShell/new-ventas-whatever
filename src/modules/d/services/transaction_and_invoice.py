@@ -23,10 +23,13 @@ from ...comparison_values.historical.models import ComparisonValueHistorical
 from ...balances_business_entities.models import BalanceBusinessEntity
 from ..schemas.transaction_and_invoice import InvoiceSales
 
+
 class DTransactionAndInvoiceService(Service):
     @handle_service_errors
     @injectable
-    async def create_transaction_and_invoice_service(self, data: InvoiceSales, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[dict]:
+    async def create_transaction_and_invoice_service(
+        self, data: InvoiceSales, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[dict]:
         """
         Full sales flow: resolve balances -> create historical comparison -> create transaction -> create invoice -> link all.
         """
@@ -37,13 +40,17 @@ class DTransactionAndInvoiceService(Service):
                 name=data.name or "Sale Invoice",
                 type=data.type or "sale",
                 serial=data.serial,
-                notes=data.notes
+                notes=data.notes,
             )
             db.add(invoice)
-            await db.flush() # get invoice.id
+            await db.flush()  # get invoice.id
 
             # 2. Link Invoice to Business Entity
-            db.add(InvoiceBusinessEntity(ref_invoice=invoice.id, ref_business_entity=data.business_entity_id))
+            db.add(
+                InvoiceBusinessEntity(
+                    ref_invoice=invoice.id, ref_business_entity=data.business_entity_id
+                )
+            )
 
             created_transactions = []
 
@@ -54,9 +61,13 @@ class DTransactionAndInvoiceService(Service):
                 balance_to_id = tx_data.ref_balance_to
 
                 if not balance_from_id:
-                    balance_from_id = await self._resolve_balance(tx_data.ref_value_from, data.business_entity_id)
+                    balance_from_id = await self._resolve_balance(
+                        tx_data.ref_value_from, data.business_entity_id
+                    )
                 if not balance_to_id:
-                    balance_to_id = await self._resolve_balance(tx_data.ref_value_to, data.business_entity_id)
+                    balance_to_id = await self._resolve_balance(
+                        tx_data.ref_value_to, data.business_entity_id
+                    )
 
                 # Resolve/Create Historical Comparison if needed
                 historical_id = tx_data.ref_comparation_values_historical
@@ -64,10 +75,10 @@ class DTransactionAndInvoiceService(Service):
                     # Create a snapshot
                     historical = ComparisonValueHistorical(
                         context=data.context or "sales_snapshot",
-                        quantity_from=1, # Default base
-                        quantity_to=tx_data.quantity, # Using quantity as current rate/qty
+                        quantity_from=1,  # Default base
+                        quantity_to=tx_data.quantity,  # Using quantity as current rate/qty
                         value_from=tx_data.ref_value_from,
-                        value_to=tx_data.ref_value_to
+                        value_to=tx_data.ref_value_to,
                     )
                     db.add(historical)
                     await db.flush()
@@ -76,56 +87,68 @@ class DTransactionAndInvoiceService(Service):
                 # Create Transaction
                 transaction = Transaction(
                     quantity=str(tx_data.quantity),
-                    quantity_to="0", # Default or derived?
+                    quantity_to="0",  # Default or derived?
                     operation_type=tx_data.operation_type,
                     reference_code=tx_data.reference_code,
-                    ref_by_user=1, # Proxy user
+                    ref_by_user=1,  # Proxy user
                     ref_balance_from=balance_from_id,
-                    ref_balance_to=balance_to_id
+                    ref_balance_to=balance_to_id,
                 )
                 db.add(transaction)
                 await db.flush()
 
                 # Link Invoice -> Transaction
-                db.add(InvoiceTransaction(ref_invoice=invoice.id, ref_transaction=transaction.id))
-                
+                db.add(
+                    InvoiceTransaction(
+                        ref_invoice=invoice.id, ref_transaction=transaction.id
+                    )
+                )
+
                 created_transactions.append(transaction.id)
 
             return {
                 "success": True,
                 "invoice_id": invoice.id,
-                "transaction_ids": created_transactions
-            }
+                "transaction_ids": created_transactions,
+            }, None
 
         except Exception as e:
             raise e
 
     @handle_service_errors
     @injectable
-    async def _resolve_balance(self, value_id: int, entity_id: int, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[int]:
+    async def _resolve_balance(
+        self, value_id: int, entity_id: int, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[int]:
         """Helper to find a balance for a value and business entity."""
-        stmt = select(Balance.id).join(BalanceBusinessEntity).where(
-            Balance.ref_value == value_id,
-            BalanceBusinessEntity.ref_business_entity == entity_id
+        stmt = (
+            select(Balance.id)
+            .join(BalanceBusinessEntity)
+            .where(
+                Balance.ref_value == value_id,
+                BalanceBusinessEntity.ref_business_entity == entity_id,
+            )
         )
         result = await db.execute(stmt)
         balance_id = result.scalars().first()
-        
+
         if not balance_id:
             # Fallback: find any balance for this value if not specifically linked to the entity?
             # Or create one? Requirements are a bit fuzzy here, let's try to find any first.
             stmt_any = select(Balance.id).where(Balance.ref_value == value_id)
             result_any = await db.execute(stmt_any)
             balance_id = result_any.scalars().first()
-            
+
         if not balance_id:
             raise DatabaseQueryError(f"No balance found for value_id {value_id}")
-            
+
         return balance_id
 
     @handle_service_errors
     @injectable
-    async def adjust_transaction_and_invoice_service(self, data: RQAdjustBalance, db: AsyncSession = Depends(get_async_db)) -> ServiceResult[dict]:
+    async def adjust_transaction_and_invoice_service(
+        self, data: RQAdjustBalance, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[dict]:
         """
         Adjust the stock (quantity) of an inventory Balance.
         If 'is_adjustment' is true, generate an Invoice and pseudo-Transaction for history.
@@ -135,9 +158,11 @@ class DTransactionAndInvoiceService(Service):
             stmt = select(Balance).where(Balance.id == data.balance_id)
             result = await db.execute(stmt)
             balance = result.scalars().first()
-            
+
             if not balance:
-                raise DatabaseQueryError("Inventory Balance not found for the given value.")
+                raise DatabaseQueryError(
+                    "Inventory Balance not found for the given value."
+                )
 
             if not data.is_adjustment:
                 # Direct edit
@@ -148,7 +173,7 @@ class DTransactionAndInvoiceService(Service):
                 # ----------------------------------------------------------------
                 # Round to avoid float precision ghosts like 20.03 - 20.0 = 0.030000000000001422
                 delta = _round_quantity(data.new_quantity - balance.quantity)
-                
+
                 if delta != 0:
                     # ------------------------------------------------------------
                     # STEP 1: Find the adjustment balance scoped to the same
@@ -161,9 +186,9 @@ class DTransactionAndInvoiceService(Service):
                     # ------------------------------------------------------------
 
                     # First, resolve which business entities the source balance belongs to.
-                    stmt_src_entities = select(BalanceBusinessEntity.ref_business_entity).where(
-                        BalanceBusinessEntity.ref_balance == balance.id
-                    )
+                    stmt_src_entities = select(
+                        BalanceBusinessEntity.ref_business_entity
+                    ).where(BalanceBusinessEntity.ref_balance == balance.id)
                     result_src_entities = await db.execute(stmt_src_entities)
                     src_entity_ids = result_src_entities.scalars().all()
                     # src_entity_ids might be empty if the balance has no entity link yet.
@@ -177,12 +202,14 @@ class DTransactionAndInvoiceService(Service):
                             select(Balance)
                             .join(
                                 BalanceBusinessEntity,
-                                BalanceBusinessEntity.ref_balance == Balance.id
+                                BalanceBusinessEntity.ref_balance == Balance.id,
                             )
                             .where(
                                 Balance.ref_value == balance.ref_value,
                                 Balance.type == "adjustment",
-                                BalanceBusinessEntity.ref_business_entity.in_(src_entity_ids)
+                                BalanceBusinessEntity.ref_business_entity.in_(
+                                    src_entity_ids
+                                ),
                             )
                             .limit(1)
                         )
@@ -191,10 +218,14 @@ class DTransactionAndInvoiceService(Service):
                     else:
                         # No entity links on source balance — fall back to a simple
                         # lookup by value (old behaviour, just in case).
-                        stmt_adj = select(Balance).where(
-                            Balance.ref_value == balance.ref_value,
-                            Balance.type == "adjustment",
-                        ).limit(1)
+                        stmt_adj = (
+                            select(Balance)
+                            .where(
+                                Balance.ref_value == balance.ref_value,
+                                Balance.type == "adjustment",
+                            )
+                            .limit(1)
+                        )
                         result_adj = await db.execute(stmt_adj)
                         adj_balance = result_adj.scalars().first()
 
@@ -203,9 +234,7 @@ class DTransactionAndInvoiceService(Service):
                     # ------------------------------------------------------------
                     if not adj_balance:
                         adj_balance = Balance(
-                            type="adjustment",
-                            quantity=0.0,
-                            ref_value=balance.ref_value
+                            type="adjustment", quantity=0.0, ref_value=balance.ref_value
                         )
                         db.add(adj_balance)
                         await db.flush()  # flush to get adj_balance.id before inserting pivots
@@ -218,16 +247,18 @@ class DTransactionAndInvoiceService(Service):
                         # Check whether this specific pivot row already exists.
                         stmt_exists = select(BalanceBusinessEntity).where(
                             BalanceBusinessEntity.ref_balance == adj_balance.id,
-                            BalanceBusinessEntity.ref_business_entity == ent_id
+                            BalanceBusinessEntity.ref_business_entity == ent_id,
                         )
                         result_exists = await db.execute(stmt_exists)
                         already_linked = result_exists.scalars().first()
-                        
+
                         if not already_linked:
-                            db.add(BalanceBusinessEntity(
-                                ref_balance=adj_balance.id,
-                                ref_business_entity=ent_id
-                            ))
+                            db.add(
+                                BalanceBusinessEntity(
+                                    ref_balance=adj_balance.id,
+                                    ref_business_entity=ent_id,
+                                )
+                            )
 
                     # ------------------------------------------------------------
                     # STEP 4: Create an Invoice + Transaction for the audit trail.
@@ -237,7 +268,7 @@ class DTransactionAndInvoiceService(Service):
                         context="chinese_restaurant",
                         name="Inventory Adjustment",
                         type="adjustment",
-                        notes=data.notes or f"Manual adjustment of {abs(delta)} units."
+                        notes=data.notes or f"Manual adjustment of {abs(delta)} units.",
                     )
                     db.add(invoice)
                     await db.flush()  # get invoice.id
@@ -258,7 +289,11 @@ class DTransactionAndInvoiceService(Service):
                     await db.flush()
 
                     # Link the invoice to the transaction.
-                    db.add(InvoiceTransaction(ref_invoice=invoice.id, ref_transaction=transaction.id))
+                    db.add(
+                        InvoiceTransaction(
+                            ref_invoice=invoice.id, ref_transaction=transaction.id
+                        )
+                    )
 
                     # ------------------------------------------------------------
                     # STEP 5: Apply quantity changes to both balances.
@@ -269,14 +304,12 @@ class DTransactionAndInvoiceService(Service):
                     # ------------------------------------------------------------
                     balance.quantity = _round_quantity(data.new_quantity)
                     adj_balance.quantity = _round_quantity(adj_balance.quantity - delta)
-                
-            
+
             return {
                 "success": True,
                 "balance_id": balance.id,
-                "new_quantity": _round_quantity(balance.quantity)
+                "new_quantity": _round_quantity(balance.quantity),
             }
 
         except Exception as e:
             raise e
-
