@@ -106,4 +106,4 @@ class SysPartials(Partial):
                     id="init-error",
                 )
             )
-        return Response(response)
+        return Response(response, status_code=200 if not error else 400)

@@ -26,7 +26,10 @@ class ValuesController(Controller):
         description="Creates a new value",
     )
     async def create_value(self, payload: RQValue):
-        return await self.ValuesService.create_value_with_meta(payload)
+        result, error = await self.ValuesService.create_value_with_meta(payload)
+        if error:
+            return error.to_response()
+        return result
 
     @Post("/query")
     @Shield.need(
@@ -40,13 +43,17 @@ class ValuesController(Controller):
         if payload.type:
             filters["type"] = payload.type
 
-        values, total = await self.ValuesService.get_values_paginated(
+        result, error = await self.ValuesService.get_values_paginated(
             page=payload.page,
             page_size=payload.page_size,
             order_by=payload.order_by,
             order=payload.order,
             filters=filters,
         )
+        if error:
+            return error.to_response()
+            
+        values, total = result
         # Returns raw list of values ensuring JS can parse directly
         return values
 

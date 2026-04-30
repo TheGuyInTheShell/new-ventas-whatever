@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from core.lib.register.service import Service
 from fastapi import Depends
 from fastapi_injectable import injectable
+from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 from core.database import get_async_db
 
 from .models import ComparisonValue
@@ -16,24 +17,47 @@ from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix m
 
 
 class ComparisonValuesService(Service):
+    @handle_service_errors
     @injectable
     async def create_comparison(
         self, data: RQComparisonValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ComparisonValue:
-        """Create a new comparison value"""
-        comparison = ComparisonValue(
-            quantity_from=data.quantity_from,
-            quantity_to=data.quantity_to,
-            value_from=data.value_from,
-            value_to=data.value_to,
-            ref_business_entity=data.ref_business_entity,
+    ) -> ServiceResult[ComparisonValue]:
+        """Create a new comparison value or restore a deleted one (Upsert)"""
+        # Check if it exists (even if deleted) to handle UniqueConstraint conflicts
+        stmt = select(ComparisonValue).where(
+            ComparisonValue.value_from == data.value_from,
+            ComparisonValue.value_to == data.value_to,
+            ComparisonValue.ref_business_entity == data.ref_business_entity
         )
-        await comparison.save(db)
+        result = await db.execute(stmt)
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            # Restore and update
+            update_data = {
+                "quantity_from": data.quantity_from,
+                "quantity_to": data.quantity_to,
+                "is_deleted": False,
+                "deleted_at": None
+            }
+            await ComparisonValue.update(db, existing.id, update_data)
+            comparison_id = existing.id
+            comparison = existing # To use below
+        else:
+            comparison = ComparisonValue(
+                quantity_from=data.quantity_from,
+                quantity_to=data.quantity_to,
+                value_from=data.value_from,
+                value_to=data.value_to,
+                ref_business_entity=data.ref_business_entity,
+            )
+            await comparison.save(db)
+            comparison_id = comparison.id
 
         if data.meta:
             for m in data.meta:
                 meta_item = MetaComparisonValue(
-                    key=m.key, value=m.value, ref_comparison_value=comparison.id
+                    key=m.key, value=m.value, ref_comparison_value=comparison_id
                 )
                 await meta_item.save(db)
 
@@ -44,7 +68,7 @@ class ComparisonValuesService(Service):
                 selectinload(ComparisonValue.source_value),
                 selectinload(ComparisonValue.target_value),
             )
-            .where(ComparisonValue.id == comparison.id)
+            .where(ComparisonValue.id == comparison_id)
         )
 
         result = await db.execute(stmt)
@@ -52,20 +76,23 @@ class ComparisonValuesService(Service):
 
         return comparison
 
+    @handle_service_errors
     @injectable
     async def update_comparison(
         self,
         comparison_id: int | str,
         data: RQComparisonValue,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ComparisonValue:
+    ) -> ServiceResult[ComparisonValue]:
         """Update a comparison value"""
         # Fetch existing comparison to check for changes and snapshot if needed
         comparison = await ComparisonValue.find_one(db, comparison_id)
 
         # Check if price (quantity_to) has changed
         if float(comparison.quantity_to) != float(data.quantity_to):
-            await self.create_historical_snapshot(comparison)
+            _, error = await self.create_historical_snapshot(comparison, db=db)
+            if error:
+                return None, error
 
         update_data = {
             "quantity_from": data.quantity_from,
@@ -89,6 +116,7 @@ class ComparisonValuesService(Service):
         result = await db.execute(stmt)
         return result.scalar_one()
 
+    @handle_service_errors
     @injectable
     async def get_comparisons_paginated(
         self,
@@ -101,7 +129,7 @@ class ComparisonValuesService(Service):
         value_to: Optional[int | str] = None,
         ref_business_entity: Optional[int] = None,
         db: AsyncSession = Depends(get_async_db),
-    ) -> Tuple[List[ComparisonValue], int]:
+    ) -> ServiceResult[Tuple[List[ComparisonValue], int]]:
         """Get paginated list of comparisons with total count"""
         # Build filters dict, only include non-None values
         filters = {}
@@ -120,13 +148,14 @@ class ComparisonValuesService(Service):
 
         return comparisons, total
 
+    @handle_service_errors
     @injectable
     async def find_comparison_rate(
         self,
         from_value_id: int,
         to_value_id: int,
         db: AsyncSession = Depends(get_async_db),
-    ) -> Optional[Tuple[float, bool]]:
+    ) -> ServiceResult[Optional[Tuple[float, bool]]]:
         """
         Find the conversion rate between two values.
         Returns (rate, is_direct) tuple or None if not found.
@@ -159,6 +188,7 @@ class ComparisonValuesService(Service):
 
         return None
 
+    @handle_service_errors
     @injectable
     async def convert_value(
         self,
@@ -166,7 +196,7 @@ class ComparisonValuesService(Service):
         to_value_id: int,
         amount: float,
         db: AsyncSession = Depends(get_async_db),
-    ) -> Optional[dict]:
+    ) -> ServiceResult[Optional[dict]]:
         """
         Convert an amount from one value to another.
         Returns conversion details or None if no rate found.
@@ -176,8 +206,10 @@ class ComparisonValuesService(Service):
         to_value = await Value.find_one(db, to_value_id)
 
         # Find the rate
-        rate_result = await self.find_comparison_rate(from_value_id, to_value_id)
-
+        rate_result, error = await self.find_comparison_rate(from_value_id, to_value_id, db=db)
+        if error:
+            return None, error
+        
         if not rate_result:
             return None
 
@@ -193,10 +225,11 @@ class ComparisonValuesService(Service):
             "inverse_rate": 1 / rate if rate != 0 else 0,
         }
 
+    @handle_service_errors
     @injectable
     async def create_historical_snapshot(
         self, comparison: ComparisonValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ComparisonValueHistorical:
+    ) -> ServiceResult[ComparisonValueHistorical]:
         """Create a historical snapshot from a comparison value"""
         historical = ComparisonValueHistorical(
             quantity_from=comparison.quantity_from,

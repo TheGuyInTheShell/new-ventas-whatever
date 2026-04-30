@@ -26,11 +26,13 @@ class ComparisonValuesController(Controller):
         description="Read comparison values filtered by optional context query string",
     )
     async def get_comparisons(self, ref_business_entity: Optional[int] = None):
-        comparisons, total = (
-            await self.ComparisonValuesService.get_comparisons_paginated(
-                page=1, page_size=1000, ref_business_entity=ref_business_entity
-            )
+        result, error = await self.ComparisonValuesService.get_comparisons_paginated(
+            page=1, page_size=1000, ref_business_entity=ref_business_entity
         )
+        if error:
+            return error.to_response()
+        
+        comparisons, total = result
         return {"data": comparisons, "total": total}
 
     @Post("/")
@@ -41,7 +43,10 @@ class ComparisonValuesController(Controller):
         description="Creates a new comparison value exchange rate link",
     )
     async def create_comparison(self, payload: RQComparisonValue):
-        return await self.ComparisonValuesService.create_comparison(payload)
+        result, error = await self.ComparisonValuesService.create_comparison(payload)
+        if error:
+            return error.to_response()
+        return result
 
     @Put("/id/{id}")
     @Shield.need(
@@ -51,7 +56,10 @@ class ComparisonValuesController(Controller):
         description="Update an existing comparison value rate",
     )
     async def update_comparison(self, id: str, payload: RQComparisonValue):
-        return await self.ComparisonValuesService.update_comparison(id, payload)
+        result, error = await self.ComparisonValuesService.update_comparison(id, payload)
+        if error:
+            return error.to_response()
+        return result
 
     @Delete("/id/{id}")
     @Shield.need(
