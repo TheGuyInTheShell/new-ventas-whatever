@@ -141,17 +141,17 @@ class ChineseRestaurant(Template):
     @Get("/menu", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.menu_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/menu.js",
+            src="/app-static/ts/pages/chinese-restaurant/menu.js",
             type="module",
             defer=True,
         ),
         position=Site.HEAD,
     )
     @enqueue_js(
-        Script(src="/app-static/javascript/index.js", type="module", defer=True),
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
     async def menu_page(self, request: Request) -> HTMLResponse:
@@ -164,17 +164,17 @@ class ChineseRestaurant(Template):
     @Get("/orders", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.orders_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/orders.js",
+            src="/app-static/ts/pages/chinese-restaurant/orders.js",
             type="module",
             defer=True,
         ),
         position=Site.HEAD,
     )
     @enqueue_js(
-        Script(src="/app-static/javascript/index.js", type="module", defer=True),
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
     async def orders_page(self, request: Request) -> HTMLResponse:
@@ -187,17 +187,17 @@ class ChineseRestaurant(Template):
     @Get("/tables", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.tables_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/tables.js",
+            src="/app-static/ts/pages/chinese-restaurant/tables.js",
             type="module",
             defer=True,
         ),
         position=Site.HEAD,
     )
     @enqueue_js(
-        Script(src="/app-static/javascript/index.js", type="module", defer=True),
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
     async def tables_page(self, request: Request) -> HTMLResponse:
@@ -210,17 +210,17 @@ class ChineseRestaurant(Template):
     @Get("/staff", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.staff_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/staff.js",
+            src="/app-static/ts/pages/chinese-restaurant/staff.js",
             type="module",
             defer=True,
         ),
         position=Site.HEAD,
     )
     @enqueue_js(
-        Script(src="/app-static/javascript/index.js", type="module", defer=True),
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
     async def staff_page(self, request: Request) -> HTMLResponse:
@@ -235,17 +235,17 @@ class ChineseRestaurant(Template):
         name="chinese_restaurant.reservations_page", action="read", type="template"
     )
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/reservations.js",
+            src="/app-static/ts/pages/chinese-restaurant/reservations.js",
             type="module",
             defer=True,
         ),
         position=Site.HEAD,
     )
     @enqueue_js(
-        Script(src="/app-static/javascript/index.js", type="module", defer=True),
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
         position=Site.BODY_AFTER,
     )
     async def reservations_page(self, request: Request) -> HTMLResponse:
@@ -282,10 +282,10 @@ class ChineseRestaurant(Template):
         name="chinese_restaurant.inventory_page", action="read", type="template"
     )
     @enqueue_css(Style(href="/app-static/css/app.css"))
-    @enqueue_js(Script(src="/app-static/javascript/icons.js", type="module"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
     @enqueue_js(
         Script(
-            src="/app-static/javascript/pages/chinese-restaurant/inventory.js",
+            src="/app-static/ts/pages/chinese-restaurant/inventory.js",
             type="module",
             defer=True,
         ),
@@ -309,10 +309,10 @@ class ChineseRestaurant(Template):
             )
 
         print(">>>>>>>>>>>>>>>> Business entity found:", entity_result)
-        
+
         # We MUST have the inventory sub-entity ID
         if not entity_result.data[0].child:
-             raise HTTPException(
+            raise HTTPException(
                 status_code=404,
                 detail="Inventory sub-entity not found for 'chinese-restaurant'. Please ensure it is correctly linked in the hierarchy.",
             )

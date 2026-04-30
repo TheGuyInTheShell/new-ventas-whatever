@@ -1,21 +1,9 @@
 import { createStore } from '@xstate/store';
+import { BusinessEntityStoreContext } from '../types/business';
 
 const API_BASE = '/api/v1';
 const ENTITY_NAME = 'chinese-restaurant';
 
-/**
- * @typedef {Object} BusinessEntityStoreContext
- * @property {number|null} entityId - The ID of the main business entity (chinese-restaurant).
- * @property {number|null} inventoryId - The ID of the inventory sub-entity.
- * @property {boolean} loading - Loading state indicator.
- * @property {Promise<void>|null} fetchingPromise - Ongoing fetch promise to avoid concurrent requests.
- * @property {string|null} error - Error message if a request fails.
- */
-
-/**
- * The XState Store instance for Business Entity management.
- * @type {import('@xstate/store').Store<BusinessEntityStoreContext>}
- */
 export const businessEntityStore = createStore({
     context: {
         entityId: null,
@@ -23,26 +11,18 @@ export const businessEntityStore = createStore({
         loading: false,
         fetchingPromise: null,
         error: null
-    },
+    } as BusinessEntityStoreContext,
     on: {
-        setEntityId: (context, event) => ({ ...context, entityId: event.id === 'null' ? null : event.id }),
-        setInventoryId: (context, event) => ({ ...context, inventoryId: event.id === 'null' ? null : event.id }),
-        setLoading: (context, event) => ({ ...context, loading: event.value }),
-        setFetchingPromise: (context, event) => ({ ...context, fetchingPromise: event.promise }),
-        setError: (context, event) => ({ ...context, error: event.message })
+        setEntityId: (context, event: { id: string | number | null }) => ({ ...context, entityId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
+        setInventoryId: (context, event: { id: string | number | null }) => ({ ...context, inventoryId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
+        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setFetchingPromise: (context, event: { promise: Promise<void> | null }) => ({ ...context, fetchingPromise: event.promise }),
+        setError: (context, event: { message: string | null }) => ({ ...context, error: event.message })
     }
 });
 
-/**
- * Object containing all side-effect actions for the Business Entity Store.
- */
 export const businessEntityActions = {
-    /**
-     * Fetches the business entity ID from the backend using the predefined ENTITY_NAME.
-     * @async
-     * @returns {Promise<void>}
-     */
-    async fetchEntity() {
+    async fetchEntity(): Promise<void> {
         const snap = businessEntityStore.getSnapshot().context;
         if (snap.entityId) return;
         if (snap.fetchingPromise) return snap.fetchingPromise;
@@ -57,7 +37,7 @@ export const businessEntityActions = {
                 });
                 const data = await res.json();
                 if (data && data.data && data.data.length > 0) {
-                    const entity = data.data.find(e => e.name === ENTITY_NAME) || data.data[0];
+                    const entity = data.data.find((e: any) => e.name === ENTITY_NAME) || data.data[0];
                     businessEntityStore.trigger.setEntityId({ id: entity.id });
                     
                     if (entity.child && entity.child.name === 'inventory') {
@@ -66,7 +46,7 @@ export const businessEntityActions = {
                 } else {
                     console.warn(`Business entity '${ENTITY_NAME}' not found.`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch business entity: ", error);
                 businessEntityStore.trigger.setError({ message: error.message });
             } finally {

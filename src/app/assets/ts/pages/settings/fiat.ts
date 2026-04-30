@@ -3,34 +3,22 @@ import mask from '@alpinejs/mask';
 import focus from '@alpinejs/focus';
 import collapse from '@alpinejs/collapse';
 import "htmx.org";
-window.Alpine = Alpine;
+import { fiatStore, fiatActions } from "../../store/fiatStore";
 
-// Register Alpine.js plugins
+(window as any).Alpine = Alpine;
+
 Alpine.plugin(mask);
 Alpine.plugin(focus);
 Alpine.plugin(collapse);
-import { fiatStore, fiatActions } from "../../store/fiatStore";
 
-/**
- * Registers the 'fiatConfig' Alpine.js data component.
- * This component acts as a bridge between the reactive UI and the Fiat Store.
- */
 document.addEventListener('alpine:init', () => {
     Alpine.data('fiatConfig', () => ({
-        /** Current context snapshot from the fiatStore */
         storeContext: fiatStore.getSnapshot().context,
-        /** Form state for creating a new fiat */
         newFiat: { name: '', expression: '' },
-        /** Form state for creating a new comparison */
-        newComparison: { fromId: null, toId: null, rate: null },
-        /** Local UI state for comparison rates */
-        compRates: {},
-        /** Local UI state for add operation status */
+        newComparison: { fromId: null as number | null, toId: null as number | null, rate: null as number | null },
+        compRates: {} as Record<number, number>,
         isAddingFiat: false,
 
-        /**
-         * Initializes the component. Subscribes to store changes and performs initial fetch.
-         */
         init() {
             fiatStore.subscribe(snapshot => {
                 this.storeContext = snapshot.context;
@@ -38,18 +26,12 @@ document.addEventListener('alpine:init', () => {
             fiatActions.fetchFiats();
         },
 
-        // Helper Getters
         get fiats() { return this.storeContext.fiats; },
         get mainFiatId() { return this.storeContext.mainFiatId; },
         get comparisons() { return this.storeContext.comparisons; },
         get exchangeRates() { return this.storeContext.exchangeRates; },
-        /** Returns comparisons defined with 'custom' context */
         get customComparisons() { return this.storeContext.comparisons.filter(c => c.context === 'custom'); },
 
-        /**
-         * Event handler for adding a new fiat currency.
-         * @async
-         */
         async onAddFiat() {
             if (this.newFiat.name && this.newFiat.expression) {
                 this.isAddingFiat = true;
@@ -60,31 +42,16 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        /**
-         * Event handler for setting the main fiat currency.
-         * @async
-         * @param {number} id
-         */
-        async onSetMainFiat(id) {
+        async onSetMainFiat(id: number) {
             await fiatActions.setMainFiat(id);
         },
 
-        /**
-         * Event handler for updating an exchange rate between the main currency and another.
-         * @async
-         * @param {number} fiatId - The ID of the non-main fiat currency.
-         * @param {string|number} rate - The exchange rate value.
-         */
-        async onSetRate(fiatId, rate) {
+        async onSetRate(fiatId: number, rate: string | number) {
             if (this.mainFiatId && rate) {
-                await fiatActions.createLink(this.mainFiatId, fiatId, parseFloat(rate), 'main');
+                await fiatActions.createLink(this.mainFiatId, fiatId, typeof rate === 'string' ? parseFloat(rate) : rate);
             }
         },
 
-        /**
-         * Event handler for adding a custom comparison between any two currencies.
-         * @async
-         */
         async onAddComparison() {
             if (this.newComparison.fromId && this.newComparison.toId && this.newComparison.rate) {
                 if (this.newComparison.fromId === this.newComparison.toId) {
@@ -92,60 +59,38 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 await fiatActions.createLink(
-                    parseInt(this.newComparison.fromId),
-                    parseInt(this.newComparison.toId),
-                    parseFloat(this.newComparison.rate),
-                    'custom'
+                    this.newComparison.fromId,
+                    this.newComparison.toId,
+                    this.newComparison.rate
                 );
                 this.newComparison = { fromId: null, toId: null, rate: null };
             }
         },
 
-        /**
-         * Event handler for deleting a fiat currency.
-         * @async
-         * @param {number} id
-         */
-        async onDeleteFiat(id) {
+        async onDeleteFiat(id: number) {
             if (confirm('Are you sure you want to delete this currency?')) {
                 await fiatActions.deleteFiat(id);
             }
         },
 
-        /**
-         * Event handler for deleting a custom comparison.
-         * @async
-         * @param {number} id
-         */
-        async onDeleteComparison(id) {
+        async onDeleteComparison(id: number) {
             if (confirm('Are you sure you want to delete this comparison?')) {
                 await fiatActions.deleteComparison(id);
             }
         },
 
-        /**
-         * Returns the name of a currency given its ID.
-         * @param {number} id
-         * @returns {string}
-         */
-        getFiatName(id) {
+        getFiatName(id: number) {
             if (!Array.isArray(this.fiats)) return `#${id}`;
             const f = this.fiats.find(f => f.id === id);
             return f ? f.name : `#${id}`;
         },
 
-        /**
-         * Returns the expression/symbol of a currency given its ID.
-         * @param {number} id
-         * @returns {string}
-         */
-        getFiatExpression(id) {
+        getFiatExpression(id: number) {
             if (!Array.isArray(this.fiats)) return '';
             const f = this.fiats.find(f => f.id === id);
             return f ? f.expression : '';
         }
     }));
 });
-
 
 Alpine.start();

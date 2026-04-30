@@ -27,16 +27,11 @@ const subConfigs = await loadSubConfigs();
 // 2. Configuración base del proyecto
 const baseConfig = defineConfig({
   input: Object.fromEntries(
-    globSync('src/app/assets/**/*.js').map((file) => [
-      // This removes `src/` as well as the file extension from each
-      // file, so e.g. src/nested/foo.js becomes nested/foo, and
-      // normalizes Windows backslashes to forward slashes.
-      path
-        .relative('src/app/assets/', file.slice(0, file.length - path.extname(file).length))
+    globSync('src/app/assets/ts/**/*.ts').map((file) => [
+      'ts/' + path
+        .relative('src/app/assets/ts/', file.slice(0, file.length - path.extname(file).length))
         .split(path.sep)
         .join('/'),
-      // This expands the relative paths to absolute paths, so e.g.
-      // src/nested/foo.js becomes /project/src/nested/foo.js
       path.resolve(file),
     ]),
   ),

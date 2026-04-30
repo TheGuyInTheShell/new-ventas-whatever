@@ -37,15 +37,11 @@ class Dashboard(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/index.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/index.js", type="module", defer=True)),
         position=Site.BODY_AFTER,
     )
     async def dashboard_index(self, request: Request) -> HTMLResponse:

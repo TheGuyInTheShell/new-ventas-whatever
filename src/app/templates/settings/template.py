@@ -32,9 +32,7 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @CSRF()
@@ -62,9 +60,7 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @CSRF()
@@ -92,15 +88,13 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/store/chinese-restaurant-store.js",
+                src="/app-static/ts/store/chinese-restaurant-store.js",
                 type="module",
                 defer=True,
             )
@@ -110,7 +104,7 @@ class SettingsTemplate(Template):
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/store/fiatStore.js",
+                src="/app-static/ts/store/fiatStore.js",
                 type="module",
                 defer=True,
             )
@@ -120,7 +114,7 @@ class SettingsTemplate(Template):
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/pages/settings/fiat.js",
+                src="/app-static/ts/pages/settings/fiat.js",
                 type="module",
                 defer=True,
             )
@@ -152,9 +146,7 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @CSRF()
@@ -182,9 +174,7 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @CSRF()
@@ -212,9 +202,7 @@ class SettingsTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @CSRF()
