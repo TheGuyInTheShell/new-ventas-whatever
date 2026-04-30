@@ -69,11 +69,12 @@ class TestValuesWithComparisonServiceUnitaries:
         mock_saved_comp.value_from = 10 # Inherited from saved_value
         mock_saved_comp.value_to = 2
         mock_saved_comp.ref_business_entity = 1
-        values_with_comparison_service.ComparisonValuesService.create_comparison = AsyncMock(return_value=mock_saved_comp)
+        values_with_comparison_service.ComparisonValuesService.create_comparison = AsyncMock(return_value=(mock_saved_comp, None))
         
-        result = await values_with_comparison_service.save_value_with_comparison_service(create_dto, db=mock_db)
+        result, error = await values_with_comparison_service.save_value_with_comparison_service(create_dto, db=mock_db)
         
         # Assertions
+        assert error is None
         assert result is not None
         assert result.value.id == 10
         assert result.value.ref_business_entity == 1
@@ -100,8 +101,9 @@ class TestValuesWithComparisonServiceUnitaries:
             mock_builder_instance.build.return_value = mock_builder_instance
             mock_builder_instance.execute = AsyncMock(return_value=mock_result)
             
-            result = await values_with_comparison_service.get_values_with_comparison_service(query_dto, db=mock_db)
+            result, error = await values_with_comparison_service.get_values_with_comparison_service(query_dto, db=mock_db)
             
+            assert error is None
             assert result == mock_result
             MockBuilder.assert_called_once_with(mock_db)
             mock_builder_instance.set_query.assert_called_once_with(query_dto)

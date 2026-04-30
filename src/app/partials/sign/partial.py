@@ -36,7 +36,7 @@ class SignPartial(Partial):
                     cls="alert alert-error text-white text-sm font-semibold rounded-lg shadow-md p-3 animate-pulse flex items-center justify-center w-full",
                 )
             )
-            return HTMLResponse(content=content, status_code=200)
+            return HTMLResponse(content=content, status_code=401)
 
         access_token, error = self.AuthService.create_token(
             data={

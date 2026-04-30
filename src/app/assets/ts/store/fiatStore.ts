@@ -75,7 +75,7 @@ export const fiatActions = {
             const mainFiatId = fiatStore.getSnapshot().context.mainFiatId;
             if (comps && mainFiatId) {
                 comps.forEach(comp => {
-                    if (comp.value_from === mainFiatId || comp.value_to === mainFiatId) {
+                    if (Number(comp.value_from) === Number(mainFiatId) || Number(comp.value_to) === Number(mainFiatId)) {
                         if (comp.value_from === mainFiatId) {
                             rates[comp.value_to] = comp.quantity_to / comp.quantity_from;
                         } else if (comp.value_to === mainFiatId) {
@@ -143,12 +143,15 @@ export const fiatActions = {
 
     async createLink(fromId: number, toId: number, rate: number): Promise<void> {
         try {
+            // Ensure data is fresh before checking for existing links
+            await this.fetchFiats();
+            
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
             if (!entityId) throw new Error("Business entity ID required to create link");
 
             const comps = fiatStore.getSnapshot().context.comparisons;
-            const existing = comps.find(c => c.value_from === fromId && c.value_to === toId);
+            const existing = comps.find(c => Number(c.value_from) === Number(fromId) && Number(c.value_to) === Number(toId));
 
             const body = {
                 quantity_from: 1,
