@@ -45,6 +45,7 @@ class TestComparisonValuesServiceUnitaries:
         mock_comparison.id = 1
         mock_comparison.ref_business_entity = 100
         mock_result.scalar_one.return_value = mock_comparison
+        mock_result.scalar_one_or_none.return_value = None # Ensure we take the create path
         mock_db.execute.return_value = mock_result
         
         # Mock the comparison save method since it's a BasicBaseAsync model
@@ -58,7 +59,8 @@ class TestComparisonValuesServiceUnitaries:
                 
                 mock_save.assert_called_once_with(mock_db)
                 mock_meta_save.assert_called_once_with(mock_db)
-                mock_db.execute.assert_called_once()
+                # db.execute is called once for exists check, once for selectinload
+                assert mock_db.execute.call_count == 2
 
     @patch("src.modules.comparison_values.models.ComparisonValue.update", new_callable=AsyncMock)
     @patch("src.modules.comparison_values.models.ComparisonValue.find_one", new_callable=AsyncMock)
@@ -88,7 +90,7 @@ class TestComparisonValuesServiceUnitaries:
             assert error is None
             
             # Verify historical snapshot was created because price changed
-            mock_snapshot.assert_called_once_with(mock_existing)
+            mock_snapshot.assert_called_once_with(mock_existing, db=mock_db)
             mock_update.assert_called_once()
 
     async def test_find_comparison_rate_direct(self, comparison_values_service, mock_db):

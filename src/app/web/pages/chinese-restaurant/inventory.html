@@ -33,6 +33,17 @@
                 class="w-5 h-5"></i>
             <span x-text="sortOrder === 'asc' ? 'A → Z' : 'Z → A'"></span>
         </button>
+
+        <!-- Currency Selector -->
+        <div class="flex items-center gap-2 ml-2">
+            <span class="text-sm font-semibold opacity-50 uppercase">Currency:</span>
+            <select x-model.number="viewFiatId" class="select select-bordered select-sm w-32 focus:select-primary">
+                <template x-for="fiat in fiatContext.fiats" :key="fiat.id">
+                    <option :value="fiat.id" x-text="fiat.name"></option>
+                </template>
+            </select>
+        </div>
+
         <span class="ml-auto text-lg text-gray-500">
             <span x-text="filteredItems.length"></span> items
         </span>
@@ -86,7 +97,7 @@
                                 <div class="flex items-center gap-1" x-show="item.quantity_to > 0">
                                     <span class="text-lg font-medium text-base-content"
                                         x-text="calculatePrice(item)"></span>
-                                    <span class="text-lg text-gray-500" x-text="getMainFiatExpression()"></span>
+                                    <span class="text-lg text-gray-500" x-text="getViewFiatExpression()"></span>
                                 </div>
                                 <span class="text-gray-400" x-show="!item.quantity_to || item.quantity_to <= 0">-</span>
                             </td>

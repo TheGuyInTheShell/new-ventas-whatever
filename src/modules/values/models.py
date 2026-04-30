@@ -3,14 +3,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, TYPE_CHECKING
 
 from core.database import BasicBaseAsync
+from src.modules.values.meta.models import MetaValue
+from src.modules.comparison_values.models import ComparisonValue
+from src.modules.balances.models import Balance
+from src.modules.business_entities.models import BusinessEntity
 
 if TYPE_CHECKING:
-    from src.modules.comparison_values.models import ComparisonValue
-    from src.modules.values.meta.models import MetaValue
-    from src.modules.balances.models import Balance
     from src.modules.values.schemas import RQValueQuery
     from sqlalchemy.ext.asyncio import AsyncSession
-    from src.modules.business_entities.models import BusinessEntity
 
 
 class Value(BasicBaseAsync):

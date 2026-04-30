@@ -59,7 +59,7 @@ class TestValuesWithComparisonServiceUnitaries:
         mock_saved_value.type = "currency"
         mock_saved_value.ref_business_entity = 1
         mock_saved_value.identifier = None
-        values_with_comparison_service.ValuesService.create_value_with_meta = AsyncMock(return_value=mock_saved_value)
+        values_with_comparison_service.ValuesService.create_value_with_meta = AsyncMock(return_value=(mock_saved_value, None))
         
         mock_saved_comp = MagicMock()
         mock_saved_comp.id = 20

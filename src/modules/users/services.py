@@ -105,12 +105,12 @@ class UsersService(Service):
         Crea el primer usuario owner del sistema y marca la inicialización como lista.
         """
         # 1. Obtener rol owner
-        role = await self.RolesService.get_role_by_name("owner")
-        if not role:
+        role, error = await self.RolesService.get_role_by_name("owner")
+        if error or not role:
             # Si no existe, intentamos buscar Admin o usamos el ID 1 como fallback si es necesario,
             # pero lo ideal es que el rol Owner esté pre-creado.
-            role = await self.RolesService.get_role_by_name("admin")
-            if not role:
+            role, error = await self.RolesService.get_role_by_name("admin")
+            if error or not role:
                 return None, AuthError("Owner role not found in system")
 
         # 2. Hashear password
@@ -132,4 +132,4 @@ class UsersService(Service):
             context="system_init", name="owner_signup", value="ready"
         )
 
-        return new_user
+        return new_user, None

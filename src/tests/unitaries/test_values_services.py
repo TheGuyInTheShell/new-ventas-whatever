@@ -52,8 +52,9 @@ class TestValuesServiceUnitaries:
         mock_result.scalar_one.return_value = mock_value
         mock_db.execute.return_value = mock_result
         
-        result = await values_service.create_value_with_meta(create_dto, db=mock_db)
+        result, error = await values_service.create_value_with_meta(create_dto, db=mock_db)
         
+        assert error is None
         assert result.name == "Test Value"
         assert result.ref_business_entity == 1
         
@@ -79,7 +80,8 @@ class TestValuesServiceUnitaries:
         mock_result.scalar_one.return_value = mock_value
         mock_db.execute.return_value = mock_result
         
-        await values_service.create_value_with_meta(create_dto, db=mock_db)
+        result, error = await values_service.create_value_with_meta(create_dto, db=mock_db)
+        assert error is None
         
         # Called add twice: once for Value, once for ComparisonValue (no meta)
         assert mock_db.add.call_count == 2
@@ -117,7 +119,9 @@ class TestValuesServiceUnitaries:
         mock_existing_meta.id = 10
         mock_meta_find_all.return_value = [mock_existing_meta]
         
-        result = await values_service.update_value_with_meta(1, update_dto, db=mock_db)
+        result, error = await values_service.update_value_with_meta(1, update_dto, db=mock_db)
+        
+        assert error is None
         
         mock_value_update.assert_called_once()
         mock_meta_find_all.assert_called_once()
@@ -130,12 +134,18 @@ class TestValuesServiceUnitaries:
     @patch("src.modules.values.models.Value.find_some", new_callable=AsyncMock)
     @patch("src.modules.values.models.Value.find_all", new_callable=AsyncMock)
     async def test_get_values_paginated(self, mock_find_all, mock_find_some, values_service, mock_db):
-        mock_find_some.return_value = [MagicMock(), MagicMock()]
-        mock_find_all.return_value = [MagicMock(), MagicMock(), MagicMock()] # Total 3
+        m1 = MagicMock()
+        m1.id = 1; m1.uid = "uid1"; m1.name = "n1"; m1.expression = "e1"; m1.type = "t1"; m1.ref_business_entity = 1; m1.identifier = "i1"
+        m2 = MagicMock()
+        m2.id = 2; m2.uid = "uid2"; m2.name = "n2"; m2.expression = "e2"; m2.type = "t2"; m2.ref_business_entity = 1; m2.identifier = "i2"
         
-        values, total = await values_service.get_values_paginated(page=1, page_size=2, db=mock_db)
+        mock_find_some.return_value = [m1, m2]
+        mock_find_all.return_value = [m1, m2, MagicMock()] # Total 3
         
-        assert len(values) == 2
-        assert total == 3
+        result, error = await values_service.get_values_paginated(page=1, page_size=2, db=mock_db)
+        
+        assert error is None
+        assert len(result.data) == 2
+        assert result.total == 3
         mock_find_some.assert_called_once()
         mock_find_all.assert_called_once()
