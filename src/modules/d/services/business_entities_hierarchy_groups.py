@@ -2,6 +2,7 @@ from typing import List, Tuple, Optional
 import math
 
 from fastapi import Depends
+from fastapi import FastAPI
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +37,8 @@ from ..schemas.business_entities_hierarchy_groups import (
     RSBusinessEntitySearchChild,
     RSBusinessEntitySearchGroups,
 )
+
+from core.lib.hooks.lifespan import on_app_init
 
 
 class BusinessEntitiesSearchByService(Service):
@@ -295,7 +298,9 @@ class BusinessEntitiesSearchByService(Service):
             return None, error
 
         if not result.data:
-            return None, ParentEntityNotFoundError(f"Parent entity '{query.name}' not found")
+            return None, ParentEntityNotFoundError(
+                f"Parent entity '{query.name}' not found"
+            )
 
         parent = result.data[0]
         if not parent.child:
@@ -324,3 +329,20 @@ class BusinessEntitiesSearchByService(Service):
 
         entity = result.data[0]
         return RSBusinessEntitySearchGroups(entity=entity, groups=entity.groups), None
+
+    @on_app_init
+    @injectable
+    async def _initialize_business_entity_global(
+        self, app: FastAPI, db: AsyncSession = Depends(get_async_db)
+    ):
+        """
+        Inicializa la entidad de negocio global si no existe.
+        """
+        stmt = select(BusinessEntity).where(BusinessEntity.name == "global")
+        result = await db.execute(stmt)
+        global_entity = result.scalar_one_or_none()
+
+        if not global_entity:
+            new_global = BusinessEntity(name="global")
+            db.add(new_global)
+            await db.commit()
