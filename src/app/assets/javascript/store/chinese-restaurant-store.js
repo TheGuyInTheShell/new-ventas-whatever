@@ -5,7 +5,8 @@ const ENTITY_NAME = 'chinese-restaurant';
 
 /**
  * @typedef {Object} BusinessEntityStoreContext
- * @property {number|null} entityId - The ID of the business entity.
+ * @property {number|null} entityId - The ID of the main business entity (chinese-restaurant).
+ * @property {number|null} inventoryId - The ID of the inventory sub-entity.
  * @property {boolean} loading - Loading state indicator.
  * @property {Promise<void>|null} fetchingPromise - Ongoing fetch promise to avoid concurrent requests.
  * @property {string|null} error - Error message if a request fails.
@@ -18,12 +19,14 @@ const ENTITY_NAME = 'chinese-restaurant';
 export const businessEntityStore = createStore({
     context: {
         entityId: null,
+        inventoryId: null,
         loading: false,
         fetchingPromise: null,
         error: null
     },
     on: {
         setEntityId: (context, event) => ({ ...context, entityId: event.id === 'null' ? null : event.id }),
+        setInventoryId: (context, event) => ({ ...context, inventoryId: event.id === 'null' ? null : event.id }),
         setLoading: (context, event) => ({ ...context, loading: event.value }),
         setFetchingPromise: (context, event) => ({ ...context, fetchingPromise: event.promise }),
         setError: (context, event) => ({ ...context, error: event.message })
@@ -50,12 +53,16 @@ export const businessEntityActions = {
                 const res = await fetch(`${API_BASE}/business_entities_search_by/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: ENTITY_NAME })
+                    body: JSON.stringify({ name: ENTITY_NAME, child_name: "inventory" })
                 });
                 const data = await res.json();
                 if (data && data.data && data.data.length > 0) {
                     const entity = data.data.find(e => e.name === ENTITY_NAME) || data.data[0];
                     businessEntityStore.trigger.setEntityId({ id: entity.id });
+                    
+                    if (entity.child && entity.child.name === 'inventory') {
+                        businessEntityStore.trigger.setInventoryId({ id: entity.child.id });
+                    }
                 } else {
                     console.warn(`Business entity '${ENTITY_NAME}' not found.`);
                 }
