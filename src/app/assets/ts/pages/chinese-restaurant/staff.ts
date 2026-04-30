@@ -4,23 +4,21 @@ import focus from '@alpinejs/focus';
 import collapse from '@alpinejs/collapse';
 import "htmx.org";
 
-window.Alpine = Alpine;
+(window as any).Alpine = Alpine;
 
 // Register Alpine.js plugins
 Alpine.plugin(mask);
 Alpine.plugin(focus);
 Alpine.plugin(collapse);
 
-/**
- * Registers the 'chineseRestaurantReservations' Alpine.js data component.
- */
 document.addEventListener('alpine:init', () => {
-    Alpine.data('chineseRestaurantReservations', (initialReservations) => ({
-        reservations: initialReservations || [],
-        isAddModalOpen: false,
+    Alpine.data('chineseRestaurantStaff', (initialStaff: any[]) => ({
+        staff: initialStaff || [],
 
-        init() {
-            // Initialization logic
+        getStatusClass(status: string) {
+            if (status === 'Active') return 'badge-success';
+            if (status === 'On Break') return 'badge-warning';
+            return 'badge-ghost';
         }
     }));
 });

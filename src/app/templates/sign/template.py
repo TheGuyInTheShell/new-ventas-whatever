@@ -29,15 +29,13 @@ class SignTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/pages/sign/in.js",
+                src="/app-static/ts/pages/sign/in.js",
                 type="module",
                 defer=True,
             )

@@ -1,47 +1,10 @@
-/**
- * @fileoverview Fiat Store Module.
- *
- * This module manages global currency data, exchange rates, and custom comparisons
- * using `@xstate/store`. It includes persistent storage in localStorage and
- * provides an Alpine.js data component for reactive UI binding.
- */
-
 import { createStore } from '@xstate/store';
-import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store.js';
-
-/**
- * @typedef {Object} Fiat
- * @property {number} id - Unique identifier for the currency.
- * @property {string} name - Human-readable name (e.g., "Dollar").
- * @property {string} expression - Cultural/symbolic representation (e.g., "USD" or "$").
- */
-
-/**
- * @typedef {Object} Comparison
- * @property {number} id - Unique identifier for the comparison.
- * @property {number} value_from - Source currency ID.
- * @property {number} value_to - Target currency ID.
- * @property {number} quantity_from - Base quantity of the source currency.
- * @property {number} quantity_to - Resulting quantity of the target currency.
- * @property {string} context - The context of the comparison (e.g., "main", "custom").
- */
-
-/**
- * @typedef {Object} StoreContext
- * @property {Fiat[]} fiats - List of all registered fiat currencies.
- * @property {number|null} mainFiatId - ID of the primary/main currency.
- * @property {Comparison[]} comparisons - List of all currency comparisons/rates.
- * @property {Record<number, number>} exchangeRates - Derived rates mapped by target fiat ID.
- * @property {boolean} loading - Global loading state indicator.
- */
+import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store';
+import { Comparison, Fiat, FiatStoreContext } from '../types/fiat';
 
 const PERSIST_KEY = 'fiat-store-persist';
 
-/**
- * Loads the persisted store state from localStorage.
- * @returns {Partial<StoreContext>}
- */
-const loadPersistedState = () => {
+const loadPersistedState = (): Partial<FiatStoreContext> => {
     try {
         return JSON.parse(localStorage.getItem(PERSIST_KEY) || '{}');
     } catch (e) {
@@ -51,10 +14,6 @@ const loadPersistedState = () => {
 
 const persistedState = loadPersistedState();
 
-/**
- * The XState Store instance for Fiat management.
- * @type {import('@xstate/store').Store<StoreContext>}
- */
 export const fiatStore = createStore({
     context: {
         fiats: persistedState.fiats || [],
@@ -62,34 +21,24 @@ export const fiatStore = createStore({
         comparisons: persistedState.comparisons || [],
         exchangeRates: persistedState.exchangeRates || {},
         loading: false,
-    },
+    } as FiatStoreContext,
     on: {
-        setLoading: (context, event) => ({ ...context, loading: event.value }),
-        setFiats: (context, event) => ({ ...context, fiats: event.data }),
-        setMainFiat: (context, event) => ({ ...context, mainFiatId: event.id }),
-        setComparisons: (context, event) => ({ ...context, comparisons: event.data }),
-        setExchangeRates: (context, event) => ({ ...context, exchangeRates: event.rates })
+        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setFiats: (context, event: { data: Fiat[] }) => ({ ...context, fiats: event.data }),
+        setMainFiat: (context, event: { id: number }) => ({ ...context, mainFiatId: event.id }),
+        setComparisons: (context, event: { data: Comparison[] }) => ({ ...context, comparisons: event.data }),
+        setExchangeRates: (context, event: { rates: Record<number, number> }) => ({ ...context, exchangeRates: event.rates })
     }
 });
 
-// Subscribe to state changes to persist the context
 fiatStore.subscribe((snapshot) => {
     localStorage.setItem(PERSIST_KEY, JSON.stringify(snapshot.context));
 });
 
 const API_BASE = '/api/v1';
 
-/**
- * Object containing all side-effect actions for the Fiat Store.
- */
 export const fiatActions = {
-    /**
-     * Fetches all fiat currencies, comparisons, and settings from the backend.
-     * Updates the store with the retrieved data and derives exchange rates.
-     * @async
-     * @returns {Promise<void>}
-     */
-    async fetchFiats() {
+    async fetchFiats(): Promise<void> {
         fiatStore.trigger.setLoading({ value: true });
         try {
             await businessEntityActions.fetchEntity();
@@ -110,27 +59,22 @@ export const fiatActions = {
             const fiatList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
             fiatStore.trigger.setFiats({ data: fiatList });
 
-            // Fetch comparisons
             const compsRes = await fetch(`${API_BASE}/comparison_values/?ref_business_entity=${entityId}`);
             const compsData = compsRes.ok ? (await compsRes.json()).data || [] : [];
-            /** @type {Comparison[]} */
-            const comps = Array.isArray(compsData) ? compsData : [];
+            const comps: Comparison[] = Array.isArray(compsData) ? compsData : [];
             fiatStore.trigger.setComparisons({ data: comps });
 
-            // Fetch main fiat option
             const optRes = await fetch(`${API_BASE}/options/?context=global`);
             const optData = await optRes.json();
-            const mainOption = optData.find(o => o.name === 'main_fiat_currency');
+            const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
             if (mainOption) {
                 fiatStore.trigger.setMainFiat({ id: parseInt(mainOption.value) });
             }
 
-            // Derive exchange rates based on main fiat
-            const rates = {};
+            const rates: Record<number, number> = {};
             const mainFiatId = fiatStore.getSnapshot().context.mainFiatId;
             if (comps && mainFiatId) {
                 comps.forEach(comp => {
-                    // It is a main comparison if it involves the main fiat currency
                     if (comp.value_from === mainFiatId || comp.value_to === mainFiatId) {
                         if (comp.value_from === mainFiatId) {
                             rates[comp.value_to] = comp.quantity_to / comp.quantity_from;
@@ -149,17 +93,11 @@ export const fiatActions = {
         }
     },
 
-    /**
-     * Sets a currency as the main fiat currency.
-     * @async
-     * @param {number} id - The ID of the currency to set as main.
-     * @returns {Promise<void>}
-     */
-    async setMainFiat(id) {
+    async setMainFiat(id: number): Promise<void> {
         try {
             const optRes = await fetch(`${API_BASE}/options/?context=global`);
             const optData = await optRes.json();
-            const mainOption = optData.find(o => o.name === 'main_fiat_currency');
+            const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
 
             if (mainOption) {
                 await fetch(`${API_BASE}/options/id/${mainOption.id}`, {
@@ -175,20 +113,13 @@ export const fiatActions = {
                 });
             }
             fiatStore.trigger.setMainFiat({ id });
-            await this.fetchFiats(); // Refresh rates to ensure consistency
+            await this.fetchFiats();
         } catch (error) {
             console.error("Failed to set main fiat: ", error);
         }
     },
 
-    /**
-     * Creates a new fiat currency definition.
-     * @async
-     * @param {string} name - Name of the currency.
-     * @param {string} expression - Symbol or code.
-     * @returns {Promise<void>}
-     */
-    async createFiat(name, expression) {
+    async createFiat(name: string, expression: string): Promise<void> {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
@@ -210,16 +141,7 @@ export const fiatActions = {
         }
     },
 
-    /**
-     * Creates or updates a comparison link between two currencies.
-     * @async
-     * @param {number} fromId - Source currency ID.
-     * @param {number} toId - Target currency ID.
-     * @param {number} rate - The exchange rate (1 source = X target).
-     * @param {string} [context='main'] - Operation context.
-     * @returns {Promise<void>}
-     */
-    async createLink(fromId, toId, rate) {
+    async createLink(fromId: number, toId: number, rate: number): Promise<void> {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
@@ -255,13 +177,7 @@ export const fiatActions = {
         }
     },
 
-    /**
-     * Deletes a fiat currency definition.
-     * @async
-     * @param {number} id - ID of the currency to delete.
-     * @returns {Promise<void>}
-     */
-    async deleteFiat(id) {
+    async deleteFiat(id: number): Promise<void> {
         try {
             await fetch(`${API_BASE}/values/id/${id}`, { method: 'DELETE' });
             await this.fetchFiats();
@@ -270,17 +186,7 @@ export const fiatActions = {
         }
     },
 
-    /**
-     * Updates an existing custom comparison rate.
-     * @async
-     * @param {number} compId - Comparison ID.
-     * @param {number} fromId - Source currency ID.
-     * @param {number} toId - Target currency ID.
-     * @param {number} rate - The exchange rate.
-     * @param {string} [context='custom'] - Operation context.
-     * @returns {Promise<void>}
-     */
-    async updateComparison(compId, fromId, toId, rate) {
+    async updateComparison(compId: number, fromId: number, toId: number, rate: number): Promise<void> {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
@@ -303,13 +209,7 @@ export const fiatActions = {
         }
     },
 
-    /**
-     * Deletes a currency comparison definition.
-     * @async
-     * @param {number} id - ID of the comparison to delete.
-     * @returns {Promise<void>}
-     */
-    async deleteComparison(id) {
+    async deleteComparison(id: number): Promise<void> {
         try {
             await fetch(`${API_BASE}/comparison_values/id/${id}`, { method: 'DELETE' });
             await this.fetchFiats();
