@@ -3,6 +3,7 @@ import math
 
 from fastapi import Depends
 from sqlalchemy import select, func, and_, or_
+from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_injectable import injectable
 
@@ -54,16 +55,28 @@ class BusinessEntitiesSearchByService(Service):
             )
 
         if query.parent_id:
+            parent_hierarchy = aliased(BusinessEntitiesHierarchy)
             stmt = stmt.join(
-                BusinessEntitiesHierarchy,
-                BusinessEntity.id == BusinessEntitiesHierarchy.ref_entity_bottom,
-            ).where(BusinessEntitiesHierarchy.ref_entity_top == query.parent_id)
+                parent_hierarchy,
+                BusinessEntity.id == parent_hierarchy.ref_entity_bottom,
+            ).where(parent_hierarchy.ref_entity_top == query.parent_id)
 
-        if query.child_id:
+        if query.child_id or query.child_name:
+            child_hierarchy = aliased(BusinessEntitiesHierarchy)
             stmt = stmt.join(
-                BusinessEntitiesHierarchy,
-                BusinessEntity.id == BusinessEntitiesHierarchy.ref_entity_top,
-            ).where(BusinessEntitiesHierarchy.ref_entity_bottom == query.child_id)
+                child_hierarchy,
+                BusinessEntity.id == child_hierarchy.ref_entity_top,
+            )
+            
+            if query.child_id:
+                stmt = stmt.where(child_hierarchy.ref_entity_bottom == query.child_id)
+                
+            if query.child_name:
+                child_entity = aliased(BusinessEntity)
+                stmt = stmt.join(
+                    child_entity,
+                    child_hierarchy.ref_entity_bottom == child_entity.id,
+                ).where(child_entity.name == query.child_name)
 
         # 3. Apply basic filters (Exact match as requested)
         if query.name:
@@ -114,12 +127,46 @@ class BusinessEntitiesSearchByService(Service):
             if query.hierarchy:
                 children = await self._get_entity_children(entity.id, db)
 
+            # Match specific child if searched by child filters
+            child_item = None
+            if query.child_id or query.child_name:
+                child_stmt = select(BusinessEntity).join(
+                    BusinessEntitiesHierarchy, BusinessEntity.id == BusinessEntitiesHierarchy.ref_entity_bottom
+                ).where(BusinessEntitiesHierarchy.ref_entity_top == entity.id)
+                
+                if query.child_id:
+                    child_stmt = child_stmt.where(BusinessEntity.id == query.child_id)
+                if query.child_name:
+                    child_stmt = child_stmt.where(BusinessEntity.name == query.child_name)
+                    
+                matched_child = (await db.execute(child_stmt.limit(1))).scalar_one_or_none()
+                if matched_child:
+                    # Get groups for matched child
+                    child_group_stmt = (
+                        select(BusinessEntitiesGroup.name)
+                        .join(
+                            BusinessEntitiesGroupConnection,
+                            BusinessEntitiesGroup.id == BusinessEntitiesGroupConnection.ref_business_entities_group,
+                        )
+                        .where(BusinessEntitiesGroupConnection.ref_business_entities == matched_child.id)
+                    )
+                    child_groups = [row[0] for row in (await db.execute(child_group_stmt)).all()]
+                    
+                    child_item = RSBusinessEntitiesSearchItem(
+                        id=matched_child.id,
+                        uid=matched_child.uid,
+                        name=matched_child.name,
+                        groups=child_groups,
+                        children=None
+                    )
+
             data.append(
                 RSBusinessEntitiesSearchItem(
                     id=entity.id,
                     uid=entity.uid,
                     name=entity.name,
                     groups=groups,
+                    child=child_item,
                     children=children,
                 )
             )

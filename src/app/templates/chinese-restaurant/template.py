@@ -320,7 +320,6 @@ class ChineseRestaurant(Template):
                         "name": val.name,
                         "type": val.type,
                         "expression": val.expression,
-                        "context": val.context,
                         "identifier": val.identifier,
                         # From comparison
                         "comparison_id": comp.id if comp else None,
