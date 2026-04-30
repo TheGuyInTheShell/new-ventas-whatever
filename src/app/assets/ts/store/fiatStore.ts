@@ -1,5 +1,5 @@
 import { createStore } from '@xstate/store';
-import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store';
+import { globalStore, globalActions } from './global-store';
 import { Comparison, Fiat, FiatStoreContext } from '../types/fiat';
 
 const PERSIST_KEY = 'fiat-store-persist';
@@ -41,9 +41,9 @@ export const fiatActions = {
     async fetchFiats(): Promise<void> {
         fiatStore.trigger.setLoading({ value: true });
         try {
-            await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
-            if (!entityId) throw new Error("Business entity 'chinese-restaurant' ID not found");
+            await globalActions.fetchGlobalEntity();
+            const entityId = globalStore.getSnapshot().context.globalEntityId;
+            if (!entityId) throw new Error("Global business entity ID not found");
 
             const res = await fetch(`${API_BASE}/values/query`, {
                 method: 'POST',
@@ -123,9 +123,9 @@ export const fiatActions = {
 
     async createFiat(name: string, expression: string): Promise<boolean> {
         try {
-            await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
-            if (!entityId) throw new Error("Business entity ID required to create fiat");
+            await globalActions.fetchGlobalEntity();
+            const entityId = globalStore.getSnapshot().context.globalEntityId;
+            if (!entityId) throw new Error("Global business entity ID required to create fiat");
 
             const res = await fetch(`${API_BASE}/values/`, {
                 method: 'POST',
@@ -151,9 +151,9 @@ export const fiatActions = {
             // Ensure data is fresh before checking for existing links
             await this.fetchFiats();
             
-            await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
-            if (!entityId) throw new Error("Business entity ID required to create link");
+            await globalActions.fetchGlobalEntity();
+            const entityId = globalStore.getSnapshot().context.globalEntityId;
+            if (!entityId) throw new Error("Global business entity ID required to create link");
 
             const comps = fiatStore.getSnapshot().context.comparisons;
             const existing = comps.find(c => Number(c.value_from) === Number(fromId) && Number(c.value_to) === Number(toId));
@@ -203,9 +203,9 @@ export const fiatActions = {
 
     async updateComparison(compId: number, fromId: number, toId: number, rate: number): Promise<void> {
         try {
-            await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
-            if (!entityId) throw new Error("Business entity ID required to update comparison");
+            await globalActions.fetchGlobalEntity();
+            const entityId = globalStore.getSnapshot().context.globalEntityId;
+            if (!entityId) throw new Error("Global business entity ID required to update comparison");
 
             await fetch(`${API_BASE}/comparison_values/id/${compId}`, {
                 method: 'PUT',
