@@ -1,63 +1,26 @@
 import { createStore } from '@xstate/store';
-import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store.js';
-
-/**
- * @typedef {Object} InventoryItem
- * @property {number} id - Unique identifier.
- * @property {string} uid - Unique string identifier.
- * @property {string} name - Item name.
- * @property {string} type - Item type (e.g., ingredient, utensil).
- * @property {string} expression - Unit expression (e.g., kg, units).
- * @property {string} [context] - Data context.
- * @property {string} [identifier] - Internal identifier.
- * @property {number|null} comparison_id - Associated comparison ID.
- * @property {number} quantity_from - Base quantity for price comparison.
- * @property {number} quantity_to - Target quantity/price for comparison.
- * @property {number|null} value_to - Fiat currency ID for the price.
- * @property {number} balance - Current stock quantity.
- * @property {number[]} ref_super_values_ids - Parent item IDs.
- * @property {Array} meta - Metadata attributes.
- */
-
-/**
- * @typedef {Object} InventoryStoreContext
- * @property {InventoryItem[]} items - List of inventory items.
- * @property {InventoryItem[]} eligibleItems - List of items eligible for composition.
- * @property {boolean} loading - Global loading state indicator.
- * @property {string|null} error - Error message if a request fails.
- */
+import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store';
+import { InventoryItem, InventoryStoreContext } from '../types/inventory';
 
 const API_BASE = '/api/v1';
 
-/**
- * The XState Store instance for Inventory management.
- * @type {import('@xstate/store').Store<InventoryStoreContext>}
- */
 export const inventoryStore = createStore({
     context: {
-        items: [],
-        eligibleItems: [],
+        items: [] as InventoryItem[],
+        eligibleItems: [] as InventoryItem[],
         loading: false,
-        error: null
-    },
+        error: null as string | null
+    } as InventoryStoreContext,
     on: {
-        setLoading: (context, event) => ({ ...context, loading: event.value }),
-        setItems: (context, event) => ({ ...context, items: event.data }),
-        setEligibleItems: (context, event) => ({ ...context, eligibleItems: event.data }),
-        setError: (context, event) => ({ ...context, error: event.message })
+        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setItems: (context, event: { data: InventoryItem[] }) => ({ ...context, items: event.data }),
+        setEligibleItems: (context, event: { data: InventoryItem[] }) => ({ ...context, eligibleItems: event.data }),
+        setError: (context, event: { message: string | null }) => ({ ...context, error: event.message })
     }
 });
 
-/**
- * Object containing all side-effect actions for the Inventory Store.
- */
 export const inventoryActions = {
-    /**
-     * Fetches inventory values and comparisons from the backend.
-     * @async
-     * @returns {Promise<void>}
-     */
-    async fetchItems() {
+    async fetchItems(): Promise<void> {
         inventoryStore.trigger.setLoading({ value: true });
         inventoryStore.trigger.setError({ message: null });
         try {
@@ -72,30 +35,29 @@ export const inventoryActions = {
             });
             const result = await res.json();
 
-            const items = [];
+            const items: InventoryItem[] = [];
             if (result.value) {
-                result.value.forEach(val => {
-                    const comp = result.comparison_value ? result.comparison_value.find(c => c.value_from === val.id) : null;
+                result.value.forEach((val: any) => {
+                    const comp = result.comparison_value ? result.comparison_value.find((c: any) => c.value_from === val.id) : null;
                     items.push({
                         id: val.id,
                         uid: val.uid,
                         name: val.name,
                         type: val.type,
                         expression: val.expression,
-                        context: val.context,
                         identifier: val.identifier,
                         comparison_id: comp ? comp.id : null,
                         quantity_from: comp ? comp.quantity_from : 1,
                         quantity_to: comp ? comp.quantity_to : 0,
                         value_to: comp ? comp.value_to : null,
-                        balance: 0, // Mock balance for now, expand via balances API if required
+                        balance: 0,
                         ref_super_values_ids: val.ref_super_values_ids || [],
                         meta: val.meta || []
                     });
                 });
             }
             inventoryStore.trigger.setItems({ data: items });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch inventory: ", error);
             inventoryStore.trigger.setError({ message: error.message || 'Unknown error' });
         } finally {
@@ -103,12 +65,7 @@ export const inventoryActions = {
         }
     },
 
-    /**
-     * Fetches items eligible for composition (ingredients, made-from, by-product) from the backend.
-     * @async
-     * @returns {Promise<void>}
-     */
-    async fetchEligibleItems() {
+    async fetchEligibleItems(): Promise<void> {
         try {
             await businessEntityActions.fetchEntity();
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
@@ -123,10 +80,10 @@ export const inventoryActions = {
             });
             const result = await res.json();
 
-            const eligibleItems = [];
+            const eligibleItems: any[] = [];
             if (result.value) {
                 const allowedTypes = ['ingredient', 'made-from', 'by-product'];
-                result.value.forEach(val => {
+                result.value.forEach((val: any) => {
                     if (allowedTypes.includes(val.type)) {
                         eligibleItems.push({
                             id: val.id,
@@ -139,33 +96,21 @@ export const inventoryActions = {
                 });
             }
 
-            inventoryStore.trigger.setEligibleItems({ data: eligibleItems });
+            inventoryStore.trigger.setEligibleItems({ data: eligibleItems as InventoryItem[] });
         } catch (error) {
             console.error("Failed to fetch eligible items: ", error);
         }
     },
 
-    /**
-     * Creates or updates an inventory item with its comparison data.
-     * @async
-     * @param {Object|null} editingItem - The item to update, or null to create.
-     * @param {Object} formData - Form data (name, expression, type, price, currency_id).
-     * @returns {Promise<boolean>} Success status.
-     */
-    async saveItem(editingItem, formData) {
+    async saveItem(editingItem: InventoryItem | null, formData: any): Promise<boolean> {
         try {
-            /**
-             * Capitalize logically like the old Nuxt composable
-             * @param {string} s - String to capitalize
-             * @returns {string} Capitalized string
-             */
-            const capitalize = (s) => (s && typeof s === 'string' ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+            const capitalize = (s: string) => (s && typeof s === 'string' ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
             await businessEntityActions.fetchEntity();
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
             if (!inventoryId) throw new Error("Inventory sub-entity ID not found for saving item");
 
-            const body = {
+            const body: any = {
                 value: {
                     name: capitalize(formData.name),
                     expression: formData.expression,
@@ -184,9 +129,8 @@ export const inventoryActions = {
                 balance_type: 'inventory'
             };
 
-            // Hierarchy and Meta logic
             if (formData.type === 'made-from' && formData.ingredients) {
-                body.ref_super_values_ids = formData.ingredients.map(id => parseInt(id));
+                body.ref_super_values_ids = formData.ingredients.map((id: string) => parseInt(id));
             } else if (formData.type === 'by-product') {
                 if (formData.source_id) {
                     body.ref_super_values_ids = [parseInt(formData.source_id)];
@@ -215,21 +159,14 @@ export const inventoryActions = {
 
             await this.fetchItems();
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save inventory item: ", error);
             inventoryStore.trigger.setError({ message: error.message || 'Failed to save item' });
             return false;
         }
     },
 
-    /**
-     * Deletes an inventory item and its associated comparison.
-     * @async
-     * @param {number} id - The value ID to delete.
-     * @param {number} [comparisonId] - The comparison ID to delete, if any.
-     * @returns {Promise<boolean>} Success status.
-     */
-    async deleteItem(id, comparisonId) {
+    async deleteItem(id: number, comparisonId?: number | null): Promise<boolean> {
         try {
             await fetch(`${API_BASE}/values/id/${id}`, { method: 'DELETE' });
             if (comparisonId) {
@@ -237,7 +174,7 @@ export const inventoryActions = {
             }
             await this.fetchItems();
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to delete inventory item: ", error);
             inventoryStore.trigger.setError({ message: error.message || 'Failed to delete item' });
             return false;

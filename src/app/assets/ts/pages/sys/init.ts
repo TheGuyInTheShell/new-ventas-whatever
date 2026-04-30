@@ -1,10 +1,3 @@
-/**
- * @fileoverview App Module - JavaScript Entry Point.
- *
- * This module coordinates the initialization of Alpine.js and its plugins,
- * integrates HTMX, and handles global CSS imports for bundling.
- */
-
 import "../../../css/app.css";
 import Alpine from "alpinejs";
 import mask from '@alpinejs/mask';
@@ -18,28 +11,14 @@ Alpine.plugin(mask);
 Alpine.plugin(focus);
 Alpine.plugin(collapse);
 
-/**
- * @typedef {Object} SpinnerComponent
- * @property {boolean} loading - Indicates if an operation is in progress.
- * @property {function} show - Sets the loading state to true.
- * @property {function} hide - Sets the loading state to false.
- */
-
-/**
- * Initializes global Alpine.js data components.
- */
 document.addEventListener('alpine:init', () => {
-    /**
-     * Spinner component for controlling the loading state during async operations.
-     * @type {SpinnerComponent}
-     */
     Alpine.data('spinner', () => ({
         loading: false,
         show() {
-            this.loading = true;
+            (this as any).loading = true;
         },
         hide() {
-            this.loading = false;
+            (this as any).loading = false;
         }
     }));
 
@@ -49,58 +28,44 @@ document.addEventListener('alpine:init', () => {
         showPassword: false,
         get strength() {
             let score = 0;
-            if (!this.password) return 0;
-            if (this.password.length >= 8) score++;
-            if (/[A-Z]/.test(this.password)) score++;
-            if (/[0-9]/.test(this.password)) score++;
-            if (/[!@#$%^&*.]/.test(this.password)) score++;
+            const self = this as any;
+            if (!self.password) return 0;
+            if (self.password.length >= 8) score++;
+            if (/[A-Z]/.test(self.password)) score++;
+            if (/[0-9]/.test(self.password)) score++;
+            if (/[!@#$%^&*.]/.test(self.password)) score++;
             return score;
         },
         show() {
-            this.loading = true;
+            (this as any).loading = true;
         },
         hide() {
-            this.loading = false;
+            (this as any).loading = false;
         }
     }));
 });
 
 Alpine.start();
-/**
- * HTMX & Validation Logic for System Initialization
- */
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Lucide icons
-    if (window.lucide) {
-        window.lucide.createIcons();
+    const win = window as any;
+    if (win.lucide) {
+        win.lucide.createIcons();
     }
 
-    /**
-     * Selector helper for DOM elements.
-     * @param {string} e - Selector string.
-     * @returns {Element|null} The matched element.
-     */
-    const $ = (e) => document.querySelector(e);
+    const $ = (e: string) => document.querySelector(e);
 
-    /** @type {HTMLFormElement|null} */
-    const form = /** @type {HTMLFormElement} */ ($("#init-form"));
-
-    /** @type {HTMLElement|null} */
+    const form = $("#init-form") as HTMLFormElement | null;
     const spinner = document.getElementById('spinner');
 
     if (form) {
-        form.addEventListener('htmx:beforeRequest', function (event) {
-            // Clear previous error messages
+        form.addEventListener('htmx:beforeRequest' as any, function (event: any) {
             const labels = ["full_name", "username", "email", "password"];
             labels.forEach(id => {
                 const element = $(`#label-${id}`);
                 if (element) element.innerHTML = "";
             });
 
-            /** 
-             * Validation constraints for validate.js
-             * @type {Object}
-             */
             const constraints = {
                 full_name: {
                     presence: { allowEmpty: false, message: "is required" },
@@ -120,44 +85,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            /** @type {Object} */
             const data = Object.fromEntries(new FormData(form));
-
-            /** @type {Object|undefined} */
             const validation = validate(data, constraints);
 
-            if (!!validation) {
-                // STOP the request if validation fails
+            if (validation) {
                 event.preventDefault();
 
                 Object.entries(validation).forEach(([keydom, errors]) => {
                     const element = $(`#label-${keydom}`);
-                    console.log(element);
                     if (element) {
-                        element.innerHTML = errors.join(', ');
+                        element.innerHTML = (errors as string[]).join(', ');
                     }
                 });
                 return false;
             }
 
-            // Show loading via Alpine state
             if (spinner) {
-                Alpine.$data(spinner).show();
+                (Alpine as any).$data(spinner).show();
             }
             return true;
         });
 
-        /**
-         * Handle HTMX successful completion to redirect.
-         * @param {Event} event 
-         */
-        document.body.addEventListener('htmx:afterSwap', function (event) {
+        document.body.addEventListener('htmx:afterSwap' as any, function (event: any) {
             if (event.detail.target.id === "notification") {
-                console.log(event.detail.target);
                 setTimeout(() => {
-                    // Hide loading
                     if (spinner) {
-                        Alpine.$data(spinner).hide();
+                        (Alpine as any).$data(spinner).hide();
                     }
 
                     const successTarget = $("#init-success");
@@ -171,9 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.location.replace("/sign/in");
                         }, 1500);
                     }
-                    // Re-initialize Lucide icons for the new content
-                    if (window.lucide) {
-                        window.lucide.createIcons();
+                    if (win.lucide) {
+                        win.lucide.createIcons();
                     }
                 }, 100);
             }

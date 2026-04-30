@@ -34,15 +34,13 @@ class SysTemplate(Template):
         position=CssSite.HEAD,
     )
     @enqueue_js(
-        js_tag=str(
-            Script(src="/app-static/javascript/icons.js", type="module", defer=True)
-        ),
+        js_tag=str(Script(src="/app-static/ts/icons.js", type="module", defer=True)),
         position=Site.HEAD,
     )
     @enqueue_js(
         js_tag=str(
             Script(
-                src="/app-static/javascript/pages/sys/init.js",
+                src="/app-static/ts/pages/sys/init.js",
                 type="module",
                 defer=True,
             )
