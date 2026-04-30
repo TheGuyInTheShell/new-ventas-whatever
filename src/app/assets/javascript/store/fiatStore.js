@@ -94,6 +94,7 @@ export const fiatActions = {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
+            if (!entityId) throw new Error("Business entity 'chinese-restaurant' ID not found");
 
             const res = await fetch(`${API_BASE}/values/query`, {
                 method: 'POST',
@@ -102,7 +103,7 @@ export const fiatActions = {
                     type: 'fiat',
                     page_size: 100,
                     balances: true,
-                    ref_business_entity: entityId || 1
+                    ref_business_entity: entityId
                 })
             });
             const data = res.ok ? await res.json() : [];
@@ -191,6 +192,7 @@ export const fiatActions = {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
+            if (!entityId) throw new Error("Business entity ID required to create fiat");
 
             await fetch(`${API_BASE}/values/`, {
                 method: 'POST',
@@ -199,7 +201,7 @@ export const fiatActions = {
                     name,
                     expression,
                     type: 'fiat',
-                    ref_business_entity: entityId || 1
+                    ref_business_entity: entityId
                 })
             });
             await this.fetchFiats();
@@ -221,6 +223,7 @@ export const fiatActions = {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
+            if (!entityId) throw new Error("Business entity ID required to create link");
 
             const comps = fiatStore.getSnapshot().context.comparisons;
             const existing = comps.find(c => c.value_from === fromId && c.value_to === toId);
@@ -230,7 +233,7 @@ export const fiatActions = {
                 quantity_to: rate,
                 value_from: fromId,
                 value_to: toId,
-                ref_business_entity: entityId || 1
+                ref_business_entity: entityId
             };
 
             if (existing) {
@@ -281,6 +284,7 @@ export const fiatActions = {
         try {
             await businessEntityActions.fetchEntity();
             const entityId = businessEntityStore.getSnapshot().context.entityId;
+            if (!entityId) throw new Error("Business entity ID required to update comparison");
 
             await fetch(`${API_BASE}/comparison_values/id/${compId}`, {
                 method: 'PUT',
@@ -290,7 +294,7 @@ export const fiatActions = {
                     quantity_to: rate,
                     value_from: fromId,
                     value_to: toId,
-                    ref_business_entity: entityId || 1
+                    ref_business_entity: entityId
                 })
             });
             await this.fetchFiats();

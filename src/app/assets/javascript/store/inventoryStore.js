@@ -62,13 +62,13 @@ export const inventoryActions = {
         inventoryStore.trigger.setError({ message: null });
         try {
             await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
-            if (!entityId) throw new Error("Could not load business entity for inventory context");
+            const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
+            if (!inventoryId) throw new Error("Could not load inventory sub-entity ID");
 
             const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ref_business_entity: entityId || 1 })
+                body: JSON.stringify({ ref_business_entity: inventoryId })
             });
             const result = await res.json();
 
@@ -111,13 +111,14 @@ export const inventoryActions = {
     async fetchEligibleItems() {
         try {
             await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
+            const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
+            if (!inventoryId) throw new Error("Inventory sub-entity ID not found for eligible items");
 
             const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ref_business_entity: entityId || 1
+                    ref_business_entity: inventoryId
                 })
             });
             const result = await res.json();
@@ -161,24 +162,25 @@ export const inventoryActions = {
             const capitalize = (s) => (s && typeof s === 'string' ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
             await businessEntityActions.fetchEntity();
-            const entityId = businessEntityStore.getSnapshot().context.entityId;
+            const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
+            if (!inventoryId) throw new Error("Inventory sub-entity ID not found for saving item");
 
             const body = {
                 value: {
                     name: capitalize(formData.name),
                     expression: formData.expression,
                     type: formData.type,
-                    ref_business_entity: entityId || 1,
+                    ref_business_entity: inventoryId,
                     meta: []
                 },
                 comparison_value: {
                     quantity_from: 1,
                     quantity_to: parseFloat(formData.price) || 0,
                     value_to: formData.currency_id || null,
-                    ref_business_entity: entityId || 1
+                    ref_business_entity: inventoryId
                 },
                 ref_super_values_ids: [],
-                business_entity_ids: entityId ? [entityId] : [1],
+                business_entity_ids: [inventoryId],
                 balance_type: 'inventory'
             };
 

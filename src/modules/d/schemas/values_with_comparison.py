@@ -24,6 +24,7 @@ class QueryValue(BaseModel):
     name: Optional[str] = None
     expression: Optional[str] = None
     identifier: Optional[str] = None
+    type: Optional[str] = None
     price: Optional[float] = None
     meta: Optional[List[int]] = None
     full_meta: bool = False
