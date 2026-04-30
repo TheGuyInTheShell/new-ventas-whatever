@@ -40,6 +40,8 @@ class BuilderValueWithComparison:
         # type and context removed from QueryValue
         if vq.identifier is not None:
             self.stmt = self.stmt.where(Value.identifier == vq.identifier)
+        if vq.type is not None:
+            self.stmt = self.stmt.where(Value.type == vq.type)
 
         # Handle soft deletes
         self.stmt = self.stmt.where(Value.is_deleted == False)
@@ -68,9 +70,12 @@ class BuilderValueWithComparison:
 
     def _apply_business_entity_filter(self):
         if self.query_params and self.query_params.ref_business_entity is not None:
+            eb_id = self.query_params.ref_business_entity
+            # Ensure both Value and ComparisonValue (if present) are filtered by the business entity
+            self.stmt = self.stmt.where(Value.ref_business_entity == eb_id)
+            # If there's a join with ComparisonValue, we also filter it if it's not null (since it's an outer join in some cases)
             self.stmt = self.stmt.where(
-                ComparisonValue.ref_business_entity
-                == self.query_params.ref_business_entity
+                (ComparisonValue.ref_business_entity == eb_id) | (ComparisonValue.id == None)
             )
 
     def _apply_eager_loading(self):

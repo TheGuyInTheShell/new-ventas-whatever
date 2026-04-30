@@ -2,7 +2,7 @@
 Template controller para la sección de Restaurante Chino (/chinese-restaurant).
 """
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import HTMLResponse
 
 from core.lib.decorators import Get, Services
@@ -13,19 +13,24 @@ from core.security.shield import Shield
 
 from src.modules.d.services.menu import MenuService
 from src.modules.d.services.value_with_comparison import DValueWithComparisonService
+from src.modules.d.services.business_entities_search_by import (
+    BusinessEntitiesSearchByService,
+)
+from src.modules.d.schemas.business_entities_search_by import RQBusinessEntitiesSearch
 from src.modules.d.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     QueryValue,
 )
 
 
-@Services(MenuService, DValueWithComparisonService)
+@Services(MenuService, DValueWithComparisonService, BusinessEntitiesSearchByService)
 @Shield.register(context="ChineseRestaurant")
 class ChineseRestaurant(Template):
     """Controlador de templates para el módulo de Restaurante Chino."""
 
     MenuService: "MenuService"
     DValueWithComparisonService: "DValueWithComparisonService"
+    BusinessEntitiesSearchByService: "BusinessEntitiesSearchByService"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -287,13 +292,37 @@ class ChineseRestaurant(Template):
         position=Site.HEAD,
     )
     async def inventory_page(self, request: Request) -> HTMLResponse:
-        # Fetch inventory using DValueWithComparisonService
+        # 1. Fetch the business entity ID for 'chinese-restaurant'
+        entity_search_query = RQBusinessEntitiesSearch(
+            name="chinese-restaurant", child_name="inventory"
+        )
+        entity_result, error = (
+            await self.BusinessEntitiesSearchByService.search_business_entities(
+                entity_search_query
+            )
+        )
 
-        # We query all values of specific types or context if needed,
-        # For now, let's fetch those that have context="inventory" or type="ingredient|utensil|consumable|other"
-        # We will query all for the inventory page context
+        if error or not entity_result or not entity_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Business entity 'chinese-restaurant' not found. This entity is required for the inventory module.",
+            )
+
+        print(">>>>>>>>>>>>>>>> Business entity found:", entity_result)
+        
+        # We MUST have the inventory sub-entity ID
+        if not entity_result.data[0].child:
+             raise HTTPException(
+                status_code=404,
+                detail="Inventory sub-entity not found for 'chinese-restaurant'. Please ensure it is correctly linked in the hierarchy.",
+            )
+
+        entity_id = entity_result.data[0].child.id
+
+        # 2. Fetch inventory using DValueWithComparisonService
+        # We query all values for the specific business entity
         query_data = QueryValuesWithComparison(
-            context="inventory",
+            context="inventory", ref_business_entity=entity_id
         )
         result = (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
