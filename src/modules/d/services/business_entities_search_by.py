@@ -23,8 +23,13 @@ from src.modules.business_entities.meta.models import (
 
 from ..schemas.business_entities_search_by import (
     RQBusinessEntitiesSearch,
+    RQBusinessEntitySearch,
+    RQBusinessEntitySearchChild,
+    RQBusinessEntitySearchGroups,
     RSBusinessEntitiesSearchItem,
     RSBusinessEntitiesSearchList,
+    RSBusinessEntitySearchChild,
+    RSBusinessEntitySearchGroups,
 )
 
 
@@ -236,3 +241,59 @@ class BusinessEntitiesSearchByService(Service):
             )
 
         return children_items
+
+    @handle_service_errors
+    @injectable
+    async def search_entity_by_name(
+        self, query: RQBusinessEntitySearch, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSBusinessEntitiesSearchItem]:
+        """
+        Busca una única entidad por nombre.
+        """
+        result, error = await self.search_business_entities(query.to_generic(), db=db)
+        if error:
+            return None, error
+        
+        if not result.data:
+            return None, ServiceResult.error(f"Entity '{query.name}' not found", status_code=404)
+        
+        return result.data[0], None
+
+    @handle_service_errors
+    @injectable
+    async def search_entity_by_child(
+        self, query: RQBusinessEntitySearchChild, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSBusinessEntitySearchChild]:
+        """
+        Busca la relación específica entre un padre y un hijo.
+        """
+        result, error = await self.search_business_entities(query.to_generic(), db=db)
+        if error:
+            return None, error
+        
+        if not result.data:
+            return None, ServiceResult.error(f"Parent entity '{query.name}' not found", status_code=404)
+        
+        parent = result.data[0]
+        if not parent.child:
+            return None, ServiceResult.error(f"Child entity '{query.child_name}' not found for parent '{query.name}'", status_code=404)
+        
+        return RSBusinessEntitySearchChild(parent=parent, child=parent.child), None
+
+    @handle_service_errors
+    @injectable
+    async def search_entity_by_groups(
+        self, query: RQBusinessEntitySearchGroups, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSBusinessEntitySearchGroups]:
+        """
+        Busca una entidad y valida su pertenencia a grupos.
+        """
+        result, error = await self.search_business_entities(query.to_generic(), db=db)
+        if error:
+            return None, error
+        
+        if not result.data:
+            return None, ServiceResult.error(f"Entity '{query.name}' not found", status_code=404)
+        
+        entity = result.data[0]
+        return RSBusinessEntitySearchGroups(entity=entity, groups=entity.groups), None

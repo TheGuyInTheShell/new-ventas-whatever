@@ -16,7 +16,10 @@ from src.modules.d.services.value_with_comparison import DValueWithComparisonSer
 from src.modules.d.services.business_entities_search_by import (
     BusinessEntitiesSearchByService,
 )
-from src.modules.d.schemas.business_entities_search_by import RQBusinessEntitiesSearch
+from src.modules.d.schemas.business_entities_search_by import (
+    RQBusinessEntitiesSearch,
+    RQBusinessEntitySearchChild,
+)
 from src.modules.d.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     QueryValue,
@@ -293,31 +296,22 @@ class ChineseRestaurant(Template):
     )
     async def inventory_page(self, request: Request) -> HTMLResponse:
         # 1. Fetch the business entity ID for 'chinese-restaurant'
-        entity_search_query = RQBusinessEntitiesSearch(
+        entity_search_query = RQBusinessEntitySearchChild(
             name="chinese-restaurant", child_name="inventory"
         )
         entity_result, error = (
-            await self.BusinessEntitiesSearchByService.search_business_entities(
+            await self.BusinessEntitiesSearchByService.search_entity_by_child(
                 entity_search_query
             )
         )
 
-        if error or not entity_result or not entity_result.data:
+        if error or not entity_result:
             raise HTTPException(
                 status_code=404,
-                detail="Business entity 'chinese-restaurant' not found. This entity is required for the inventory module.",
+                detail=str(error.message) if error else "Business entity not found",
             )
 
-        print(">>>>>>>>>>>>>>>> Business entity found:", entity_result)
-
-        # We MUST have the inventory sub-entity ID
-        if not entity_result.data[0].child:
-            raise HTTPException(
-                status_code=404,
-                detail="Inventory sub-entity not found for 'chinese-restaurant'. Please ensure it is correctly linked in the hierarchy.",
-            )
-
-        entity_id = entity_result.data[0].child.id
+        entity_id = entity_result.child.id
 
         # 2. Fetch inventory using DValueWithComparisonService
         # We query all values for the specific business entity
