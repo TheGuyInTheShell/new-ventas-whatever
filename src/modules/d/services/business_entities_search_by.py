@@ -43,7 +43,7 @@ class BusinessEntitiesSearchByService(Service):
 
         # 2. Joins based on filters
         # If groups=True or group filters are present, we join the groups tables
-        if query.groups or query.group_name or query.group_id:
+        if query.groups or query.group_name or query.group_id or query.group_names:
             stmt = stmt.join(
                 BusinessEntitiesGroupConnection,
                 BusinessEntity.id
@@ -84,6 +84,9 @@ class BusinessEntitiesSearchByService(Service):
 
         if query.group_name:
             stmt = stmt.where(BusinessEntitiesGroup.name == query.group_name)
+
+        if query.group_names:
+            stmt = stmt.where(BusinessEntitiesGroup.name.in_(query.group_names))
 
         if query.group_id:
             stmt = stmt.where(BusinessEntitiesGroup.id == query.group_id)
