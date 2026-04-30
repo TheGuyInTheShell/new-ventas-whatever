@@ -12,13 +12,15 @@ from .meta.models import MetaValue
 from .schemas import RQValue, RQMetaValue
 from ..comparison_values.models import ComparisonValue
 from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix mapper initialization
+from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 
 
 class ValuesService(Service):
+    @handle_service_errors
     @injectable
     async def create_value_with_meta(
         self, value_data: RQValue, db: AsyncSession = Depends(get_async_db)
-    ) -> Value:
+    ) -> ServiceResult[Value]:
         """
         Create a new value with optional metadata.
         Also creates a price comparison if provided.
@@ -65,10 +67,11 @@ class ValuesService(Service):
         await db.refresh(value)
         return value
 
+    @handle_service_errors
     @injectable
     async def create_values_bulk(
         self, values_data: List[RQValue], db: AsyncSession = Depends(get_async_db)
-    ) -> List[Value]:
+    ) -> ServiceResult[List[Value]]:
         """
         Create multiple values in bulk with metadata.
         """
@@ -80,13 +83,14 @@ class ValuesService(Service):
 
         return created_values
 
+    @handle_service_errors
     @injectable
     async def update_value_with_meta(
         self,
         value_id: int | str,
         value_data: RQValue,
         db: AsyncSession = Depends(get_async_db),
-    ) -> Value:
+    ) -> ServiceResult[Value]:
         """
         Update a value and its metadata.
         """
@@ -114,6 +118,7 @@ class ValuesService(Service):
         await db.refresh(value)
         return value
 
+    @handle_service_errors
     @injectable
     async def get_values_paginated(
         self,
@@ -123,7 +128,7 @@ class ValuesService(Service):
         order: str = "asc",
         filters: Optional[dict] = None,
         db: AsyncSession = Depends(get_async_db),
-    ) -> Tuple[List[Value], int]:
+    ) -> ServiceResult[Tuple[List[Value], int]]:
         """
         Get paginated list of values with total count.
         """

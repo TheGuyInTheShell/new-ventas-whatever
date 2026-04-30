@@ -28,11 +28,12 @@ class ValuesWithComparisonController(Controller):
         description="Save an optional value and an optional comparison.",
     )
     async def create_value_with_comparison(self, payload: RQValueWithComparison):
-        return (
-            await self.DValueWithComparisonService.save_value_with_comparison_service(
-                payload
-            )
+        result, error = await self.DValueWithComparisonService.save_value_with_comparison_service(
+            payload
         )
+        if error:
+            return error.to_response()
+        return result
 
     @Put("/id/{id}")
     @Shield.need(
@@ -46,11 +47,12 @@ class ValuesWithComparisonController(Controller):
         id: str,
         payload: RQValueWithComparison,
     ):
-        return (
-            await self.DValueWithComparisonService.update_value_with_comparison_service(
-                id, payload
-            )
+        result, error = await self.DValueWithComparisonService.update_value_with_comparison_service(
+            id, payload
         )
+        if error:
+            return error.to_response()
+        return result
 
     @Post("/query")
     @Shield.need(
@@ -63,8 +65,9 @@ class ValuesWithComparisonController(Controller):
         self,
         payload: QueryValuesWithComparison,
     ) -> ResultValueWithComparison:
-        return (
-            await self.DValueWithComparisonService.get_values_with_comparison_service(
-                payload
-            )
+        result, error = await self.DValueWithComparisonService.get_values_with_comparison_service(
+            payload
         )
+        if error:
+            return error.to_response()
+        return result

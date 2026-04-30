@@ -50,8 +50,9 @@ class TestComparisonValuesServiceUnitaries:
         # Mock the comparison save method since it's a BasicBaseAsync model
         with patch("src.modules.comparison_values.models.ComparisonValue.save", new_callable=AsyncMock) as mock_save:
             with patch("src.modules.comparison_values.meta.models.MetaComparisonValue.save", new_callable=AsyncMock) as mock_meta_save:
-                result = await comparison_values_service.create_comparison(create_dto, db=mock_db)
+                result, error = await comparison_values_service.create_comparison(create_dto, db=mock_db)
                 
+                assert error is None
                 assert result.id == 1
                 assert result.ref_business_entity == 100
                 
@@ -82,7 +83,9 @@ class TestComparisonValuesServiceUnitaries:
         mock_db.execute.return_value = mock_result
         
         with patch.object(comparison_values_service, "create_historical_snapshot", new_callable=AsyncMock) as mock_snapshot:
-            await comparison_values_service.update_comparison(1, update_dto, db=mock_db)
+            mock_snapshot.return_value = (MagicMock(), None)
+            result, error = await comparison_values_service.update_comparison(1, update_dto, db=mock_db)
+            assert error is None
             
             # Verify historical snapshot was created because price changed
             mock_snapshot.assert_called_once_with(mock_existing)
@@ -96,10 +99,11 @@ class TestComparisonValuesServiceUnitaries:
         mock_result.scalar_one_or_none.return_value = mock_comp
         mock_db.execute.return_value = mock_result
         
-        rate_result = await comparison_values_service.find_comparison_rate(1, 2, db=mock_db)
+        result, error = await comparison_values_service.find_comparison_rate(1, 2, db=mock_db)
         
-        assert rate_result is not None
-        rate, is_direct = rate_result
+        assert error is None
+        assert result is not None
+        rate, is_direct = result
         assert rate == 50.0
         assert is_direct is True
         
@@ -119,10 +123,11 @@ class TestComparisonValuesServiceUnitaries:
         # First call returns None (direct not found), second returns comp (inverse found)
         mock_db.execute.side_effect = [mock_result_none, mock_result_found]
         
-        rate_result = await comparison_values_service.find_comparison_rate(2, 1, db=mock_db)
+        result, error = await comparison_values_service.find_comparison_rate(2, 1, db=mock_db)
         
-        assert rate_result is not None
-        rate, is_direct = rate_result
+        assert error is None
+        assert result is not None
+        rate, is_direct = result
         assert rate == 1.0 / 50.0
         assert is_direct is False
         
@@ -135,10 +140,11 @@ class TestComparisonValuesServiceUnitaries:
         mock_find_value.side_effect = [mock_from_value, mock_to_value]
         
         with patch.object(comparison_values_service, "find_comparison_rate", new_callable=AsyncMock) as mock_rate:
-            mock_rate.return_value = (50.0, True) # 1 USD = 50 VES
+            mock_rate.return_value = ((50.0, True), None) # 1 USD = 50 VES
             
-            result = await comparison_values_service.convert_value(1, 2, 10.0, db=mock_db)
+            result, error = await comparison_values_service.convert_value(1, 2, 10.0, db=mock_db)
             
+            assert error is None
             assert result is not None
             assert result["original_amount"] == 10.0
             assert result["converted_amount"] == 500.0

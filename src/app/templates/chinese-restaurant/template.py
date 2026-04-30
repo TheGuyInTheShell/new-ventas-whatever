@@ -318,11 +318,17 @@ class ChineseRestaurant(Template):
         query_data = QueryValuesWithComparison(
             context="inventory", ref_business_entity=entity_id
         )
-        result = (
+        result, error = (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
                 query_data
             )
         )
+
+        if error:
+            raise HTTPException(
+                status_code=400,
+                detail=str(error.message),
+            )
 
         inventory_items = []
         if result.value:
