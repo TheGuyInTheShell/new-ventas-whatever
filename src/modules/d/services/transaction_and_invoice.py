@@ -61,13 +61,17 @@ class DTransactionAndInvoiceService(Service):
                 balance_to_id = tx_data.ref_balance_to
 
                 if not balance_from_id:
-                    balance_from_id = await self._resolve_balance(
+                    balance_from_id, error_balance_from = await self._resolve_balance(
                         tx_data.ref_value_from, data.business_entity_id
                     )
+                    if error_balance_from:
+                        return None, error_balance_from
                 if not balance_to_id:
-                    balance_to_id = await self._resolve_balance(
+                    balance_to_id, error_balance_to = await self._resolve_balance(
                         tx_data.ref_value_to, data.business_entity_id
                     )
+                    if error_balance_to:
+                        return None, error_balance_to
 
                 # Resolve/Create Historical Comparison if needed
                 historical_id = tx_data.ref_comparation_values_historical
@@ -142,7 +146,7 @@ class DTransactionAndInvoiceService(Service):
         if not balance_id:
             raise DatabaseQueryError(f"No balance found for value_id {value_id}")
 
-        return balance_id
+        return balance_id, None
 
     @handle_service_errors
     @injectable
@@ -309,7 +313,7 @@ class DTransactionAndInvoiceService(Service):
                 "success": True,
                 "balance_id": balance.id,
                 "new_quantity": _round_quantity(balance.quantity),
-            }
+            }, None
 
         except Exception as e:
             raise e

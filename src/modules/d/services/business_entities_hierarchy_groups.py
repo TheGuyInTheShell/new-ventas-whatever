@@ -21,7 +21,12 @@ from src.modules.business_entities.meta.models import (
     MetaBusinessEntity,
 )  # Added to fix mapper initialization
 
-from ..schemas.business_entities_search_by import (
+from ..exceptions.business_entities_hierarchy_groups import (
+    BusinessEntityNotFoundError,
+    ParentEntityNotFoundError,
+    ChildEntityNotFoundError,
+)
+from ..schemas.business_entities_hierarchy_groups import (
     RQBusinessEntitiesSearch,
     RQBusinessEntitySearch,
     RQBusinessEntitySearchChild,
@@ -72,10 +77,10 @@ class BusinessEntitiesSearchByService(Service):
                 child_hierarchy,
                 BusinessEntity.id == child_hierarchy.ref_entity_top,
             )
-            
+
             if query.child_id:
                 stmt = stmt.where(child_hierarchy.ref_entity_bottom == query.child_id)
-                
+
             if query.child_name:
                 child_entity = aliased(BusinessEntity)
                 stmt = stmt.join(
@@ -138,34 +143,50 @@ class BusinessEntitiesSearchByService(Service):
             # Match specific child if searched by child filters
             child_item = None
             if query.child_id or query.child_name:
-                child_stmt = select(BusinessEntity).join(
-                    BusinessEntitiesHierarchy, BusinessEntity.id == BusinessEntitiesHierarchy.ref_entity_bottom
-                ).where(BusinessEntitiesHierarchy.ref_entity_top == entity.id)
-                
+                child_stmt = (
+                    select(BusinessEntity)
+                    .join(
+                        BusinessEntitiesHierarchy,
+                        BusinessEntity.id
+                        == BusinessEntitiesHierarchy.ref_entity_bottom,
+                    )
+                    .where(BusinessEntitiesHierarchy.ref_entity_top == entity.id)
+                )
+
                 if query.child_id:
                     child_stmt = child_stmt.where(BusinessEntity.id == query.child_id)
                 if query.child_name:
-                    child_stmt = child_stmt.where(BusinessEntity.name == query.child_name)
-                    
-                matched_child = (await db.execute(child_stmt.limit(1))).scalar_one_or_none()
+                    child_stmt = child_stmt.where(
+                        BusinessEntity.name == query.child_name
+                    )
+
+                matched_child = (
+                    await db.execute(child_stmt.limit(1))
+                ).scalar_one_or_none()
                 if matched_child:
                     # Get groups for matched child
                     child_group_stmt = (
                         select(BusinessEntitiesGroup.name)
                         .join(
                             BusinessEntitiesGroupConnection,
-                            BusinessEntitiesGroup.id == BusinessEntitiesGroupConnection.ref_business_entities_group,
+                            BusinessEntitiesGroup.id
+                            == BusinessEntitiesGroupConnection.ref_business_entities_group,
                         )
-                        .where(BusinessEntitiesGroupConnection.ref_business_entities == matched_child.id)
+                        .where(
+                            BusinessEntitiesGroupConnection.ref_business_entities
+                            == matched_child.id
+                        )
                     )
-                    child_groups = [row[0] for row in (await db.execute(child_group_stmt)).all()]
-                    
+                    child_groups = [
+                        row[0] for row in (await db.execute(child_group_stmt)).all()
+                    ]
+
                     child_item = RSBusinessEntitiesSearchItem(
                         id=matched_child.id,
                         uid=matched_child.uid,
                         name=matched_child.name,
                         groups=child_groups,
-                        children=None
+                        children=None,
                     )
 
             data.append(
@@ -253,16 +274,18 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
-        
+
         if not result.data:
-            return None, ServiceResult.error(f"Entity '{query.name}' not found", status_code=404)
-        
+            return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
+
         return result.data[0], None
 
     @handle_service_errors
     @injectable
     async def search_entity_by_child(
-        self, query: RQBusinessEntitySearchChild, db: AsyncSession = Depends(get_async_db)
+        self,
+        query: RQBusinessEntitySearchChild,
+        db: AsyncSession = Depends(get_async_db),
     ) -> ServiceResult[RSBusinessEntitySearchChild]:
         """
         Busca la relación específica entre un padre y un hijo.
@@ -270,20 +293,24 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
-        
+
         if not result.data:
-            return None, ServiceResult.error(f"Parent entity '{query.name}' not found", status_code=404)
-        
+            return None, ParentEntityNotFoundError(f"Parent entity '{query.name}' not found")
+
         parent = result.data[0]
         if not parent.child:
-            return None, ServiceResult.error(f"Child entity '{query.child_name}' not found for parent '{query.name}'", status_code=404)
-        
+            return None, ChildEntityNotFoundError(
+                f"Child entity '{query.child_name}' not found for parent '{query.name}'"
+            )
+
         return RSBusinessEntitySearchChild(parent=parent, child=parent.child), None
 
     @handle_service_errors
     @injectable
     async def search_entity_by_groups(
-        self, query: RQBusinessEntitySearchGroups, db: AsyncSession = Depends(get_async_db)
+        self,
+        query: RQBusinessEntitySearchGroups,
+        db: AsyncSession = Depends(get_async_db),
     ) -> ServiceResult[RSBusinessEntitySearchGroups]:
         """
         Busca una entidad y valida su pertenencia a grupos.
@@ -291,9 +318,9 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
-        
+
         if not result.data:
-            return None, ServiceResult.error(f"Entity '{query.name}' not found", status_code=404)
-        
+            return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
+
         entity = result.data[0]
         return RSBusinessEntitySearchGroups(entity=entity, groups=entity.groups), None

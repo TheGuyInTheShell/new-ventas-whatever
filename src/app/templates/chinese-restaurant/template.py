@@ -13,10 +13,10 @@ from core.security.shield import Shield
 
 from src.modules.d.services.menu import MenuService
 from src.modules.d.services.value_with_comparison import DValueWithComparisonService
-from src.modules.d.services.business_entities_search_by import (
+from src.modules.d.services.business_entities_hierarchy_groups import (
     BusinessEntitiesSearchByService,
 )
-from src.modules.d.schemas.business_entities_search_by import (
+from src.modules.d.schemas.business_entities_hierarchy_groups import (
     RQBusinessEntitiesSearch,
     RQBusinessEntitySearchChild,
 )
