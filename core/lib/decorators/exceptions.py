@@ -37,6 +37,16 @@ def handle_service_errors(func: Callable[..., Coroutine[Any, Any, ServiceResult[
             return result, None
         except BaseError as e:
             # Known domain errors
+            import inspect
+            for arg in list(args) + list(kwargs.values()):
+                if hasattr(arg, "rollback") and callable(arg.rollback):
+                    try:
+                        res = arg.rollback()
+                        if inspect.isawaitable(res):
+                            await res
+                    except Exception:
+                        pass
+                    break
             return None, e
         except Exception as e:
             # Unexpected errors
@@ -44,6 +54,19 @@ def handle_service_errors(func: Callable[..., Coroutine[Any, Any, ServiceResult[
             class_name = args[0].__class__.__name__ if args else "Unknown"
             logger.error(f"Unexpected error in {class_name}.{method_name}: {str(e)}")
             logger.debug(traceback.format_exc())
+            
+            # Try to rollback any active database session
+            import inspect
+            for arg in list(args) + list(kwargs.values()):
+                if hasattr(arg, "rollback") and callable(arg.rollback):
+                    try:
+                        res = arg.rollback()
+                        if inspect.isawaitable(res):
+                            await res
+                    except Exception:
+                        pass
+                    break
+
             return None, BaseError(f"System error in {method_name}: {str(e)}", code="SYSTEM_ERROR")
 
     return wrapper
@@ -61,11 +84,27 @@ def handle_sync_errors(func: Callable[..., ServiceResult[R]]) -> Callable[..., S
                     return result
             return result, None
         except BaseError as e:
+            for arg in list(args) + list(kwargs.values()):
+                if hasattr(arg, "rollback") and callable(arg.rollback):
+                    try:
+                        arg.rollback()
+                    except Exception:
+                        pass
+                    break
             return None, e
         except Exception as e:
             method_name = func.__name__
             class_name = args[0].__class__.__name__ if args else "Unknown"
             logger.error(f"Unexpected error in {class_name}.{method_name}: {str(e)}")
+            
+            for arg in list(args) + list(kwargs.values()):
+                if hasattr(arg, "rollback") and callable(arg.rollback):
+                    try:
+                        arg.rollback()
+                    except Exception:
+                        pass
+                    break
+                    
             return None, BaseError(f"System error in {method_name}: {str(e)}", code="SYSTEM_ERROR")
 
     return wrapper
