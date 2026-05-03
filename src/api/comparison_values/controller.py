@@ -1,5 +1,5 @@
-from typing import Any, Dict, Optional
-from fastapi import Depends
+from typing import Optional
+from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
 
@@ -11,6 +11,7 @@ from core.lib.decorators.services import Services
 from src.modules.comparison_values.services import ComparisonValuesService
 from src.modules.comparison_values.schemas import RQComparisonValue
 from src.modules.comparison_values.models import ComparisonValue
+from core.lib.http.errors import error_response
 
 
 @Shield.register(context="Comparison Values API")
@@ -30,7 +31,10 @@ class ComparisonValuesController(Controller):
             page=1, page_size=1000, ref_business_entity=ref_business_entity
         )
         if error:
-            return error.to_response()
+            return error_response(error)
+        
+        if not result:
+            return HTTPException(400, "comparisons not found")
         
         comparisons, total = result
         return {"data": comparisons, "total": total}
@@ -45,7 +49,7 @@ class ComparisonValuesController(Controller):
     async def create_comparison(self, payload: RQComparisonValue):
         result, error = await self.ComparisonValuesService.create_comparison(payload)
         if error:
-            return error.to_response()
+            return error_response(error)
         return result
 
     @Put("/id/{id}")
@@ -58,7 +62,7 @@ class ComparisonValuesController(Controller):
     async def update_comparison(self, id: str, payload: RQComparisonValue):
         result, error = await self.ComparisonValuesService.update_comparison(id, payload)
         if error:
-            return error.to_response()
+            return error_response(error)
         return result
 
     @Delete("/id/{id}")

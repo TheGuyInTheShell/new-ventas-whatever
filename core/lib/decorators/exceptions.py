@@ -1,9 +1,10 @@
-from typing import TypeVar, Generic, Optional, Type, Any, Callable, cast
+from typing import TypeVar, Generic, Optional, Type, Any, Callable, cast, Coroutine
 import functools
 import traceback
 from loguru import logger
 
 T = TypeVar("T")
+R = TypeVar("R") # Generic for the return type of the decorated function
 
 class BaseError(Exception):
     """Base exception for all system errors."""
@@ -20,19 +21,19 @@ class BaseError(Exception):
 # Type alias for the methodology (Value, Error)
 ServiceResult = tuple[Optional[T], Optional[BaseError]]
 
-def handle_service_errors(func: Callable[..., Any]) -> Callable[..., Any]:
+def handle_service_errors(func: Callable[..., Coroutine[Any, Any, ServiceResult[R]]]) -> Callable[..., Coroutine[Any, Any, ServiceResult[R]]]:
     """
     Decorator to apply the (Value, Error) methodology.
     Catches all exceptions and returns them as the second element of a tuple.
     """
     @functools.wraps(func)
-    async def wrapper(*args, **kwargs) -> tuple[Any | None, BaseError | None]:
+    async def wrapper(*args, **kwargs) -> ServiceResult[R]:
         try:
             result = await func(*args, **kwargs)
             # Prevent double wrapping if the method manually returned a tuple
             if isinstance(result, tuple) and len(result) == 2:
                 if result[1] is None or isinstance(result[1], BaseError):
-                    return result
+                    return result # Already a ServiceResult
             return result, None
         except BaseError as e:
             # Known domain errors
@@ -45,14 +46,14 @@ def handle_service_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             logger.debug(traceback.format_exc())
             return None, BaseError(f"System error in {method_name}: {str(e)}", code="SYSTEM_ERROR")
 
-    return cast(Callable[..., Any], wrapper)
+    return wrapper
 
-def handle_sync_errors(func: Callable[..., Any]) -> Callable[..., Any]:
+def handle_sync_errors(func: Callable[..., ServiceResult[R]]) -> Callable[..., ServiceResult[R]]:
     """
     Sync version of the (Value, Error) methodology decorator.
     """
     @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> tuple[Any | None, BaseError | None]:
+    def wrapper(*args, **kwargs) -> ServiceResult[R]:
         try:
             result = func(*args, **kwargs)
             if isinstance(result, tuple) and len(result) == 2:
@@ -67,4 +68,4 @@ def handle_sync_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             logger.error(f"Unexpected error in {class_name}.{method_name}: {str(e)}")
             return None, BaseError(f"System error in {method_name}: {str(e)}", code="SYSTEM_ERROR")
 
-    return cast(Callable[..., Any], wrapper)
+    return wrapper
