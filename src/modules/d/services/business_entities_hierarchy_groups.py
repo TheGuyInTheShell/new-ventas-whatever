@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_injectable import injectable
 
 from core.database import get_async_db
+from core.database.drivers.postgres.async_connection import SessionAsync
 from core.lib.register.service import Service
 from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 
@@ -21,6 +22,7 @@ from src.modules.business_entities.hierarchy.models import BusinessEntitiesHiera
 from src.modules.business_entities.meta.models import (
     MetaBusinessEntity,
 )  # Added to fix mapper initialization
+from src.context.globals.busines_entity import BUSINESS_ENTITY_TREE
 
 from ..exceptions.business_entities_hierarchy_groups import (
     BusinessEntityNotFoundError,
@@ -330,19 +332,56 @@ class BusinessEntitiesSearchByService(Service):
         entity = result.data[0]
         return RSBusinessEntitySearchGroups(entity=entity, groups=entity.groups), None
 
+    async def _sync_entity_tree(
+        self, tree_node: dict, parent_id: Optional[int], db: AsyncSession
+    ):
+        """
+        Recursively creates business entities and their hierarchy based on a tree structure.
+        """
+        for name, children in tree_node.items():
+            # 1. Get or create the entity
+            stmt = select(BusinessEntity).where(BusinessEntity.name == name)
+            result = await db.execute(stmt)
+            entity = result.scalar_one_or_none()
+
+            if not entity:
+                entity = BusinessEntity(name=name)
+                db.add(entity)
+                await db.flush()
+
+            # 2. If it has a parent, ensure the hierarchy link exists
+            if parent_id is not None:
+                h_stmt = select(BusinessEntitiesHierarchy).where(
+                    and_(
+                        BusinessEntitiesHierarchy.ref_entity_top == parent_id,
+                        BusinessEntitiesHierarchy.ref_entity_bottom == entity.id
+                    )
+                )
+                h_result = await db.execute(h_stmt)
+                hierarchy = h_result.scalar_one_or_none()
+
+                if not hierarchy:
+                    hierarchy = BusinessEntitiesHierarchy(
+                        ref_entity_top=parent_id,
+                        ref_entity_bottom=entity.id
+                    )
+                    db.add(hierarchy)
+                    await db.flush()
+
+            # 3. Recursively process children
+            if isinstance(children, dict) and children:
+                await self._sync_entity_tree(children, entity.id, db)
+
     @on_app_init
     @injectable
     async def _initialize_business_entity_global(
-        self, app: FastAPI, db: AsyncSession = Depends(get_async_db)
+        self, app: FastAPI
     ):
         """
-        Inicializa la entidad de negocio global si no existe.
+        Inicializa las entidades de negocio globales según el árbol jerárquico.
         """
-        stmt = select(BusinessEntity).where(BusinessEntity.name == "global")
-        result = await db.execute(stmt)
-        global_entity = result.scalar_one_or_none()
-
-        if not global_entity:
-            new_global = BusinessEntity(name="global")
-            db.add(new_global)
+        print("DEBUG: _initialize_business_entity_global START")
+        async with SessionAsync() as db:
+            await self._sync_entity_tree(BUSINESS_ENTITY_TREE, None, db)
             await db.commit()
+        print("DEBUG: _initialize_business_entity_global END")
