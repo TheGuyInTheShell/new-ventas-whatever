@@ -314,9 +314,9 @@ class ChineseRestaurant(Template):
         entity_id = entity_result.child.id
 
         # 2. Fetch inventory using DValueWithComparisonService
-        # We query all values for the specific business entity
         query_data = QueryValuesWithComparison(
-            context="inventory", ref_business_entity=entity_id
+            ref_business_entity=entity_id,
+            value=QueryValue(full_meta=True)
         )
         result, error = (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
@@ -342,6 +342,10 @@ class ChineseRestaurant(Template):
                     ),
                     None,
                 )
+                
+                # Extract primary balance
+                primary_balance = val.balances[0] if val.balances else None
+                
                 inventory_items.append(
                     {
                         "id": val.id,
@@ -355,7 +359,9 @@ class ChineseRestaurant(Template):
                         "quantity_from": comp.quantity_from if comp else 1,
                         "quantity_to": comp.quantity_to if comp else 0,
                         "value_to": comp.value_to if comp else None,
-                        "balance": 0,  # This should theoretically come from a balance fetch if needed, defaulting to 0
+                        # From balance
+                        "balance": primary_balance.quantity if primary_balance else 0,
+                        "balance_id": primary_balance.id if primary_balance else None,
                     }
                 )
 
