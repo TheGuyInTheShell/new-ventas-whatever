@@ -5,7 +5,13 @@ from sqlalchemy.orm import selectinload
 from core.lib.register.service import Service
 from fastapi import Depends
 from fastapi_injectable import injectable
-from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
+from core.lib.decorators.exceptions import handle_service_errors
+from .exceptions import (
+    ServiceResult,
+    ComparisonValueNotFoundError,
+    ValueNotFoundError,
+    ComparisonRateNotFoundError,
+)
 from core.database import get_async_db
 
 from .models import ComparisonValue
@@ -13,7 +19,9 @@ from .historical import ComparisonValueHistorical
 from .schemas import RQComparisonValue
 from ..values.models import Value
 from .meta.models import MetaComparisonValue
-from src.modules.business_entities.meta.models import MetaBusinessEntity # Fix mapper initialization
+from src.modules.business_entities.meta.models import (
+    MetaBusinessEntity,
+)  # Fix mapper initialization
 
 
 class ComparisonValuesService(Service):
@@ -27,7 +35,7 @@ class ComparisonValuesService(Service):
         stmt = select(ComparisonValue).where(
             ComparisonValue.value_from == data.value_from,
             ComparisonValue.value_to == data.value_to,
-            ComparisonValue.ref_business_entity == data.ref_business_entity
+            ComparisonValue.ref_business_entity == data.ref_business_entity,
         )
         result = await db.execute(stmt)
         existing = result.scalar_one_or_none()
@@ -38,11 +46,11 @@ class ComparisonValuesService(Service):
                 "quantity_from": data.quantity_from,
                 "quantity_to": data.quantity_to,
                 "is_deleted": False,
-                "deleted_at": None
+                "deleted_at": None,
             }
             await ComparisonValue.update(db, existing.id, update_data)
             comparison_id = existing.id
-            comparison = existing # To use below
+            comparison = existing  # To use below
         else:
             comparison = ComparisonValue(
                 quantity_from=data.quantity_from,
@@ -74,7 +82,7 @@ class ComparisonValuesService(Service):
         result = await db.execute(stmt)
         comparison = result.scalar_one()
 
-        return comparison
+        return comparison, None
 
     @handle_service_errors
     @injectable
@@ -87,6 +95,8 @@ class ComparisonValuesService(Service):
         """Update a comparison value"""
         # Fetch existing comparison to check for changes and snapshot if needed
         comparison = await ComparisonValue.find_one(db, comparison_id)
+        if not comparison:
+            raise ComparisonValueNotFoundError()
 
         # Check if price (quantity_to) has changed
         if float(comparison.quantity_to) != float(data.quantity_to):
@@ -114,7 +124,7 @@ class ComparisonValuesService(Service):
         )
 
         result = await db.execute(stmt)
-        return result.scalar_one()
+        return result.scalar_one(), None
 
     @handle_service_errors
     @injectable
@@ -184,9 +194,9 @@ class ComparisonValuesService(Service):
         if result:
             # Inverse rate: if 1 USD = 46 VES, then 1 VES = 1/46 USD
             rate = result.quantity_from / result.quantity_to
-            return (rate, False)
+            return (rate, False), None
 
-        return None
+        return None, ComparisonRateNotFoundError()
 
     @handle_service_errors
     @injectable
@@ -203,15 +213,22 @@ class ComparisonValuesService(Service):
         """
         # Get the values
         from_value = await Value.find_one(db, from_value_id)
+        if not from_value:
+            raise ValueNotFoundError(f"Source value with ID {from_value_id} not found.")
+
         to_value = await Value.find_one(db, to_value_id)
+        if not to_value:
+            raise ValueNotFoundError(f"Target value with ID {to_value_id} not found.")
 
         # Find the rate
-        rate_result, error = await self.find_comparison_rate(from_value_id, to_value_id, db=db)
+        rate_result, error = await self.find_comparison_rate(
+            from_value_id, to_value_id, db=db
+        )
         if error:
             return None, error
-        
+
         if not rate_result:
-            return None
+            return None, ComparisonRateNotFoundError()
 
         rate, _ = rate_result
         converted_amount = amount * rate
@@ -223,7 +240,7 @@ class ComparisonValuesService(Service):
             "converted_amount": converted_amount,
             "rate": rate,
             "inverse_rate": 1 / rate if rate != 0 else 0,
-        }
+        }, None
 
     @handle_service_errors
     @injectable
@@ -240,4 +257,4 @@ class ComparisonValuesService(Service):
             original_comparison_id=comparison.id,
         )
         await historical.save(db)
-        return historical
+        return historical, None
