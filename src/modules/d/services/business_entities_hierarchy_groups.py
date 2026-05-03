@@ -280,6 +280,9 @@ class BusinessEntitiesSearchByService(Service):
         if error:
             return None, error
 
+        if not result:
+            return None, BusinessEntityNotFoundError('Business entity not found')
+
         if not result.data:
             return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
 
@@ -298,6 +301,9 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
+
+        if not result:
+            return None, BusinessEntityNotFoundError('Business entity not found')
 
         if not result.data:
             return None, ParentEntityNotFoundError(
@@ -325,6 +331,9 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
+        
+        if not result:
+            return None, BusinessEntityNotFoundError('Business entity not found')
 
         if not result.data:
             return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
