@@ -261,7 +261,10 @@ document.addEventListener('alpine:init', () => {
         async saveItemSubmit() {
             this.isSaving = true;
             try {
-                const success = await inventoryActions.saveItem(this.editingItem, this.formData);
+                const success = await inventoryActions.saveItem({
+                    ...this.editingItem,
+                    ...this.formData
+                });
                 if (success) {
                     this.formModalOpen = false;
                     notifySuccess(this.editingItem ? 'Item updated successfully' : 'Item added successfully', 'Inventory');
@@ -284,7 +287,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.itemToDelete) return;
 
             try {
-                const success = await inventoryActions.deleteItem(this.itemToDelete.id, this.itemToDelete.comparison_id);
+                const success = await inventoryActions.deleteItem(this.itemToDelete);
 
                 if (success) {
                     this.deleteModalOpen = false;

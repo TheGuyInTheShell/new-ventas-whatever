@@ -10,8 +10,7 @@ import json
 from core.lib.register.service import Service
 
 # Shared float precision for all inventory/balance quantities
-
-from app.context.globals import _round_quantity
+from src.context.globals.round_quantity import _round_quantity
 from ...balances.models import Balance
 from ..schemas.transaction_and_invoice import RQAdjustBalance
 from ...invoices.models import Invoice
@@ -110,9 +109,12 @@ class DTransactionAndInvoiceService(Service):
 
                 created_transactions.append(transaction.id)
 
+            invoice_id = invoice.id
+            await db.commit()
+
             return {
                 "success": True,
-                "invoice_id": invoice.id,
+                "invoice_id": invoice_id,
                 "transaction_ids": created_transactions,
             }, None
 
@@ -158,8 +160,40 @@ class DTransactionAndInvoiceService(Service):
         If 'is_adjustment' is true, generate an Invoice and pseudo-Transaction for history.
         """
         try:
-            # 1. Fetch the Balance
-            stmt = select(Balance).where(Balance.id == data.balance_id)
+            # 1. Fetch or Create the Balance
+            balance_id = data.balance_id
+
+            if not balance_id:
+                if not data.value_id or not data.ref_business_entity:
+                    raise DatabaseQueryError(
+                        "Must provide either balance_id or (value_id AND ref_business_entity)"
+                    )
+
+                # Try to resolve it
+                try:
+                    resolved_id, err = await self._resolve_balance(
+                        data.value_id, data.ref_business_entity, db=db
+                    )
+                    if err:
+                        raise DatabaseQueryError("Not found")
+                    balance_id = resolved_id
+                except Exception:
+                    # Create the balance if it completely doesn't exist
+                    new_balance = Balance(
+                        quantity=0.0, type="inventory", ref_value=data.value_id
+                    )
+                    db.add(new_balance)
+                    await db.flush()
+                    db.add(
+                        BalanceBusinessEntity(
+                            ref_balance=new_balance.id,
+                            ref_business_entity=data.ref_business_entity,
+                        )
+                    )
+                    await db.flush()
+                    balance_id = new_balance.id
+
+            stmt = select(Balance).where(Balance.id == balance_id)
             result = await db.execute(stmt)
             balance = result.scalars().first()
 
@@ -309,10 +343,15 @@ class DTransactionAndInvoiceService(Service):
                     balance.quantity = _round_quantity(data.new_quantity)
                     adj_balance.quantity = _round_quantity(adj_balance.quantity - delta)
 
+            final_balance_id = balance.id
+            final_quantity = _round_quantity(balance.quantity)
+            
+            await db.commit()
+
             return {
                 "success": True,
-                "balance_id": balance.id,
-                "new_quantity": _round_quantity(balance.quantity),
+                "balance_id": final_balance_id,
+                "new_quantity": final_quantity,
             }, None
 
         except Exception as e:

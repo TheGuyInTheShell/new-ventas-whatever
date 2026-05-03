@@ -35,7 +35,9 @@ class InvoiceSales(BaseModel):
     transactions: List[Transaction]
 
 class RQAdjustBalance(BaseModel):
-    balance_id: int # The inventory item (Value.id)
+    balance_id: Optional[int] = None
+    value_id: Optional[int] = None
+    ref_business_entity: Optional[int] = None
     new_quantity: float
     is_adjustment: bool
     notes: Optional[str] = None

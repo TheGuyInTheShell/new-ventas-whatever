@@ -75,10 +75,14 @@ class BuilderValueWithComparison:
             self.stmt = self.stmt.where(Value.ref_business_entity == eb_id)
             # If there's a join with ComparisonValue, we also filter it if it's not null (since it's an outer join in some cases)
             self.stmt = self.stmt.where(
-                (ComparisonValue.ref_business_entity == eb_id) | (ComparisonValue.id == None)
+                (ComparisonValue.ref_business_entity == eb_id)
+                | (ComparisonValue.id == None)
             )
 
     def _apply_eager_loading(self):
+        # Balances are critical for inventory, so we load them by default now
+        self.stmt = self.stmt.options(selectinload(Value.balances))
+
         if not self.query_params:
             return
 
@@ -172,6 +176,16 @@ class BuilderValueWithComparison:
                             RSMetaValue(uid=m.uid, id=m.id, key=m.key, value=m.value)
                         )
 
+                balance_list = None
+                if "balances" not in unloaded:
+                    balance_list = []
+                    from src.modules.values.schemas import RSBalance
+
+                    for b in getattr(value_obj, "balances", []):
+                        balance_list.append(
+                            RSBalance(id=b.id, quantity=b.quantity, type=b.type)
+                        )
+
                 rv = RSValueWithHierarchy(
                     uid=value_obj.uid,
                     id=value_obj.id,
@@ -181,6 +195,7 @@ class BuilderValueWithComparison:
                     ref_business_entity=value_obj.ref_business_entity,
                     identifier=value_obj.identifier,
                     meta=meta_list,
+                    balances=balance_list,
                     ref_super_values_ids=[],
                 )
                 seen_values[value_obj.id] = rv
