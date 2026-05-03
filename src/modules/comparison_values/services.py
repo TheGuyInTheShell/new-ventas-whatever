@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Literal
+from typing import Optional, Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -139,7 +139,7 @@ class ComparisonValuesService(Service):
         value_to: Optional[int | str] = None,
         ref_business_entity: Optional[int] = None,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Tuple[List[ComparisonValue], int]]:
+    ) -> ServiceResult[tuple[list[ComparisonValue], int]]:
         """Get paginated list of comparisons with total count"""
         # Build filters dict, only include non-None values
         filters = {}
@@ -156,7 +156,7 @@ class ComparisonValuesService(Service):
 
         total = await ComparisonValue.count(db, status=status)
 
-        return comparisons, total
+        return (comparisons, total), None
 
     @handle_service_errors
     @injectable
@@ -165,7 +165,7 @@ class ComparisonValuesService(Service):
         from_value_id: int,
         to_value_id: int,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Optional[Tuple[float, bool]]]:
+    ) -> ServiceResult[tuple[float, bool]]:
         """
         Find the conversion rate between two values.
         Returns (rate, is_direct) tuple or None if not found.
@@ -181,7 +181,7 @@ class ComparisonValuesService(Service):
 
         if result:
             rate = result.quantity_to / result.quantity_from
-            return (rate, True)
+            return (rate, True), None
 
         # Try inverse comparison
         query = select(ComparisonValue).where(
