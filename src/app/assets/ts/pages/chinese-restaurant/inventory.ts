@@ -26,6 +26,16 @@ document.addEventListener('alpine:init', () => {
         formModalOpen: false,
         isSaving: false,
         editingItem: null as InventoryItem | null,
+
+        adjustModalOpen: false,
+        isAdjusting: false,
+        adjustItem: null as InventoryItem | null,
+        adjustFormData: {
+            new_quantity: 0,
+            is_adjustment: false,
+            notes: ''
+        },
+
         formData: {
             name: '',
             type: 'ingredient',
@@ -211,7 +221,41 @@ document.addEventListener('alpine:init', () => {
         },
 
         openAdjustModal(item: InventoryItem) {
-            console.log('Adjust Stock', item);
+            this.adjustItem = item;
+            this.adjustFormData = {
+                new_quantity: item.balance || 0,
+                is_adjustment: false,
+                notes: ''
+            };
+            this.adjustModalOpen = true;
+            this.$nextTick(() => { createIcons({ icons }); });
+        },
+
+        closeAdjustModal() {
+            this.adjustModalOpen = false;
+        },
+
+        async adjustStockSubmit() {
+            if (!this.adjustItem) return;
+            this.isAdjusting = true;
+            try {
+                const success = await inventoryActions.adjustStock(
+                    this.adjustItem,
+                    this.adjustFormData.new_quantity,
+                    this.adjustFormData.is_adjustment,
+                    this.adjustFormData.notes
+                );
+                if (success) {
+                    this.adjustModalOpen = false;
+                    notifySuccess('Stock adjusted successfully', 'Inventory');
+                } else {
+                    notifyError('Failed to adjust stock', 'Error');
+                }
+            } catch (e: any) {
+                notifyError(e.message || 'Error adjusting stock', 'Error');
+            } finally {
+                this.isAdjusting = false;
+            }
         },
 
         async saveItemSubmit() {

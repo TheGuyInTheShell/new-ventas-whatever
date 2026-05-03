@@ -10,6 +10,7 @@ export interface InventoryItem {
     quantity_to: number;
     value_to: number | null;
     balance: number;
+    balance_id?: number;
     ref_super_values_ids: number[];
     meta: Array<{ key: string; value: string }>;
     prices?: Array<{

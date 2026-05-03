@@ -8,3 +8,4 @@ node_modules
 .mypy_cache/*
 src/app/web/out
 **/out
+scratch

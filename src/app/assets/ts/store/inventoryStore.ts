@@ -31,7 +31,11 @@ export const inventoryActions = {
             const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ref_business_entity: inventoryId })
+                body: JSON.stringify({ 
+                    ref_business_entity: inventoryId,
+                    balances: true,
+                    balance_type: 'inventory' // the current backend expects this based on saveItem
+                })
             });
             const result = await res.json();
 
@@ -52,7 +56,8 @@ export const inventoryActions = {
                         quantity_from: primaryComp ? primaryComp.quantity_from : 1,
                         quantity_to: primaryComp ? primaryComp.quantity_to : 0,
                         value_to: primaryComp ? primaryComp.value_to : null,
-                        balance: 0,
+                        balance: val.balances && val.balances.length > 0 ? val.balances[0].quantity : 0,
+                        balance_id: val.balances && val.balances.length > 0 ? val.balances[0].id : undefined,
                         ref_super_values_ids: val.ref_super_values_ids || [],
                         meta: val.meta || [],
                         prices: comps.map((c: any) => ({
@@ -70,6 +75,34 @@ export const inventoryActions = {
             inventoryStore.trigger.setError({ message: error.message || 'Unknown error' });
         } finally {
             inventoryStore.trigger.setLoading({ value: false });
+        }
+    },
+
+    async adjustStock(item: InventoryItem, newQuantity: number, isAdjustment: boolean, notes: string): Promise<boolean> {
+        try {
+            if (!item.balance_id) throw new Error("Balance ID not found for this item");
+
+            const payload = {
+                balance_id: item.balance_id,
+                new_quantity: newQuantity,
+                is_adjustment: isAdjustment,
+                notes: notes
+            };
+
+            const res = await fetch(`${API_BASE}/d/transaction_and_invoice/adjust`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error('Failed to adjust stock');
+
+            await this.fetchItems();
+            return true;
+        } catch (error: any) {
+            console.error("Failed to adjust stock: ", error);
+            inventoryStore.trigger.setError({ message: error.message || 'Failed to adjust stock' });
+            return false;
         }
     },
 
