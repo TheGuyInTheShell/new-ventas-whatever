@@ -10,6 +10,7 @@ export interface Comparison {
     value_to: number;
     quantity_from: number;
     quantity_to: number;
+    ref_business_entity: number;
     context: string;
 }
 

@@ -41,9 +41,22 @@ export const fiatActions = {
     async fetchFiats(): Promise<void> {
         fiatStore.trigger.setLoading({ value: true });
         try {
-            await globalActions.fetchGlobalEntity();
-            const entityId = globalStore.getSnapshot().context.globalEntityId;
-            if (!entityId) throw new Error("Global business entity ID not found");
+            await globalActions.fetchFinanceHierarchy();
+            const snap = globalStore.getSnapshot().context;
+            console.log("[FiatStore] Snapshot before check:", snap);
+            const globalId = snap.globalEntityId;
+            const currentId = snap.entities['current'];
+            const customId = snap.entities['custom'];
+
+            if (!globalId) {
+                console.error("[FiatStore] Global ID missing. Context entities:", snap.entities);
+                throw new Error("Global business entity ID not found");
+            }
+            
+            console.log(`[FiatStore] Using globalId: ${globalId}, currentId: ${currentId}, customId: ${customId}`);
+
+            // Fetch fiats (usually from current or global)
+            const baseEntityId = currentId || globalId;
 
             const res = await fetch(`${API_BASE}/values/query`, {
                 method: 'POST',
@@ -52,16 +65,25 @@ export const fiatActions = {
                     type: 'fiat',
                     page_size: 100,
                     balances: true,
-                    ref_business_entity: entityId
+                    ref_business_entity: baseEntityId
                 })
             });
             const data = res.ok ? await res.json() : [];
             const fiatList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
             fiatStore.trigger.setFiats({ data: fiatList });
 
-            const compsRes = await fetch(`${API_BASE}/comparison_values/?ref_business_entity=${entityId}`);
-            const compsData = compsRes.ok ? (await compsRes.json()).data || [] : [];
-            const comps: Comparison[] = Array.isArray(compsData) ? compsData : [];
+            // Fetch comparisons for both current and custom if they exist
+            const fetchComps = async (id: number) => {
+                const r = await fetch(`${API_BASE}/comparison_values/?ref_business_entity=${id}`);
+                return r.ok ? (await r.json()).data || [] : [];
+            };
+
+            const [currentComps, customComps] = await Promise.all([
+                currentId ? fetchComps(currentId).then(list => list.map((c: any) => ({ ...c, context: 'current' }))) : Promise.resolve([]),
+                customId ? fetchComps(customId).then(list => list.map((c: any) => ({ ...c, context: 'custom' }))) : Promise.resolve([])
+            ]);
+
+            const comps: Comparison[] = [...currentComps, ...customComps];
             fiatStore.trigger.setComparisons({ data: comps });
 
             const optRes = await fetch(`${API_BASE}/options/?context=global`);
@@ -86,8 +108,13 @@ export const fiatActions = {
             }
             fiatStore.trigger.setExchangeRates({ rates });
 
+            console.log("[FiatStore] Successfully fetched fiats and comparisons.", {
+                fiats: fiatList.length,
+                comparisons: comps.length
+            });
+
         } catch (error) {
-            console.error("Failed to fetch fiats: ", error);
+            console.error("[FiatStore] Failed to fetch fiats: ", error);
         } finally {
             fiatStore.trigger.setLoading({ value: false });
         }
@@ -146,24 +173,25 @@ export const fiatActions = {
         }
     },
 
-    async createLink(fromId: number, toId: number, rate: number): Promise<boolean> {
+    async createLink(fromId: number, toId: number, rate: number, useCustom: boolean = false): Promise<boolean> {
         try {
-            // Ensure data is fresh before checking for existing links
+            // Ensure data is fresh
             await this.fetchFiats();
-            
-            await globalActions.fetchGlobalEntity();
-            const entityId = globalStore.getSnapshot().context.globalEntityId;
-            if (!entityId) throw new Error("Global business entity ID required to create link");
+
+            const snap = globalStore.getSnapshot().context;
+            const targetEntityId = useCustom ? snap.entities['custom'] : snap.entities['current'];
+
+            if (!targetEntityId) throw new Error(`Target business entity ID (${useCustom ? 'custom' : 'current'}) required to create link`);
 
             const comps = fiatStore.getSnapshot().context.comparisons;
-            const existing = comps.find(c => Number(c.value_from) === Number(fromId) && Number(c.value_to) === Number(toId));
+            const existing = comps.find(c => Number(c.value_from) === Number(fromId) && Number(c.value_to) === Number(toId) && Number(c.ref_business_entity) === Number(targetEntityId));
 
             const body = {
                 quantity_from: 1,
                 quantity_to: rate,
                 value_from: fromId,
                 value_to: toId,
-                ref_business_entity: entityId
+                ref_business_entity: targetEntityId
             };
 
             let res;

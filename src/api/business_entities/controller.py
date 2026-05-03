@@ -2,6 +2,7 @@ from fastapi import Request
 from core.lib.register import Controller
 from core.lib.decorators import Post, Services
 from core.security.shield import Shield
+from core.lib.http.errors import error_response
 
 from src.modules.d.services.business_entities_hierarchy_groups import (
     BusinessEntitiesSearchByService,
@@ -37,7 +38,7 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error.to_response()
+            return error_response(error)
 
         return result
 
@@ -57,7 +58,7 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error.to_response()
+            return error_response(error)
 
         return result
 
@@ -78,7 +79,7 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error.to_response()
+            return error_response(error)
 
         return result
 
@@ -99,6 +100,6 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error.to_response()
+            return error_response(error)
 
         return result

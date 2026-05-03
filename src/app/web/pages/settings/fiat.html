@@ -63,6 +63,11 @@
                 <div x-show="fiats.length === 0" class="text-center text-base-content/50 py-4 text-sm">
                     No currencies added yet.
                 </div>
+
+                <div x-show="fiats.length > 0 && !mainFiatId" class="alert alert-warning text-xs py-2 mt-2">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                    <span>Please select a <strong>Main Currency</strong> (Set Main) to enable exchange rate management in this section.</span>
+                </div>
             </div>
 
             <div class="divider my-6"></div>
@@ -83,6 +88,53 @@
                     @click="onAddFiat" :disabled="isAddingFiat">
                     Add
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Standard Exchange Rates (Current) -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="card-title text-base">Standard Exchange Rates</h2>
+            <p class="text-xs text-base-content/60">System-wide global exchange rates (Current Context).</p>
+
+            <div class="space-y-3 mt-4">
+                <template x-for="comp in currentComparisons" :key="comp.id">
+                    <div
+                        class="flex items-center justify-between bg-base-200/50 p-3 rounded-lg border border-base-300 relative">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full bg-primary/20 text-primary">
+                                <i data-lucide="globe" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">
+                                    <span x-text="getFiatName(comp.value_from)"></span>
+                                    <span class="text-base-content/40 mx-1">→</span>
+                                    <span x-text="getFiatName(comp.value_to)"></span>
+                                </div>
+                                <div class="text-xs text-base-content/50">
+                                    <span x-text="getFiatExpression(comp.value_from)"></span> → <span
+                                        x-text="getFiatExpression(comp.value_to)"></span>
+                                </div>
+                                <div class="text-xs font-bold text-primary mt-1">
+                                    1 <span x-text="getFiatExpression(comp.value_from)"></span> = 
+                                    <span x-text="(comp.quantity_to / comp.quantity_from).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})"></span> 
+                                    <span x-text="getFiatExpression(comp.value_to)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button class="btn btn-ghost btn-xs text-error" @click="onDeleteComparison(comp.id)">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="currentComparisons.length === 0" class="text-center text-base-content/50 py-4 text-sm">
+                    No standard exchange rates defined yet.
+                </div>
             </div>
         </div>
     </div>
@@ -111,6 +163,11 @@
                                     <span x-text="getFiatExpression(comp.value_from)"></span> → <span
                                         x-text="getFiatExpression(comp.value_to)"></span>
                                 </div>
+                                <div class="text-xs font-bold text-primary mt-1">
+                                    1 <span x-text="getFiatExpression(comp.value_from)"></span> = 
+                                    <span x-text="(comp.quantity_to / comp.quantity_from).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})"></span> 
+                                    <span x-text="getFiatExpression(comp.value_to)"></span>
+                                </div>
                             </div>
                         </div>
 
@@ -134,7 +191,7 @@
                 <div class="form-control grow">
                     <label class="label"><span class="label-text text-xs">From Currency</span></label>
                     <select x-model="newComparison.fromId" class="select select-bordered select-sm w-full">
-                        <option value="null" disabled>Select...</option>
+                        <option :value="null" disabled>Select...</option>
                         <template x-for="f in fiats" :key="f.id">
                             <option :value="f.id" x-text="f.name"></option>
                         </template>
@@ -143,7 +200,7 @@
                 <div class="form-control grow">
                     <label class="label"><span class="label-text text-xs">To Currency</span></label>
                     <select x-model="newComparison.toId" class="select select-bordered select-sm w-full">
-                        <option value="null" disabled>Select...</option>
+                        <option :value="null" disabled>Select...</option>
                         <template x-for="f in fiats" :key="f.id">
                             <option :value="f.id" x-text="f.name"></option>
                         </template>
