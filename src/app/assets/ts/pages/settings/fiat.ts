@@ -31,6 +31,7 @@ document.addEventListener('alpine:init', () => {
         get mainFiatId() { return this.storeContext.mainFiatId; },
         get comparisons() { return this.storeContext.comparisons; },
         get exchangeRates() { return this.storeContext.exchangeRates; },
+        get currentComparisons() { return this.storeContext.comparisons.filter(c => c.context === 'current'); },
         get customComparisons() { return this.storeContext.comparisons.filter(c => c.context === 'custom'); },
 
         async onAddFiat() {
@@ -83,7 +84,8 @@ document.addEventListener('alpine:init', () => {
                     const success = await fiatActions.createLink(
                         this.newComparison.fromId,
                         this.newComparison.toId,
-                        this.newComparison.rate
+                        this.newComparison.rate,
+                        true // Use custom context
                     );
                     if (success) {
                         notifySuccess('Comparison added', 'Settings');
