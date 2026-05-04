@@ -1,6 +1,11 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, TYPE_CHECKING
 from src.modules.comparison_values.schemas import RSComparisonValue
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from src.modules.balances.models import BalanceType
+else:
+    from src.modules.balances.models import BalanceType
 
 
 # ==================== Value Meta Schemas ====================
@@ -47,7 +52,7 @@ class RSMetaValue(BaseModel):
 class RSBalance(BaseModel):
     id: int
     quantity: float
-    type: str
+    type: BalanceType
 
     class Config:
         from_attributes = True

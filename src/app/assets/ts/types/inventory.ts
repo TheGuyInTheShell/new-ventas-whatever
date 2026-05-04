@@ -9,8 +9,17 @@ export interface InventoryItem {
     quantity_from: number;
     quantity_to: number;
     value_to: number | null;
+    
+    // Split balances
+    basic_balance: number;
+    basic_balance_id?: number;
+    adjustment_balance: number;
+    adjustment_balance_id?: number;
+    
+    // Legacy support
     balance: number;
     balance_id?: number;
+
     ref_super_values_ids: number[];
     meta: Array<{ key: string; value: string }>;
     prices?: Array<{

@@ -11,7 +11,7 @@ from core.lib.register.service import Service
 
 # Shared float precision for all inventory/balance quantities
 from src.context.globals.round_quantity import _round_quantity
-from ...balances.models import Balance
+from ...balances.models import Balance, BalanceType
 from ..schemas.transaction_and_invoice import RQAdjustBalance
 from ...invoices.models import Invoice
 from ...transactions.models import Transaction
@@ -180,7 +180,7 @@ class DTransactionAndInvoiceService(Service):
                 except Exception:
                     # Create the balance if it completely doesn't exist
                     new_balance = Balance(
-                        quantity=0.0, type="inventory", ref_value=data.value_id
+                        quantity=0.0, type=BalanceType.BASIC, ref_value=data.value_id
                     )
                     db.add(new_balance)
                     await db.flush()
@@ -244,7 +244,7 @@ class DTransactionAndInvoiceService(Service):
                             )
                             .where(
                                 Balance.ref_value == balance.ref_value,
-                                Balance.type == "adjustment",
+                                Balance.type == BalanceType.ADJUSTMENT,
                                 BalanceBusinessEntity.ref_business_entity.in_(
                                     src_entity_ids
                                 ),
@@ -257,10 +257,9 @@ class DTransactionAndInvoiceService(Service):
                         # No entity links on source balance — fall back to a simple
                         # lookup by value (old behaviour, just in case).
                         stmt_adj = (
-                            select(Balance)
-                            .where(
+                            select(Balance).where(
                                 Balance.ref_value == balance.ref_value,
-                                Balance.type == "adjustment",
+                                Balance.type == BalanceType.ADJUSTMENT,
                             )
                             .limit(1)
                         )

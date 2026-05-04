@@ -1,5 +1,6 @@
-from sqlalchemy import String, Integer, ForeignKey, Float, Index, text
+from sqlalchemy import String, Integer, ForeignKey, Float, Index, text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+import enum
 from typing import TYPE_CHECKING
 
 from core.database import BasicBaseAsync
@@ -8,10 +9,17 @@ if TYPE_CHECKING:
     from src.modules.values.models import Value
 
 
+class BalanceType(enum.Enum):
+    BASIC = "basic"
+    ADJUSTMENT = "adjustment"
+
+
 class Balance(BasicBaseAsync):
     __tablename__ = "balances"
 
-    type: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[BalanceType] = mapped_column(
+        Enum(BalanceType, name="balance_type_enum"), nullable=False
+    )
 
     quantity: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 

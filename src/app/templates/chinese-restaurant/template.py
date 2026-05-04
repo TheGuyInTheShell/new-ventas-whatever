@@ -330,6 +330,8 @@ class ChineseRestaurant(Template):
                 detail=str(error.message),
             )
 
+        from src.modules.balances.models import BalanceType
+
         inventory_items = []
         if result.value:
             for val in result.value:
@@ -343,8 +345,10 @@ class ChineseRestaurant(Template):
                     None,
                 )
                 
-                # Extract primary balance
-                primary_balance = val.balances[0] if val.balances else None
+                # Extract balances by type
+                balances = getattr(val, "balances", [])
+                basic_balance = next((b for b in balances if b.type == BalanceType.BASIC), None)
+                adj_balance = next((b for b in balances if b.type == BalanceType.ADJUSTMENT), None)
                 
                 inventory_items.append(
                     {
@@ -360,8 +364,13 @@ class ChineseRestaurant(Template):
                         "quantity_to": comp.quantity_to if comp else 0,
                         "value_to": comp.value_to if comp else None,
                         # From balance
-                        "balance": primary_balance.quantity if primary_balance else 0,
-                        "balance_id": primary_balance.id if primary_balance else None,
+                        "basic_balance": basic_balance.quantity if basic_balance else 0,
+                        "basic_balance_id": basic_balance.id if basic_balance else None,
+                        "adjustment_balance": adj_balance.quantity if adj_balance else 0,
+                        "adjustment_balance_id": adj_balance.id if adj_balance else None,
+                        # Legacy support
+                        "balance": basic_balance.quantity if basic_balance else 0,
+                        "balance_id": basic_balance.id if basic_balance else None,
                     }
                 )
 
