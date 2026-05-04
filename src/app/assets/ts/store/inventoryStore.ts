@@ -4,8 +4,6 @@ import { businessEntityStore, businessEntityActions } from './chinese-restaurant
 import { api } from '../lib/api';
 import { RSQueryValueWithComparison, RSValue, RSComparisonValue, RSBalance } from '../types/api';
 
-const API_BASE = '/api/v1';
-
 export const inventoryStore = createStore({
     context: {
         items: [],
@@ -39,7 +37,7 @@ export const inventoryActions = {
                 }
             });
             console.log("Inventory API Result:", result);
-            
+
             const items: InventoryItem[] = [];
             if (result.value) {
                 const allowedTypes = ['ingredient', 'made-from', 'by-product'];
@@ -50,7 +48,7 @@ export const inventoryActions = {
                         const balances = val.balances || [];
                         const basicBalance = balances.find((b: RSBalance) => b.type === 'basic');
                         const adjustmentBalance = balances.find((b: RSBalance) => b.type === 'adjustment');
-                        
+
                         items.push({
                             id: val.id,
                             uid: val.uid,
@@ -62,17 +60,17 @@ export const inventoryActions = {
                             quantity_from: primaryComp ? primaryComp.quantity_from : 1,
                             quantity_to: primaryComp ? primaryComp.quantity_to : 0,
                             value_to: primaryComp ? primaryComp.value_to : null,
-                            
+
                             // Split balances
                             basic_balance: basicBalance ? basicBalance.quantity : 0,
                             basic_balance_id: basicBalance ? basicBalance.id : undefined,
                             adjustment_balance: adjustmentBalance ? adjustmentBalance.quantity : 0,
                             adjustment_balance_id: adjustmentBalance ? adjustmentBalance.id : undefined,
-                            
+
                             // Legacy support (using basic as primary)
                             balance: basicBalance ? basicBalance.quantity : 0,
                             balance_id: basicBalance ? basicBalance.id : undefined,
-                            
+
                             ref_super_values_ids: val.ref_super_values_ids || [],
                             meta: val.meta || [],
                             prices: comps.map((c: RSComparisonValue) => ({
@@ -86,9 +84,10 @@ export const inventoryActions = {
                 });
             }
             inventoryStore.trigger.setItems({ data: items });
-        } catch (error: any) {
-            console.error("Failed to fetch inventory: ", error);
-            inventoryStore.trigger.setError({ message: error.message || 'Unknown error' });
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Unknown error';
+            console.error("Failed to fetch inventory items: ", error);
+            inventoryStore.trigger.setError({ message: msg });
         } finally {
             inventoryStore.trigger.setLoading({ value: false });
         }
@@ -112,9 +111,10 @@ export const inventoryActions = {
 
             await this.fetchItems();
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Unknown error';
             console.error("Failed to adjust stock: ", error);
-            inventoryStore.trigger.setError({ message: error.message || 'Failed to adjust stock' });
+            inventoryStore.trigger.setError({ message: msg });
             return false;
         }
     },
@@ -131,7 +131,7 @@ export const inventoryActions = {
                     full_meta: true
                 }
             });
-            const items: any[] = [];
+            const items: Partial<InventoryItem>[] = [];
             if (result.value) {
                 result.value.forEach((val: RSValue) => {
                     items.push({
@@ -141,8 +141,8 @@ export const inventoryActions = {
                     });
                 });
             }
-            inventoryStore.trigger.setEligibleItems({ data: items });
-        } catch (error: any) {
+            inventoryStore.trigger.setEligibleItems({ data: items as InventoryItem[] });
+        } catch (error: unknown) {
             console.error("Failed to fetch eligible items: ", error);
         }
     },
@@ -174,16 +174,20 @@ export const inventoryActions = {
                 balance_type: 'inventory'
             };
 
-            const method = itemData.id ? 'put' : 'post';
             const url = itemData.id ? `/values_with_comparison/id/${itemData.uid}` : `/values_with_comparison`;
 
-            await (api as any)[method](url, payload);
+            if (itemData.id) {
+                await api.put(url, payload);
+            } else {
+                await api.post(url, payload);
+            }
 
             await this.fetchItems();
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Unknown error';
             console.error("Failed to save inventory item: ", error);
-            inventoryStore.trigger.setError({ message: error.message || 'Failed to save item' });
+            inventoryStore.trigger.setError({ message: msg });
             return false;
         }
     },
@@ -194,9 +198,10 @@ export const inventoryActions = {
 
             await this.fetchItems();
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Unknown error';
             console.error("Failed to delete inventory item: ", error);
-            inventoryStore.trigger.setError({ message: error.message || 'Failed to delete item' });
+            inventoryStore.trigger.setError({ message: msg });
             return false;
         }
     }

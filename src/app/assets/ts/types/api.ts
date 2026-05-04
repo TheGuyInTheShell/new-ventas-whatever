@@ -47,10 +47,25 @@ export interface RSQueryValueWithComparison {
 export interface ApiError {
     message: string;
     code?: string;
-    detail?: any;
+    detail?: unknown;
 }
 
-export interface ServiceResult<T> {
-    data: T | null;
-    error: ApiError | null;
+export interface RSBusinessEntity {
+    id: number;
+    name: string;
+    type: string;
+    parent_id?: number;
+    children?: RSBusinessEntity[];
+}
+
+export interface RSBusinessEntitySearchChild {
+    parent: RSBusinessEntity;
+    child: RSBusinessEntity;
+}
+
+export interface RSOption {
+    id: number;
+    name: string;
+    value: string;
+    context: string;
 }

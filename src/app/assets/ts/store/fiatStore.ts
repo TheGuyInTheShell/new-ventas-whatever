@@ -2,7 +2,7 @@ import { createStore } from '@xstate/store';
 import { globalStore, globalActions } from './global-store';
 import { Comparison, Fiat, FiatStoreContext } from '../types/fiat';
 import { api } from '../lib/api';
-import { RSValue, RSComparisonValue } from '../types/api';
+import { RSValue, RSComparisonValue, RSOption } from '../types/api';
 
 const PERSIST_KEY = 'fiat-store-persist';
 
@@ -33,7 +33,7 @@ export const fiatStore = createStore({
     }
 });
 
-fiatStore.subscribe((snapshot: any) => {
+fiatStore.subscribe((snapshot: { context: FiatStoreContext }) => {
     localStorage.setItem(PERSIST_KEY, JSON.stringify(snapshot.context));
 });
 
@@ -60,31 +60,31 @@ export const fiatActions = {
             // Fetch fiats (usually from current or global)
             const baseEntityId = currentId || globalId;
 
-            const { data: result } = await api.post<any>('/values/query', {
+            const { data: result } = await api.post<RSValue[]>('/values/query', {
                 type: 'fiat',
                 page_size: 100,
                 balances: true,
                 ref_business_entity: baseEntityId
             });
-            const fiatList = Array.isArray(result) ? result : (result && Array.isArray(result.data) ? result.data : []);
-            fiatStore.trigger.setFiats({ data: fiatList });
+            const fiatList = Array.isArray(result) ? result : (result && (result as any).data && Array.isArray((result as any).data) ? (result as any).data : []);
+            fiatStore.trigger.setFiats({ data: fiatList as unknown as Fiat[] });
 
             // Fetch comparisons for both current and custom if they exist
             const fetchComps = async (id: number): Promise<RSComparisonValue[]> => {
-                const { data } = await api.get<any>(`/comparison_values/?ref_business_entity=${id}`);
+                const { data } = await api.get<{ data: RSComparisonValue[] }>(`/comparison_values/?ref_business_entity=${id}`);
                 return data.data || [];
             };
 
             const [currentComps, customComps] = await Promise.all([
-                currentId ? fetchComps(currentId).then(list => list.map((c: any) => ({ ...c, context: 'current' }))) : Promise.resolve([]),
-                customId ? fetchComps(customId).then(list => list.map((c: any) => ({ ...c, context: 'custom' }))) : Promise.resolve([])
+                currentId ? fetchComps(currentId).then(list => list.map((c: RSComparisonValue) => ({ ...c, context: 'current' as const }))) : Promise.resolve([]),
+                customId ? fetchComps(customId).then(list => list.map((c: RSComparisonValue) => ({ ...c, context: 'custom' as const }))) : Promise.resolve([])
             ]);
 
             const comps: Comparison[] = [...currentComps, ...customComps];
             fiatStore.trigger.setComparisons({ data: comps });
 
-            const { data: optData } = await api.get<any[]>('/options/?context=global');
-            const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
+            const { data: optData } = await api.get<RSOption[]>('/options/?context=global');
+            const mainOption = optData.find((o: RSOption) => o.name === 'main_fiat_currency');
             if (mainOption) {
                 fiatStore.trigger.setMainFiat({ id: parseInt(mainOption.value) });
             }
@@ -118,8 +118,8 @@ export const fiatActions = {
 
     async setMainFiat(id: number): Promise<boolean> {
         try {
-            const { data: optData } = await api.get<any[]>('/options/?context=global');
-            const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
+            const { data: optData } = await api.get<RSOption[]>('/options/?context=global');
+            const mainOption = optData.find((o: RSOption) => o.name === 'main_fiat_currency');
 
             if (mainOption) {
                 await api.put(`/options/id/${mainOption.id}`, {
