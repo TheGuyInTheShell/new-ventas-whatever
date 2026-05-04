@@ -21,7 +21,7 @@ document.addEventListener('alpine:init', () => {
         isAddingFiat: false,
 
         init() {
-            fiatStore.subscribe(snapshot => {
+            fiatStore.subscribe((snapshot: any) => {
                 this.storeContext = snapshot.context;
             });
             fiatActions.fetchFiats();
@@ -31,8 +31,8 @@ document.addEventListener('alpine:init', () => {
         get mainFiatId() { return this.storeContext.mainFiatId; },
         get comparisons() { return this.storeContext.comparisons; },
         get exchangeRates() { return this.storeContext.exchangeRates; },
-        get currentComparisons() { return this.storeContext.comparisons.filter(c => c.context === 'current'); },
-        get customComparisons() { return this.storeContext.comparisons.filter(c => c.context === 'custom'); },
+        get currentComparisons() { return this.storeContext.comparisons.filter((c: any) => c.context === 'current'); },
+        get customComparisons() { return this.storeContext.comparisons.filter((c: any) => c.context === 'custom'); },
 
         async onAddFiat() {
             if (this.newFiat.name && this.newFiat.expression) {
@@ -123,13 +123,13 @@ document.addEventListener('alpine:init', () => {
 
         getFiatName(id: number) {
             if (!Array.isArray(this.fiats)) return `#${id}`;
-            const f = this.fiats.find(f => f.id === id);
+            const f = this.fiats.find((f: any) => f.id === id);
             return f ? f.name : `#${id}`;
         },
 
         getFiatExpression(id: number) {
             if (!Array.isArray(this.fiats)) return '';
-            const f = this.fiats.find(f => f.id === id);
+            const f = this.fiats.find((f: any) => f.id === id);
             return f ? f.expression : '';
         }
     }));

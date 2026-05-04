@@ -1,6 +1,8 @@
 import { createStore } from '@xstate/store';
 import { globalStore, globalActions } from './global-store';
 import { Comparison, Fiat, FiatStoreContext } from '../types/fiat';
+import { api } from '../lib/api';
+import { RSValue, RSComparisonValue } from '../types/api';
 
 const PERSIST_KEY = 'fiat-store-persist';
 
@@ -23,15 +25,15 @@ export const fiatStore = createStore({
         loading: false,
     } as FiatStoreContext,
     on: {
-        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
-        setFiats: (context, event: { data: Fiat[] }) => ({ ...context, fiats: event.data }),
-        setMainFiat: (context, event: { id: number }) => ({ ...context, mainFiatId: event.id }),
-        setComparisons: (context, event: { data: Comparison[] }) => ({ ...context, comparisons: event.data }),
-        setExchangeRates: (context, event: { rates: Record<number, number> }) => ({ ...context, exchangeRates: event.rates })
+        setLoading: (context: FiatStoreContext, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setFiats: (context: FiatStoreContext, event: { data: Fiat[] }) => ({ ...context, fiats: event.data }),
+        setMainFiat: (context: FiatStoreContext, event: { id: number }) => ({ ...context, mainFiatId: event.id }),
+        setComparisons: (context: FiatStoreContext, event: { data: Comparison[] }) => ({ ...context, comparisons: event.data }),
+        setExchangeRates: (context: FiatStoreContext, event: { rates: Record<number, number> }) => ({ ...context, exchangeRates: event.rates })
     }
 });
 
-fiatStore.subscribe((snapshot) => {
+fiatStore.subscribe((snapshot: any) => {
     localStorage.setItem(PERSIST_KEY, JSON.stringify(snapshot.context));
 });
 
@@ -58,24 +60,19 @@ export const fiatActions = {
             // Fetch fiats (usually from current or global)
             const baseEntityId = currentId || globalId;
 
-            const res = await fetch(`${API_BASE}/values/query`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'fiat',
-                    page_size: 100,
-                    balances: true,
-                    ref_business_entity: baseEntityId
-                })
+            const { data: result } = await api.post<any>('/values/query', {
+                type: 'fiat',
+                page_size: 100,
+                balances: true,
+                ref_business_entity: baseEntityId
             });
-            const data = res.ok ? await res.json() : [];
-            const fiatList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+            const fiatList = Array.isArray(result) ? result : (result && Array.isArray(result.data) ? result.data : []);
             fiatStore.trigger.setFiats({ data: fiatList });
 
             // Fetch comparisons for both current and custom if they exist
-            const fetchComps = async (id: number) => {
-                const r = await fetch(`${API_BASE}/comparison_values/?ref_business_entity=${id}`);
-                return r.ok ? (await r.json()).data || [] : [];
+            const fetchComps = async (id: number): Promise<RSComparisonValue[]> => {
+                const { data } = await api.get<any>(`/comparison_values/?ref_business_entity=${id}`);
+                return data.data || [];
             };
 
             const [currentComps, customComps] = await Promise.all([
@@ -86,8 +83,7 @@ export const fiatActions = {
             const comps: Comparison[] = [...currentComps, ...customComps];
             fiatStore.trigger.setComparisons({ data: comps });
 
-            const optRes = await fetch(`${API_BASE}/options/?context=global`);
-            const optData = await optRes.json();
+            const { data: optData } = await api.get<any[]>('/options/?context=global');
             const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
             if (mainOption) {
                 fiatStore.trigger.setMainFiat({ id: parseInt(mainOption.value) });
@@ -122,21 +118,20 @@ export const fiatActions = {
 
     async setMainFiat(id: number): Promise<boolean> {
         try {
-            const optRes = await fetch(`${API_BASE}/options/?context=global`);
-            const optData = await optRes.json();
+            const { data: optData } = await api.get<any[]>('/options/?context=global');
             const mainOption = optData.find((o: any) => o.name === 'main_fiat_currency');
 
             if (mainOption) {
-                await fetch(`${API_BASE}/options/id/${mainOption.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'main_fiat_currency', context: 'global', value: id.toString() })
+                await api.put(`/options/id/${mainOption.id}`, {
+                    name: 'main_fiat_currency',
+                    context: 'global',
+                    value: id.toString()
                 });
             } else {
-                await fetch(`${API_BASE}/options/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'main_fiat_currency', context: 'global', value: id.toString() })
+                await api.post('/options/', {
+                    name: 'main_fiat_currency',
+                    context: 'global',
+                    value: id.toString()
                 });
             }
             fiatStore.trigger.setMainFiat({ id });
@@ -154,17 +149,12 @@ export const fiatActions = {
             const entityId = globalStore.getSnapshot().context.globalEntityId;
             if (!entityId) throw new Error("Global business entity ID required to create fiat");
 
-            const res = await fetch(`${API_BASE}/values/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name,
-                    expression,
-                    type: 'fiat',
-                    ref_business_entity: entityId
-                })
+            await api.post('/values/', {
+                name,
+                expression,
+                type: 'fiat',
+                ref_business_entity: entityId
             });
-            if (!res.ok) throw new Error("Server error creating currency");
             await this.fetchFiats();
             return true;
         } catch (error) {
@@ -194,21 +184,11 @@ export const fiatActions = {
                 ref_business_entity: targetEntityId
             };
 
-            let res;
             if (existing) {
-                res = await fetch(`${API_BASE}/comparison_values/id/${existing.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
+                await api.put(`/comparison_values/id/${existing.id}`, body);
             } else {
-                res = await fetch(`${API_BASE}/comparison_values/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
+                await api.post('/comparison_values/', body);
             }
-            if (!res.ok) throw new Error("Server error creating exchange rate");
             await this.fetchFiats();
             return true;
         } catch (error) {
@@ -219,8 +199,7 @@ export const fiatActions = {
 
     async deleteFiat(id: number): Promise<boolean> {
         try {
-            const res = await fetch(`${API_BASE}/values/id/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Server error deleting currency");
+            await api.delete(`/values/id/${id}`);
             await this.fetchFiats();
             return true;
         } catch (error) {
@@ -235,16 +214,12 @@ export const fiatActions = {
             const entityId = globalStore.getSnapshot().context.globalEntityId;
             if (!entityId) throw new Error("Global business entity ID required to update comparison");
 
-            await fetch(`${API_BASE}/comparison_values/id/${compId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    quantity_from: 1,
-                    quantity_to: rate,
-                    value_from: fromId,
-                    value_to: toId,
-                    ref_business_entity: entityId
-                })
+            await api.put(`/comparison_values/id/${compId}`, {
+                quantity_from: 1,
+                quantity_to: rate,
+                value_from: fromId,
+                value_to: toId,
+                ref_business_entity: entityId
             });
             await this.fetchFiats();
         } catch (error) {
@@ -254,8 +229,7 @@ export const fiatActions = {
 
     async deleteComparison(id: number): Promise<boolean> {
         try {
-            const res = await fetch(`${API_BASE}/comparison_values/id/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Server error deleting comparison");
+            await api.delete(`/comparison_values/id/${id}`);
             await this.fetchFiats();
             return true;
         } catch (error) {

@@ -1,6 +1,8 @@
 import { createStore } from '@xstate/store';
 import { InventoryItem, InventoryStoreContext } from '../types/inventory';
 import { businessEntityStore, businessEntityActions } from './chinese-restaurant-store';
+import { api } from '../lib/api';
+import { RSQueryValueWithComparison, RSValue, RSComparisonValue, RSBalance } from '../types/api';
 
 const API_BASE = '/api/v1';
 
@@ -12,11 +14,15 @@ export const inventoryStore = createStore({
         error: null
     } as InventoryStoreContext,
     on: {
-        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
-        setItems: (context, event: { data: InventoryItem[] }) => ({ ...context, items: event.data }),
-        setEligibleItems: (context, event: { data: InventoryItem[] }) => ({ ...context, eligibleItems: event.data }),
-        setError: (context, event: { message: string | null }) => ({ ...context, error: event.message })
+        setLoading: (context: InventoryStoreContext, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setItems: (context: InventoryStoreContext, event: { data: InventoryItem[] }) => ({ ...context, items: event.data }),
+        setEligibleItems: (context: InventoryStoreContext, event: { data: InventoryItem[] }) => ({ ...context, eligibleItems: event.data }),
+        setError: (context: InventoryStoreContext, event: { message: string | null }) => ({ ...context, error: event.message })
     }
+});
+
+inventoryStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
+    console.log('Inventory state changed:', snapshot.context);
 });
 
 export const inventoryActions = {
@@ -26,29 +32,24 @@ export const inventoryActions = {
             await businessEntityActions.fetchEntity();
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
 
-            const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    ref_business_entity: inventoryId,
-                    value: {
-                        full_meta: true
-                    }
-                })
+            const { data: result } = await api.post<RSQueryValueWithComparison>('/values_with_comparison/query', {
+                ref_business_entity: inventoryId,
+                value: {
+                    full_meta: true
+                }
             });
-            const result = await res.json();
             console.log("Inventory API Result:", result);
             
             const items: InventoryItem[] = [];
             if (result.value) {
                 const allowedTypes = ['ingredient', 'made-from', 'by-product'];
-                result.value.forEach((val: any) => {
+                result.value.forEach((val: RSValue) => {
                     if (allowedTypes.includes(val.type)) {
-                        const comps = result.comparison_value ? result.comparison_value.filter((c: any) => c.value_from === val.id) : [];
+                        const comps = result.comparison_value ? result.comparison_value.filter((c: RSComparisonValue) => c.value_from === val.id) : [];
                         const primaryComp = comps.length > 0 ? comps[0] : null;
                         const balances = val.balances || [];
-                        const basicBalance = balances.find((b: any) => b.type === 'basic' || b.type === 'inventory');
-                        const adjustmentBalance = balances.find((b: any) => b.type === 'adjustment');
+                        const basicBalance = balances.find((b: RSBalance) => b.type === 'basic');
+                        const adjustmentBalance = balances.find((b: RSBalance) => b.type === 'adjustment');
                         
                         items.push({
                             id: val.id,
@@ -74,7 +75,7 @@ export const inventoryActions = {
                             
                             ref_super_values_ids: val.ref_super_values_ids || [],
                             meta: val.meta || [],
-                            prices: comps.map((c: any) => ({
+                            prices: comps.map((c: RSComparisonValue) => ({
                                 comparison_id: c.id,
                                 quantity_to: c.quantity_to,
                                 quantity_from: c.quantity_from,
@@ -107,13 +108,7 @@ export const inventoryActions = {
                 notes: notes
             };
 
-            const res = await fetch(`${API_BASE}/transaction_and_invoice/adjust`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) throw new Error('Failed to adjust stock');
+            await api.put('/transaction_and_invoice/adjust', payload);
 
             await this.fetchItems();
             return true;
@@ -130,20 +125,15 @@ export const inventoryActions = {
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
             if (!inventoryId) throw new Error("Inventory sub-entity ID not found for eligible items");
 
-            const res = await fetch(`${API_BASE}/values_with_comparison/query`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ref_business_entity: inventoryId,
-                    value: {
-                        full_meta: true
-                    }
-                })
+            const { data: result } = await api.post<RSQueryValueWithComparison>('/values_with_comparison/query', {
+                ref_business_entity: inventoryId,
+                value: {
+                    full_meta: true
+                }
             });
-            const result = await res.json();
             const items: any[] = [];
             if (result.value) {
-                result.value.forEach((val: any) => {
+                result.value.forEach((val: RSValue) => {
                     items.push({
                         id: val.id,
                         name: val.name,
@@ -184,16 +174,10 @@ export const inventoryActions = {
                 balance_type: 'inventory'
             };
 
-            const method = itemData.id ? 'PUT' : 'POST';
-            const url = itemData.id ? `${API_BASE}/values_with_comparison/id/${itemData.uid}` : `${API_BASE}/values_with_comparison`;
+            const method = itemData.id ? 'put' : 'post';
+            const url = itemData.id ? `/values_with_comparison/id/${itemData.uid}` : `/values_with_comparison`;
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) throw new Error('Failed to save inventory item');
+            await (api as any)[method](url, payload);
 
             await this.fetchItems();
             return true;
@@ -206,11 +190,7 @@ export const inventoryActions = {
 
     async deleteItem(item: InventoryItem): Promise<boolean> {
         try {
-            const res = await fetch(`${API_BASE}/values/id/${item.uid}`, {
-                method: 'DELETE'
-            });
-
-            if (!res.ok) throw new Error('Failed to delete item');
+            await api.delete(`/values/id/${item.uid}`);
 
             await this.fetchItems();
             return true;
