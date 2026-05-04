@@ -1,8 +1,8 @@
 import { createStore } from '@xstate/store';
 import { BusinessEntityStoreContext } from '../types/business';
 import { api } from '../lib/api';
+import { RSBusinessEntitySearchChild } from '../types/api';
 
-const API_BASE = '/api/v1';
 const ENTITY_NAME = 'chinese-restaurant';
 
 export const businessEntityStore = createStore({
@@ -31,24 +31,25 @@ export const businessEntityActions = {
         const promise = (async () => {
             businessEntityStore.trigger.setLoading({ value: true });
             try {
-                const { data } = await api.post<any>('/business_entities/search/child', {
+                const { data } = await api.post<RSBusinessEntitySearchChild>('/business_entities/search/child', {
                     name: ENTITY_NAME,
                     child_name: "inventory"
                 });
-                
+
                 if (data && data.parent) {
                     const entity = data.parent;
                     businessEntityStore.trigger.setEntityId({ id: entity.id });
-                    
+
                     if (data.child && data.child.name === 'inventory') {
                         businessEntityStore.trigger.setInventoryId({ id: data.child.id });
                     }
                 } else {
                     console.warn(`Business entity relationship not found for '${ENTITY_NAME}'.`);
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : 'Unknown error';
                 console.error("Failed to fetch business entity: ", error);
-                businessEntityStore.trigger.setError({ message: error.message });
+                businessEntityStore.trigger.setError({ message: msg });
             } finally {
                 businessEntityStore.trigger.setLoading({ value: false });
                 businessEntityStore.trigger.setFetchingPromise({ promise: null });

@@ -1,5 +1,6 @@
 import { createStore } from '@xstate/store';
 import { api } from '../lib/api';
+import { RSBusinessEntity, RSBusinessEntitySearchChild } from '../types/api';
 
 const API_BASE = '/api/v1';
 const GLOBAL_ENTITY_NAME = 'global';
@@ -41,7 +42,7 @@ export const globalActions = {
         const promise = (async () => {
             globalStore.trigger.setLoading({ value: true });
             try {
-                const { data: entity } = await api.post<any>('/business_entities/search', {
+                const { data: entity } = await api.post<RSBusinessEntity>('/business_entities/search', {
                     name: GLOBAL_ENTITY_NAME,
                     hierarchy: true
                 });
@@ -50,7 +51,7 @@ export const globalActions = {
                     globalStore.trigger.setGlobalEntityId({ id: entity.id });
                     
                     // Recursively process hierarchy to fill the entities map
-                    const processHierarchy = (item: any) => {
+                    const processHierarchy = (item: RSBusinessEntity) => {
                         if (item.name) {
                             globalStore.trigger.setEntityId({ name: item.name, id: item.id });
                         }
@@ -63,9 +64,10 @@ export const globalActions = {
                 } else {
                     console.warn(`[GlobalStore] Global business entity '${GLOBAL_ENTITY_NAME}' not found in response:`, entity);
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : 'Unknown error';
                 console.error("Failed to fetch global business entity: ", error);
-                globalStore.trigger.setError({ message: error.message });
+                globalStore.trigger.setError({ message: msg });
             } finally {
                 globalStore.trigger.setLoading({ value: false });
                 globalStore.trigger.setFetchingPromise({ promise: null });
@@ -78,7 +80,7 @@ export const globalActions = {
 
     async fetchEntityByChild(parentName: string, childName: string): Promise<number | null> {
         try {
-            const { data } = await api.post<any>('/business_entities/search/child', {
+            const { data } = await api.post<RSBusinessEntitySearchChild>('/business_entities/search/child', {
                 name: parentName,
                 child_name: childName
             });
