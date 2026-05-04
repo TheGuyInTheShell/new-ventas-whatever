@@ -24,7 +24,7 @@ from ..schemas.values_with_comparison import (
 from ..models.values_with_comparison import BuilderValueWithComparison
 
 from ...values.hierarchy.models import ValuesHierarchy
-from ...balances.models import Balance
+from ...balances.models import Balance, BalanceType
 from ...balances_business_entities.models import BalanceBusinessEntity
 from ...comparison_values.models import ComparisonValue
 
@@ -54,14 +54,12 @@ class DValueWithComparisonService(Service):
         if data.comparison_value.value_from is None:
             data.comparison_value.value_from = saved_value.id
 
-        saved_comparison, error = (
-            await self.ComparisonValuesService.create_comparison(
-                data.comparison_value, db=db
-            )
+        saved_comparison, error = await self.ComparisonValuesService.create_comparison(
+            data.comparison_value, db=db
         )
-        if error:
+        if error or not saved_comparison:
             await db.rollback()
-            return None, error
+            return None, error or ServiceResult.error("Failed to create comparison")
 
         # 1. Hierarchy: link to all superior values (composite parent links)
         for super_id in data.ref_super_values_ids or []:
@@ -147,9 +145,9 @@ class DValueWithComparisonService(Service):
                     existing_comparison.uid, data.comparison_value, db=db
                 )
             )
-            if error:
+            if error or not updated_comparison:
                 await db.rollback()
-                return None, error
+                return None, error or ServiceResult.error("Failed to update comparison")
         else:
             if data.comparison_value.value_from is None:
                 data.comparison_value.value_from = updated_value.id
@@ -158,9 +156,9 @@ class DValueWithComparisonService(Service):
                     data.comparison_value, db=db
                 )
             )
-            if error:
+            if error or not updated_comparison:
                 await db.rollback()
-                return None, error
+                return None, error or ServiceResult.error("Failed to create comparison")
 
         # 1. Sync Hierarchy: replace all parent links with the provided list
         if data.ref_super_values_ids is not None:

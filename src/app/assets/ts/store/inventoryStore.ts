@@ -46,8 +46,9 @@ export const inventoryActions = {
                     if (allowedTypes.includes(val.type)) {
                         const comps = result.comparison_value ? result.comparison_value.filter((c: any) => c.value_from === val.id) : [];
                         const primaryComp = comps.length > 0 ? comps[0] : null;
-
-                        const primaryBalance = (val.balances && val.balances.length > 0) ? val.balances[0] : null;
+                        const balances = val.balances || [];
+                        const basicBalance = balances.find((b: any) => b.type === 'basic' || b.type === 'inventory');
+                        const adjustmentBalance = balances.find((b: any) => b.type === 'adjustment');
                         
                         items.push({
                             id: val.id,
@@ -60,8 +61,17 @@ export const inventoryActions = {
                             quantity_from: primaryComp ? primaryComp.quantity_from : 1,
                             quantity_to: primaryComp ? primaryComp.quantity_to : 0,
                             value_to: primaryComp ? primaryComp.value_to : null,
-                            balance: primaryBalance ? primaryBalance.quantity : 0,
-                            balance_id: primaryBalance ? primaryBalance.id : undefined,
+                            
+                            // Split balances
+                            basic_balance: basicBalance ? basicBalance.quantity : 0,
+                            basic_balance_id: basicBalance ? basicBalance.id : undefined,
+                            adjustment_balance: adjustmentBalance ? adjustmentBalance.quantity : 0,
+                            adjustment_balance_id: adjustmentBalance ? adjustmentBalance.id : undefined,
+                            
+                            // Legacy support (using basic as primary)
+                            balance: basicBalance ? basicBalance.quantity : 0,
+                            balance_id: basicBalance ? basicBalance.id : undefined,
+                            
                             ref_super_values_ids: val.ref_super_values_ids || [],
                             meta: val.meta || [],
                             prices: comps.map((c: any) => ({
@@ -89,7 +99,7 @@ export const inventoryActions = {
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
 
             const payload = {
-                balance_id: item.balance_id || null,
+                balance_id: item.basic_balance_id || null,
                 value_id: item.id,
                 ref_business_entity: inventoryId,
                 new_quantity: newQuantity,

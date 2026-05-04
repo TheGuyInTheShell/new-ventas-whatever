@@ -3,13 +3,15 @@ from pydantic import BaseModel
 from src.modules.values.schemas import RQValue, RSValue
 from src.modules.comparison_values.schemas import RQComparisonValue, RSComparisonValue
 
+from src.modules.balances.models import BalanceType
+
 
 class RQValueWithComparison(BaseModel):
     value: RQValue
     comparison_value: RQComparisonValue
     ref_super_values_ids: Optional[List[int]] = []
     business_entity_ids: Optional[List[int]] = []
-    balance_type: Optional[str] = None
+    balance_type: Optional[BalanceType] = None
 
 
 class RSValueWithComparison(BaseModel):
