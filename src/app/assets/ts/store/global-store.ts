@@ -1,4 +1,5 @@
 import { createStore } from '@xstate/store';
+import { api } from '../lib/api';
 
 const API_BASE = '/api/v1';
 const GLOBAL_ENTITY_NAME = 'global';
@@ -40,15 +41,10 @@ export const globalActions = {
         const promise = (async () => {
             globalStore.trigger.setLoading({ value: true });
             try {
-                const res = await fetch(`${API_BASE}/business_entities/search`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: GLOBAL_ENTITY_NAME, hierarchy: true })
+                const { data: entity } = await api.post<any>('/business_entities/search', {
+                    name: GLOBAL_ENTITY_NAME,
+                    hierarchy: true
                 });
-                
-                if (!res.ok) throw new Error(`Failed to fetch global entity: ${res.statusText}`);
-                
-                const entity = await res.json();
                 if (entity && entity.id) {
                     console.log(`[GlobalStore] Global entity found with hierarchy:`, entity);
                     globalStore.trigger.setGlobalEntityId({ id: entity.id });
@@ -82,15 +78,10 @@ export const globalActions = {
 
     async fetchEntityByChild(parentName: string, childName: string): Promise<number | null> {
         try {
-            const res = await fetch(`${API_BASE}/business_entities/search/child`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: parentName, child_name: childName })
+            const { data } = await api.post<any>('/business_entities/search/child', {
+                name: parentName,
+                child_name: childName
             });
-
-            if (!res.ok) return null;
-
-            const data = await res.json();
             if (data && data.child && data.child.id) {
                 globalStore.trigger.setEntityId({ name: childName, id: data.child.id });
                 return data.child.id;

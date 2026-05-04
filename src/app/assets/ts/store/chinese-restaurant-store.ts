@@ -1,5 +1,6 @@
 import { createStore } from '@xstate/store';
 import { BusinessEntityStoreContext } from '../types/business';
+import { api } from '../lib/api';
 
 const API_BASE = '/api/v1';
 const ENTITY_NAME = 'chinese-restaurant';
@@ -13,11 +14,11 @@ export const businessEntityStore = createStore({
         error: null
     } as BusinessEntityStoreContext,
     on: {
-        setEntityId: (context, event: { id: string | number | null }) => ({ ...context, entityId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
-        setInventoryId: (context, event: { id: string | number | null }) => ({ ...context, inventoryId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
-        setLoading: (context, event: { value: boolean }) => ({ ...context, loading: event.value }),
-        setFetchingPromise: (context, event: { promise: Promise<void> | null }) => ({ ...context, fetchingPromise: event.promise }),
-        setError: (context, event: { message: string | null }) => ({ ...context, error: event.message })
+        setEntityId: (context: BusinessEntityStoreContext, event: { id: string | number | null }) => ({ ...context, entityId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
+        setInventoryId: (context: BusinessEntityStoreContext, event: { id: string | number | null }) => ({ ...context, inventoryId: event.id === 'null' ? null : (typeof event.id === 'string' ? parseInt(event.id) : event.id) }),
+        setLoading: (context: BusinessEntityStoreContext, event: { value: boolean }) => ({ ...context, loading: event.value }),
+        setFetchingPromise: (context: BusinessEntityStoreContext, event: { promise: Promise<void> | null }) => ({ ...context, fetchingPromise: event.promise }),
+        setError: (context: BusinessEntityStoreContext, event: { message: string | null }) => ({ ...context, error: event.message })
     }
 });
 
@@ -30,12 +31,10 @@ export const businessEntityActions = {
         const promise = (async () => {
             businessEntityStore.trigger.setLoading({ value: true });
             try {
-                const res = await fetch(`${API_BASE}/business_entities/search/child`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: ENTITY_NAME, child_name: "inventory" })
+                const { data } = await api.post<any>('/business_entities/search/child', {
+                    name: ENTITY_NAME,
+                    child_name: "inventory"
                 });
-                const data = await res.json();
                 
                 if (data && data.parent) {
                     const entity = data.parent;

@@ -6,13 +6,14 @@ import { createIcons, icons } from "lucide";
 import mask from '@alpinejs/mask';
 import focus from '@alpinejs/focus';
 import collapse from '@alpinejs/collapse';
-import { InventoryItem } from "../../types/inventory";
+import { InventoryItem, InventoryStoreContext } from "../../types/inventory";
+import { FiatStoreContext } from "../../types/fiat";
 
 Alpine.plugin(mask);
 Alpine.plugin(focus);
 Alpine.plugin(collapse);
 
-(window as any).Alpine = Alpine;
+window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('inventoryPage', (initialItems: InventoryItem[]) => ({
@@ -52,19 +53,20 @@ document.addEventListener('alpine:init', () => {
         viewFiatId: null as number | null,
 
         async init() {
-            fiatStore.subscribe((snapshot) => {
+            fiatStore.subscribe((snapshot: { context: FiatStoreContext }) => {
                 this.fiatContext = snapshot.context;
             });
 
-            inventoryStore.subscribe((snapshot) => {
+            inventoryStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
                 this.inventoryContext = snapshot.context;
             });
 
             if (this.fiatContext.fiats.length === 0) {
                 try {
                     await fiatActions.fetchFiats();
-                } catch (e: any) {
-                    notifyError('Failed to load currency data', 'Error');
+                } catch (e) {
+                    const msg = e instanceof Error ? e.message : 'Unknown error';
+                    notifyError(`Failed to load currency data: ${msg}`, 'Error');
                 }
             }
             
@@ -77,8 +79,9 @@ document.addEventListener('alpine:init', () => {
             } else if (this.inventoryContext.items.length === 0) {
                 try {
                     await inventoryActions.fetchItems();
-                } catch (e: any) {
-                    notifyError('Failed to load inventory items', 'Error');
+                } catch (e) {
+                    const msg = e instanceof Error ? e.message : 'Unknown error';
+                    notifyError(`Failed to load inventory items: ${msg}`, 'Error');
                 }
             }
 
@@ -126,15 +129,15 @@ document.addEventListener('alpine:init', () => {
         getViewFiatExpression(): string {
             const fiatId = this.viewFiatId || this.fiatContext.mainFiatId;
             if (!fiatId) return '';
-            const fiat = this.fiatContext.fiats.find(f => f.id === fiatId);
-            return fiat ? fiat.expression : '';
+            const fiat = this.fiatContext.fiats.find((f: any) => f.id === fiatId);
+            return fiat ? (fiat as any).expression : '';
         },
 
         getMainFiatName(): string {
             const mainId = this.fiatContext.mainFiatId;
             if (!mainId) return '';
-            const fiat = this.fiatContext.fiats.find(f => f.id === mainId);
-            return fiat ? fiat.name : '';
+            const fiat = this.fiatContext.fiats.find((f: any) => f.id === mainId);
+            return fiat ? (fiat as any).name : '';
         },
 
         calculatePrice(item: InventoryItem): number | string {
