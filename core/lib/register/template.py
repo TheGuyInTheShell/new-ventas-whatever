@@ -23,6 +23,7 @@ Uso típico::
 """
 
 from typing import TYPE_CHECKING, Union, Any
+from fastapi import FastAPI
 
 if TYPE_CHECKING:
     from fastapi.templating import Jinja2Templates
@@ -43,7 +44,9 @@ class Template:
 
     templates: Union["Jinja2Templates", Any]
 
-    def __init__(self, template_provider: Union["Jinja2Templates", Any]) -> None:
+    def __init__(
+        self, template_provider: Union["Jinja2Templates", Any], app: FastAPI
+    ) -> None:
         """Inicializa el controlador con el proveedor de templates.
 
         Args:
@@ -51,3 +54,4 @@ class Template:
                 Se almacena como ``self.templates`` para uso en los handlers.
         """
         self.templates = template_provider
+        self.app = app

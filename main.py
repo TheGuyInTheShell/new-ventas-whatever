@@ -16,14 +16,21 @@ from core.lib.register.extension_loader import load_extensions
 from core.lib.register.auto_router_sockets import auto_router_sockets
 from core.lib.register.auto_router_partials import auto_router_partials
 from core.lib.hooks.lifespan import on_app_init
-from sqlalchemy.ext.asyncio import AsyncSession
+from core.lib.register.wrapper_openapi import get_wrapper_openapi
+
 
 # ---------------------------------------------------------------------------
 # Inicialización de la aplicación FastAPI
 # ---------------------------------------------------------------------------
 
+docs_url, redoc_url, openapi_url = get_wrapper_openapi(is_open=False)
+version = "v1.1.1"
 app: FastAPI = FastAPI(
     title="FastAPI Template",
+    version=version,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
     lifespan=plugin_lifespan,
 )
 
