@@ -35,6 +35,8 @@ Uso típico::
             return {"deleted": user_id}
 """
 
+from fastapi import FastAPI
+
 
 class Controller:
     """Clase base para controladores de endpoints API.
@@ -55,10 +57,11 @@ class Controller:
                 return [{"id": 1, "name": "Widget"}]
     """
 
-    def __init__(self) -> None:
+    def __init__(self, app: FastAPI, prefix: str) -> None:
         """Inicializa el controller base.
 
         Las subclases pueden sobreescribir este constructor para inyectar
         servicios u otras dependencias específicas del dominio.
         """
-        pass
+        self.app = app
+        self.prefix = prefix
