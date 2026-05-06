@@ -63,12 +63,14 @@ from core.lib.consts.template import CONTEXT_INJECTABLE
 # Constantes internas
 # ---------------------------------------------------------------------------
 
-_IGNORED_DIRECTORIES: frozenset[str] = frozenset({
-    "__pycache__",
-    ".git",
-    ".mypy_cache",
-    "node_modules",
-})
+_IGNORED_DIRECTORIES: frozenset[str] = frozenset(
+    {
+        "__pycache__",
+        ".git",
+        ".mypy_cache",
+        "node_modules",
+    }
+)
 
 _TEMPLATE_MODULE_NAME: str = "template"
 _TEMPLATE_FILE_NAME: str = f"{_TEMPLATE_MODULE_NAME}.py"
@@ -122,7 +124,7 @@ def _compute_http_route(
     normalized_dir: str = directory_path.replace("\\", "/").rstrip("/")
     normalized_base: str = base_path.replace("\\", "/").rstrip("/")
 
-    relative_path: str = normalized_dir[len(normalized_base):].strip("/")
+    relative_path: str = normalized_dir[len(normalized_base) :].strip("/")
 
     if not relative_path:
         return "/"
@@ -147,9 +149,7 @@ def _find_template_classes(
     template_classes: List[Type[Template]] = []
 
     for _name, obj in inspect.getmembers(module, predicate=inspect.isclass):
-        is_template_subclass: bool = (
-            issubclass(obj, Template) and obj is not Template
-        )
+        is_template_subclass: bool = issubclass(obj, Template) and obj is not Template
 
         if is_template_subclass:
             template_classes.append(obj)
@@ -258,9 +258,7 @@ def _build_router_from_definitions(
 
 
 def _build_statics_route(
-    app: FastAPI, 
-    statics_prefix: str = "", 
-    statics_path: str = ""
+    app: FastAPI, statics_prefix: str = "", statics_path: str = ""
 ) -> None:
     """Monta un directorio para servir archivos estáticos."""
     if not (statics_prefix and statics_path):
@@ -269,20 +267,17 @@ def _build_statics_route(
     if not os.path.isdir(statics_path):
         warnings.warn(
             f"Directorio de estáticos no encontrado o no es un directorio válido: {statics_path}",
-            stacklevel=2
+            stacklevel=2,
         )
         return
 
     # Usamos import inline de 'fastapi.staticfiles' para evitar errores si no
     # está instalado o no se requiere usar archivos estáticos en el entorno.
     from fastapi.staticfiles import StaticFiles
-    
+
     route_name: str = statics_prefix.strip("/").replace("/", "_") or "static"
-    app.mount(
-        statics_prefix, 
-        StaticFiles(directory=statics_path), 
-        name=route_name
-    )
+    app.mount(statics_prefix, StaticFiles(directory=statics_path), name=route_name)
+
 
 # ---------------------------------------------------------------------------
 # Función pública principal
@@ -295,7 +290,7 @@ def auto_router_templates(
     templates_controllers_path: str,
     prefix: str = "",
     statics_prefix: str = "",
-    statics_path: str = ""
+    statics_path: str = "",
 ) -> FastAPI:
     """Auto-registra rutas de templates escaneando recursivamente un árbol de directorios.
 
@@ -334,13 +329,13 @@ def auto_router_templates(
         TemplateFileNotFoundWarning: Si un directorio dentro del árbol no
             contiene ``template.py``.
     """
-    normalized_base_path: str = templates_controllers_path.replace("\\", "/").rstrip("/")
+    normalized_base_path: str = templates_controllers_path.replace("\\", "/").rstrip(
+        "/"
+    )
 
     # Registrar rutas de archivos estáticos si están definidas
     _build_statics_route(
-        app=app,
-        statics_prefix=statics_prefix,
-        statics_path=statics_path
+        app=app, statics_prefix=statics_prefix, statics_path=statics_path
     )
 
     for current_root, subdirectories, files in os.walk(normalized_base_path):
@@ -401,13 +396,12 @@ def auto_router_templates(
         # Procesar cada clase Template encontrada
         # -----------------------------------------------------------------
         for template_class in template_classes:
-            class_full_name: str = (
-                f"{module_import_path}.{template_class.__name__}"
-            )
+            class_full_name: str = f"{module_import_path}.{template_class.__name__}"
 
             # Instanciar la clase con el proveedor de templates
             template_instance: Template = template_class(
                 template_provider=template_provider,
+                app=app,
             )
 
             # Extraer definiciones de ruta de los métodos decorados
@@ -434,9 +428,7 @@ def auto_router_templates(
                 full_prefix = f"{prefix}{http_route}" if prefix else http_route
 
             # Incluir el router en la aplicación FastAPI
-            tag_label: str = (
-                http_route.strip("/").replace("/", " - ") or "root"
-            )
+            tag_label: str = http_route.strip("/").replace("/", " - ") or "root"
             app.include_router(
                 class_router,
                 prefix=full_prefix,

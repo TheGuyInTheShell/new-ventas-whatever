@@ -59,19 +59,21 @@ from core.lib.register.exceptions import (
 # Constantes internas
 # ---------------------------------------------------------------------------
 
-_IGNORED_DIRECTORIES: frozenset[str] = frozenset({
-    "__pycache__",
-    ".git",
-    ".mypy_cache",
-    "node_modules",
-    "schemas",
-    "services",
-    "models",
-    "types",
-    "utils",
-    "middlewares",
-    "dependencies",
-})
+_IGNORED_DIRECTORIES: frozenset[str] = frozenset(
+    {
+        "__pycache__",
+        ".git",
+        ".mypy_cache",
+        "node_modules",
+        "schemas",
+        "services",
+        "models",
+        "types",
+        "utils",
+        "middlewares",
+        "dependencies",
+    }
+)
 
 _CONTROLLER_MODULE_NAME: str = "controller"
 _CONTROLLER_FILE_NAME: str = f"{_CONTROLLER_MODULE_NAME}.py"
@@ -125,7 +127,7 @@ def _compute_http_route(
     normalized_dir: str = directory_path.replace("\\", "/").rstrip("/")
     normalized_base: str = base_path.replace("\\", "/").rstrip("/")
 
-    relative_path: str = normalized_dir[len(normalized_base):].strip("/")
+    relative_path: str = normalized_dir[len(normalized_base) :].strip("/")
 
     if not relative_path:
         return "/"
@@ -369,12 +371,10 @@ def auto_router_api(
         # Procesar cada clase Controller encontrada
         # -----------------------------------------------------------------
         for controller_class in controller_classes:
-            class_full_name: str = (
-                f"{module_import_path}.{controller_class.__name__}"
-            )
+            class_full_name: str = f"{module_import_path}.{controller_class.__name__}"
 
             # Instanciar la clase controller (sin dependencias de template)
-            controller_instance: Controller = controller_class()
+            controller_instance: Controller = controller_class(app, prefix)
 
             # Extraer definiciones de ruta de los métodos decorados
             route_definitions: List[RouteDefinition] = _extract_route_definitions(
@@ -400,9 +400,7 @@ def auto_router_api(
                 full_prefix = f"{prefix}{http_route}" if prefix else http_route
 
             # Incluir el router en la aplicación FastAPI
-            tag_label: str = (
-                http_route.strip("/").replace("/", " - ") or "root"
-            )
+            tag_label: str = http_route.strip("/").replace("/", " - ") or "root"
             app.include_router(
                 class_router,
                 prefix=full_prefix,
