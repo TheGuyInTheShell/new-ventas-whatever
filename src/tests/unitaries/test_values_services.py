@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.modules.values.services import ValuesService
-from src.modules.values.schemas import RQValue, RQMetaValue
+from src.modules.values.schemas import RQValue, RQMetaValue, RQValueQuery
 from src.modules.values.models import Value
 from src.modules.values.meta.models import MetaValue
 from src.modules.comparison_values.models import ComparisonValue
@@ -49,7 +49,9 @@ class TestValuesServiceUnitaries:
         mock_value.id = 1
         mock_value.name = "Test Value"
         mock_value.ref_business_entity = 1
-        mock_result.scalar_one.return_value = mock_value
+        mock_value.balances = []
+        mock_value.meta = []
+        mock_result.scalar_one_or_none.return_value = mock_value
         mock_db.execute.return_value = mock_result
         
         result, error = await values_service.create_value_with_meta(create_dto, db=mock_db)
@@ -77,7 +79,9 @@ class TestValuesServiceUnitaries:
         mock_result = MagicMock()
         mock_value = MagicMock()
         mock_value.id = 5
-        mock_result.scalar_one.return_value = mock_value
+        mock_value.balances = []
+        mock_value.meta = []
+        mock_result.scalar_one_or_none.return_value = mock_value
         mock_db.execute.return_value = mock_result
         
         result, error = await values_service.create_value_with_meta(create_dto, db=mock_db)
@@ -98,10 +102,11 @@ class TestValuesServiceUnitaries:
         assert comparison_obj.ref_business_entity == 2 # Assuming it takes it from Value or sets it? Wait!
 
     @patch("src.modules.values.models.Value.update", new_callable=AsyncMock)
+    @patch("src.modules.values.models.Value.find_one", new_callable=AsyncMock)
     @patch("src.modules.values.meta.models.MetaValue.find_all", new_callable=AsyncMock)
     @patch("src.modules.values.meta.models.MetaValue.delete", new_callable=AsyncMock)
     @patch("src.modules.values.meta.models.MetaValue.save", new_callable=AsyncMock)
-    async def test_update_value_with_meta(self, mock_meta_save, mock_meta_delete, mock_meta_find_all, mock_value_update, values_service, mock_db):
+    async def test_update_value_with_meta(self, mock_meta_save, mock_meta_delete, mock_meta_find_all, mock_value_find_one, mock_value_update, values_service, mock_db):
         update_dto = RQValue(
             name="Updated Value",
             expression="UPD",
@@ -113,7 +118,15 @@ class TestValuesServiceUnitaries:
         mock_value = MagicMock()
         mock_value.id = 1
         mock_value.name = "Updated Value"
+        mock_value.uid = "test-uid"
+        mock_value.expression = "UPD"
+        mock_value.type = "currency"
+        mock_value.ref_business_entity = 1
+        mock_value.identifier = None
+        mock_value.meta = []
+        mock_value.balances = []
         mock_value_update.return_value = mock_value
+        mock_value_find_one.return_value = mock_value
         
         mock_existing_meta = MagicMock()
         mock_existing_meta.id = 10
@@ -131,21 +144,19 @@ class TestValuesServiceUnitaries:
         mock_db.commit.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_value)
 
-    @patch("src.modules.values.models.Value.find_some", new_callable=AsyncMock)
-    @patch("src.modules.values.models.Value.find_all", new_callable=AsyncMock)
-    async def test_get_values_paginated(self, mock_find_all, mock_find_some, values_service, mock_db):
+    @patch("src.modules.values.models.Value.query", new_callable=AsyncMock)
+    async def test_get_values_paginated(self, mock_query, values_service, mock_db):
         m1 = MagicMock()
-        m1.id = 1; m1.uid = "uid1"; m1.name = "n1"; m1.expression = "e1"; m1.type = "t1"; m1.ref_business_entity = 1; m1.identifier = "i1"
+        m1.id = 1; m1.uid = "uid1"; m1.name = "n1"; m1.expression = "e1"; m1.type = "t1"; m1.ref_business_entity = 1; m1.identifier = "i1"; m1.meta = []; m1.balances = []
         m2 = MagicMock()
-        m2.id = 2; m2.uid = "uid2"; m2.name = "n2"; m2.expression = "e2"; m2.type = "t2"; m2.ref_business_entity = 1; m2.identifier = "i2"
+        m2.id = 2; m2.uid = "uid2"; m2.name = "n2"; m2.expression = "e2"; m2.type = "t2"; m2.ref_business_entity = 1; m2.identifier = "i2"; m2.meta = []; m2.balances = []
         
-        mock_find_some.return_value = [m1, m2]
-        mock_find_all.return_value = [m1, m2, MagicMock()] # Total 3
+        mock_query.return_value = ([m1, m2], 3)
         
-        result, error = await values_service.get_values_paginated(page=1, page_size=2, db=mock_db)
+        query = RQValueQuery(page=1, page_size=2)
+        result, error = await values_service.get_values_paginated(query, db=mock_db)
         
         assert error is None
         assert len(result.data) == 2
         assert result.total == 3
-        mock_find_some.assert_called_once()
-        mock_find_all.assert_called_once()
+        mock_query.assert_called_once()

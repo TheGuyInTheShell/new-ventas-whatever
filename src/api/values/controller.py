@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from fastapi.exceptions import HTTPException
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_async_db
@@ -9,8 +9,8 @@ from core.security.shield import Shield
 from core.lib.decorators.services import Services
 
 from src.modules.values.services import ValuesService
-from src.modules.values.schemas import RQValue, RQValueQuery
-from src.modules.values.models import Value
+from src.modules.values.schemas import RQValue, RQValueQuery, RSValue, RSValueList
+from core.lib.http.errors import error_response
 
 
 @Shield.register(context="Values API")
@@ -25,10 +25,12 @@ class ValuesController(Controller):
         type="endpoint",
         description="Creates a new value",
     )
-    async def create_value(self, payload: RQValue):
+    async def create_value(self, payload: RQValue) -> RSValue:
         result, error = await self.ValuesService.create_value_with_meta(payload)
         if error:
-            return error.to_response()
+            raise error_response(error)
+        if not result:
+            raise HTTPException(detail={"message": "Unknown error", "code": "Somethin happend" }, status_code=500)
         return result
 
     @Post("/query")
@@ -38,23 +40,12 @@ class ValuesController(Controller):
         type="endpoint",
         description="Query values dynamically",
     )
-    async def query_values(self, payload: RQValueQuery):
-        filters = {}
-        if payload.type:
-            filters["type"] = payload.type
-
-        result, error = await self.ValuesService.get_values_paginated(
-            page=payload.page,
-            page_size=payload.page_size,
-            order_by=payload.order_by,
-            order=payload.order,
-            filters=filters,
-            load_meta=payload.meta,
-            load_balances=payload.balances,
-        )
+    async def query_values(self, payload: RQValueQuery) -> RSValueList:
+        result, error = await self.ValuesService.get_values_paginated(payload)
         if error:
-            return error.to_response()
-
+            raise error_response(error)
+        if not result:
+            raise HTTPException(detail={"message": "Unknown error", "code": "Somethin happend" }, status_code=500)
         return result
 
     @Delete("/id/{id}")
@@ -64,7 +55,9 @@ class ValuesController(Controller):
         type="endpoint",
         description="Delete a value by internal id",
     )
-    async def delete_value(self, id: int, db: AsyncSession = Depends(get_async_db)):
+    async def delete_value(self, id: int):
         # Ensuring we return confirmation
-        await Value.delete(db, id)
-        return {"status": "success", "message": "Value deleted"}
+        result, error = await self.ValuesService.delete_value(id)
+        if error:
+            raise error_response(error)
+        return {"code": "success", "message": "Value deleted"}

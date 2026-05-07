@@ -31,7 +31,7 @@ class ComparisonValuesController(Controller):
             page=1, page_size=1000, ref_business_entity=ref_business_entity
         )
         if error:
-            return error_response(error)
+            raise error_response(error)
         
         if not result:
             return HTTPException(400, "comparisons not found")
@@ -49,7 +49,7 @@ class ComparisonValuesController(Controller):
     async def create_comparison(self, payload: RQComparisonValue):
         result, error = await self.ComparisonValuesService.create_comparison(payload)
         if error:
-            return error_response(error)
+            raise error_response(error)
         return result
 
     @Put("/id/{id}")
@@ -62,7 +62,7 @@ class ComparisonValuesController(Controller):
     async def update_comparison(self, id: str, payload: RQComparisonValue):
         result, error = await self.ComparisonValuesService.update_comparison(id, payload)
         if error:
-            return error_response(error)
+            raise error_response(error)
         return result
 
     @Delete("/id/{id}")

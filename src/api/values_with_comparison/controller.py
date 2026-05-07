@@ -10,6 +10,7 @@ from src.modules.d.schemas.values_with_comparison import (
     RQValueWithComparison,
     QueryValuesWithComparison,
     ResultValueWithComparison,
+    RSValueWithComparison,
 )
 from src.modules.d.services.value_with_comparison import DValueWithComparisonService
 
@@ -26,14 +27,21 @@ class ValuesWithComparisonController(Controller):
         type="endpoint",
         description="Save an optional value and an optional comparison.",
     )
-    async def create_value_with_comparison(self, payload: RQValueWithComparison):
+    async def create_value_with_comparison(
+        self, payload: RQValueWithComparison
+    ) -> RSValueWithComparison:
         result, error = (
             await self.DValueWithComparisonService.save_value_with_comparison_service(
                 payload
             )
         )
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
         return result
 
     @Put("/id/{id}")
@@ -47,14 +55,19 @@ class ValuesWithComparisonController(Controller):
         self,
         id: str,
         payload: RQValueWithComparison,
-    ):
+    ) -> RSValueWithComparison:
         result, error = (
             await self.DValueWithComparisonService.update_value_with_comparison_service(
                 id, payload
             )
         )
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
         return result
 
     @Post("/query")
@@ -74,8 +87,7 @@ class ValuesWithComparisonController(Controller):
             )
         )
         if error:
-            exception = error_response(error)
-            raise exception
+            raise error_response(error)
         if not result:
             raise HTTPException(status_code=404, detail="Unexpected error")
         return result

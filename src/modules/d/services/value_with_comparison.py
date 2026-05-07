@@ -333,9 +333,7 @@ async def _compute_comparison_update(
     Returns:
         A ``{field: new_value}`` dict ready to be applied via ``setattr``.
     """
-    total_quantity_to = sum(
-        (comp.quantity_to or 0) for comp in parent_comparisons
-    )
+    total_quantity_to = sum((comp.quantity_to or 0) for comp in parent_comparisons)
 
     # TODO: apply DECORATORS_QUANTITY pipeline from child comparison meta
     # meta_decorators = child_meta.get("DECORATORS_QUANTITY")

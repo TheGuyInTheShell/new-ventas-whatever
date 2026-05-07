@@ -1,4 +1,5 @@
-from fastapi import Request
+from fastapi.exceptions import HTTPException
+
 from core.lib.register import Controller
 from core.lib.decorators import Post, Services
 from core.security.shield import Shield
@@ -12,6 +13,10 @@ from src.modules.d.schemas.business_entities_hierarchy_groups import (
     RQBusinessEntitySearch,
     RQBusinessEntitySearchChild,
     RQBusinessEntitySearchGroups,
+    RSBusinessEntitiesSearchItem,
+    RSBusinessEntitySearchGroups,
+    RSBusinessEntitySearchChild,
+    RSBusinessEntitiesSearchList,
 )
 
 
@@ -28,7 +33,9 @@ class BusinessEntitiesSearchByController(Controller):
         type="endpoint",
         description="Búsqueda de entidades por nombre con opción de jerarquía y grupos",
     )
-    async def search_by_name(self, query: RQBusinessEntitySearch):
+    async def search_by_name(
+        self, query: RQBusinessEntitySearch
+    ) -> RSBusinessEntitiesSearchItem:
         """
         Busca una entidad por su nombre exacto. Permite obtener opcionalmente
         la jerarquía completa y/o los grupos asociados.
@@ -38,8 +45,12 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error_response(error)
-
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
         return result
 
     @Post("/search/groups", summary="Búsqueda de entidades de negocio por grupos")
@@ -49,7 +60,9 @@ class BusinessEntitiesSearchByController(Controller):
         type="endpoint",
         description="Búsqueda de entidades por pertenencia a grupos",
     )
-    async def search_by_groups(self, query: RQBusinessEntitySearchGroups):
+    async def search_by_groups(
+        self, query: RQBusinessEntitySearchGroups
+    ) -> RSBusinessEntitySearchGroups:
         """
         Busca entidades que pertenecen a uno o más grupos especificados.
         """
@@ -58,7 +71,12 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
 
         return result
 
@@ -69,7 +87,9 @@ class BusinessEntitiesSearchByController(Controller):
         type="endpoint",
         description="Búsqueda de entidades por asociación padre e hijo",
     )
-    async def search_by_child(self, query: RQBusinessEntitySearchChild):
+    async def search_by_child(
+        self, query: RQBusinessEntitySearchChild
+    ) -> RSBusinessEntitySearchChild:
         """
         Busca una entidad por su nombre y una asociación específica con un hijo por su nombre.
         La respuesta incluirá los datos de ambos.
@@ -79,7 +99,12 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
 
         return result
 
@@ -90,7 +115,9 @@ class BusinessEntitiesSearchByController(Controller):
         type="endpoint",
         description="Búsqueda avanzada genérica de entidades",
     )
-    async def search_by(self, query: RQBusinessEntitiesSearch):
+    async def search_by(
+        self, query: RQBusinessEntitiesSearch
+    ) -> RSBusinessEntitiesSearchList:
         """
         Endpoint genérico para realizar búsquedas avanzadas sobre entidades de negocio,
         permitiendo filtrar por nombre, grupos y relaciones jerárquicas.
@@ -100,6 +127,11 @@ class BusinessEntitiesSearchByController(Controller):
         )
 
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(
+                detail={"message": "Unknown error", "code": "Somethin happend"},
+                status_code=500,
+            )
 
         return result

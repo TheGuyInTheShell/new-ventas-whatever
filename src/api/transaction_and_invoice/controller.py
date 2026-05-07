@@ -1,3 +1,4 @@
+from fastapi.exceptions import HTTPException
 from core.lib.decorators import Post, Put
 from core.lib.register import Controller
 from core.security.shield import Shield
@@ -6,7 +7,6 @@ from core.lib.decorators.services import Services
 from src.modules.d.schemas.transaction_and_invoice import RQAdjustBalance, InvoiceSales
 from src.modules.d.services.transaction_and_invoice import DTransactionAndInvoiceService
 from core.lib.http.errors import error_response
-
 
 @Shield.register(context="Transaction and Invoice API")
 @Services(DTransactionAndInvoiceService)
@@ -27,7 +27,9 @@ class TransactionAndInvoiceController(Controller):
             )
         )
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(detail={"message": "Unknown error", "code": "Somethin happend" }, status_code=500)
         return result
 
     @Put("/adjust")
@@ -44,5 +46,7 @@ class TransactionAndInvoiceController(Controller):
             )
         )
         if error:
-            return error_response(error)
+            raise error_response(error)
+        if not result:
+            raise HTTPException(detail={"message": "Unknown error", "code": "Somethin happend" }, status_code=500)
         return result

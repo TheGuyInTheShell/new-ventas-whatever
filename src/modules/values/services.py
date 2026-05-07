@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -9,12 +9,18 @@ from core.database import get_async_db
 
 from .models import Value
 from .meta.models import MetaValue
-from .schemas import RQValue, RSValueList, RSValue
+from .schemas import RQValue, RSValueList, RSValue, RQValueQuery
+from .exceptions import (
+    ValueNotFoundError,
+    ValueCreationError,
+    ValueUpdateError,
+    ServiceResult,
+)
 from ..comparison_values.models import ComparisonValue
 from src.modules.business_entities.meta.models import (
     MetaBusinessEntity,
 )  # Fix mapper initialization
-from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
+from core.lib.decorators.exceptions import handle_service_errors
 
 
 class ValuesService(Service):
@@ -22,7 +28,7 @@ class ValuesService(Service):
     @injectable
     async def create_value_with_meta(
         self, value_data: RQValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[Value]:
+    ) -> ServiceResult[RSValue]:
         """
         Create a new value with optional metadata.
         Also creates a price comparison if provided.
@@ -35,7 +41,11 @@ class ValuesService(Service):
             identifier=value_data.identifier,
         )
         db.add(value)
-        await db.flush()
+        try:
+            await db.flush()
+        except Exception as e:
+            await db.rollback()
+            raise ValueCreationError(f"Failed to create value: {str(e)}")
 
         # Create metadata if provided
         if value_data.meta:
@@ -60,27 +70,35 @@ class ValuesService(Service):
 
         # Refresh to get relationships including meta
         stmt = (
-            select(Value).options(selectinload(Value.meta)).where(Value.id == value.id)
+            select(Value)
+            .options(selectinload(Value.meta), selectinload(Value.balances))
+            .where(Value.id == value.id)
         )
         result = await db.execute(stmt)
-        value = result.scalar_one()
+        refreshed_value = result.scalar_one_or_none()
+
+        if not refreshed_value:
+            raise ValueCreationError("Value was created but could not be retrieved.")
 
         await db.commit()
-        await db.refresh(value)
-        return value, None
+        await db.refresh(refreshed_value)
+
+        return RSValue.model_validate(refreshed_value), None
 
     @handle_service_errors
     @injectable
     async def create_values_bulk(
         self, values_data: List[RQValue], db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[List[Value]]:
+    ) -> ServiceResult[List[RSValue]]:
         """
         Create multiple values in bulk with metadata.
         """
-        created_values = []
+        created_values: List[RSValue] = []
 
         for value_data in values_data:
-            value = await self.create_value_with_meta(value_data)
+            value, error = await self.create_value_with_meta(value_data, db=db)
+            if error or value is None:
+                return None, error
             created_values.append(value)
 
         return created_values, None
@@ -92,13 +110,21 @@ class ValuesService(Service):
         value_id: int | str,
         value_data: RQValue,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Value]:
+    ) -> ServiceResult[RSValue]:
         """
         Update a value and its metadata.
         """
+        # Check if exists
+        value = await Value.find_one(db, value_id)
+        if not value:
+            raise ValueNotFoundError(f"Value with id {value_id} not found.")
+
         # Update main value
         update_data = {"name": value_data.name, "expression": value_data.expression}
-        value = await Value.update(db, value_id, update_data)
+        try:
+            value = await Value.update(db, value_id, update_data)
+        except Exception as e:
+            raise ValueUpdateError(f"Failed to update value: {str(e)}")
 
         # If meta is provided, delete existing and create new
         if value_data.meta is not None:
@@ -118,63 +144,49 @@ class ValuesService(Service):
 
         await db.commit()
         await db.refresh(value)
-        return value
+        return RSValue.model_validate(value), None
 
     @handle_service_errors
     @injectable
     async def get_values_paginated(
         self,
-        page: int = 1,
-        page_size: int = 10,
-        order_by: str = "id",
-        order: str = "asc",
-        filters: Optional[dict] = None,
-        load_meta: bool = False,
-        load_balances: bool = False,
+        query: RQValueQuery,
         db: AsyncSession = Depends(get_async_db),
     ) -> ServiceResult[RSValueList]:
         """
-        Get paginated list of values with total count.
+        Get paginated list of values with total count using the query schema.
         """
-        options = []
-        if load_meta:
-            options.append(selectinload(Value.meta))
-        if load_balances:
-            options.append(selectinload(Value.balances))
+        values, total = await Value.query(db, query)
 
-        values = await Value.find_some(
-            db,
-            pag=page,
-            order_by=order_by,
-            ord=order,
-            status="exists",
-            filters=filters or {},
-            options=options,
-        )
-        # Count total matching filters
-        all_values = await Value.find_all(db, status="exists", filters=filters or {})
-        total = len(all_values)
+        total_pages = (total + query.page_size - 1) // query.page_size if total > 0 else 1
 
         return (
             RSValueList(
-                data=[
-                    RSValue(
-                        id=value.id,
-                        uid=value.uid,
-                        name=value.name,
-                        expression=value.expression,
-                        type=value.type,
-                        ref_business_entity=value.ref_business_entity,
-                        identifier=value.identifier,
-                    )
-                    for value in values
-                ],
+                data=[RSValue.model_validate(v) for v in values],
                 total=total,
-                page=page,
-                page_size=page_size,
-                total_pages=total // page_size + 1 if total > 0 else 1,
-                has_prev=page > 1,
-                has_next=page < total // page_size + 1 if total > 0 else False,
+                page=query.page,
+                page_size=query.page_size,
+                total_pages=total_pages,
+                has_prev=query.page > 1,
+                has_next=query.page < total_pages,
+                next_page=query.page + 1 if query.page < total_pages else None,
+                prev_page=query.page - 1 if query.page > 1 else None,
             ),
             None,
         )
+
+    @handle_service_errors
+    @injectable
+    async def delete_value(
+        self, value_id: int | str, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[bool]:
+        """
+        Delete a value by id.
+        """
+        value = await Value.find_one(db, value_id)
+        if not value:
+            raise ValueNotFoundError(f"Value with id {value_id} not found.")
+
+        await Value.delete(db, value_id)
+        await db.commit()
+        return True, None
