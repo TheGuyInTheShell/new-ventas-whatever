@@ -12,8 +12,6 @@ class RQBusinessEntitiesHierarchy(BaseModel):
 
 class RSBusinessEntitiesHierarchy(BaseModel):
     """Response schema for an entity hierarchy relationship"""
-    id: int
-    uid: str
     ref_entity_top: int
     ref_entity_bottom: int
 

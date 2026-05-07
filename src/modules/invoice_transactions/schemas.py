@@ -8,8 +8,6 @@ class RQInvoiceTransaction(BaseModel):
 
 
 class RSInvoiceTransaction(BaseModel):
-    uid: str
-    id: int
     ref_invoice: int
     ref_transaction: int
 

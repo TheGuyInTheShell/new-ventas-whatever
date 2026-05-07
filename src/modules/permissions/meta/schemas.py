@@ -10,8 +10,6 @@ class RQMetaPermission(BaseModel):
 
 class RSMetaPermission(BaseModel):
     """Response schema for meta"""
-    id: int
-    uid: str
     key: str
     value: str
 

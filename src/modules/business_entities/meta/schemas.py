@@ -11,8 +11,6 @@ class RQMetaBusinessEntity(BaseModel):
 
 class RSMetaBusinessEntity(BaseModel):
     """Response schema for meta"""
-    id: int
-    uid: str
     key: str
     value: str
     ref_business_entity: int

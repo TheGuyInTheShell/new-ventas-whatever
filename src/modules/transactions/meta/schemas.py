@@ -11,8 +11,6 @@ class RQMetaTransaction(BaseModel):
 
 class RSMetaTransaction(BaseModel):
     """Response schema for meta"""
-    id: int
-    uid: str
     key: str
     value: str
     ref_transaction: int

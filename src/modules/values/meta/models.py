@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Integer, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BasicBaseAsync
+from core.database import RelationBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.values.models import Value
 
 
-class MetaValue(BasicBaseAsync):
+class MetaValue(RelationBaseAsync):
     """
     Flexible key-value metadata for values.
     Examples: year, month, promotion, category, etc.
@@ -18,8 +18,8 @@ class MetaValue(BasicBaseAsync):
 
     ref_value: Mapped[int] = mapped_column(
         Integer, ForeignKey("values.id"), nullable=False
-    )
-    key: Mapped[str] = mapped_column(String(100), nullable=False)
+    , primary_key=True)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True, nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=True)
 
     # Relationship back to Value

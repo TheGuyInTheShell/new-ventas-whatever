@@ -17,7 +17,7 @@ if root_path not in sys.path:
     sys.path.append(root_path)
 
 from core.config.settings import settings
-from core.database.drivers.postgres.base import BasicBaseAsync
+from core.database.drivers.postgres.base import BasicBaseAsync, VanillaBaseAsync
 from core.database.models_registry import import_models
 
 # Import all models to register them in the metadata
@@ -39,7 +39,7 @@ config.set_main_option("sqlalchemy.url", db_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-target_metadata = BasicBaseAsync.metadata
+target_metadata = VanillaBaseAsync.metadata  # unified registry: BasicBaseAsync + RelationBaseAsync
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

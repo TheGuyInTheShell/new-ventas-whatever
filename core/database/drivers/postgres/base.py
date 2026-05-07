@@ -64,10 +64,134 @@ def generate_dll_view(tablename: str, is_deleted: str) -> str:
 
 
 class VanillaBaseAsync(DeclarativeBase):
+    """Single DeclarativeBase — the one shared SQLAlchemy metadata registry."""
     pass
 
 
-class BasicBaseAsync(DeclarativeBase):
+class RelationBaseAsync(VanillaBaseAsync):
+    """Base for pivot / metadata tables: no id, uid or soft-delete columns."""
+    __abstract__ = True
+    @classmethod
+    async def count(cls, db: AsyncSession) -> int:
+        try:
+            query = select(func.count()).select_from(cls)
+            result = (await db.execute(query)).scalar()
+            return int(result) if result is not None else 0
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+    async def save(self, db: AsyncSession, auto_commit: bool = True) -> Self:
+        try:
+            db.add(self)
+            if auto_commit:
+                await db.commit()
+                await db.refresh(self)
+            return self
+        except IntegrityError as e:
+            await db.rollback()
+            raise DatabaseIntegrityError(str(e))
+        except OperationalError as e:
+            await db.rollback()
+            raise DatabaseOperationalError(str(e))
+        except SQLAlchemyError as e:
+            await db.rollback()
+            raise DatabaseError(str(e))
+
+    @classmethod
+    async def delete_by_specification(cls, db: AsyncSession, specification: dict, auto_commit: bool = True):
+        try:
+            from sqlalchemy import delete as sa_delete
+            query = sa_delete(cls).where(**specification)
+            result = await db.execute(query)
+            if auto_commit:
+                await db.commit()
+            return result.rowcount
+        except IntegrityError as e:
+            await db.rollback()
+            raise DatabaseIntegrityError(str(e))
+        except SQLAlchemyError as e:
+            await db.rollback()
+            raise DatabaseError(str(e))
+
+    @classmethod
+    async def find_all(
+        cls,
+        db: AsyncSession,
+        filters: dict = dict(),
+        options: Optional[List[Any]] = None,
+    ) -> List[Self]:
+        try:
+            query = select(cls).filter_by(**filters)
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+            result = (await db.execute(query)).scalars().all()
+            return list(result)
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+    @classmethod
+    def get_order_by(cls, order_by: str) -> Column | None:
+        from sqlalchemy import MetaData, Table
+        from .sync_connection import engineSync
+        table = Table(cls.__tablename__, MetaData(), autoload_with=engineSync)
+        return table.c.get(order_by)
+
+    @classmethod
+    async def find_some(
+        cls,
+        db: AsyncSession,
+        pag: int = 1,
+        order_by: str = None,
+        ord: str = "asc",
+        filters: dict = {},
+        options: Optional[List[Any]] = None,
+    ) -> List[Self]:
+        try:
+            query = select(cls).filter_by(**filters)
+            
+            if order_by:
+                order_column = getattr(cls, order_by, None)
+                if order_column is not None:
+                    if ord == "desc":
+                        query = query.order_by(order_column.desc())
+                    else:
+                        query = query.order_by(order_column.asc())
+
+            if pag <= 0:
+                pag = 1
+            query = query.limit(10).offset((pag - 1) * 10)
+
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+
+            result = (await db.execute(query)).scalars().all()
+            return list(result)
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+    @classmethod
+    async def find_by_colunm(cls, db: AsyncSession, column: str, value: Any):
+        try:
+            result = await db.execute(select(cls).where(getattr(cls, column) == value))
+            return result
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+    @classmethod
+    async def find_by_specification(cls, db: AsyncSession, specification: dict):
+        try:
+            result = await db.execute(select(cls).where(**specification))
+            return result
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+
+
+class BasicBaseAsync(VanillaBaseAsync):
+    """Base for main entity tables: id, uid, soft-delete columns + RLS helpers."""
+    __abstract__ = True
     uid: Mapped[str] = mapped_column(
         String,
         unique=True,

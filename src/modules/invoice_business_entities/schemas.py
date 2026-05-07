@@ -8,8 +8,6 @@ class RQInvoiceBusinessEntity(BaseModel):
 
 
 class RSInvoiceBusinessEntity(BaseModel):
-    uid: str
-    id: int
     ref_invoice: int
     ref_business_entity: int
 

@@ -9,8 +9,6 @@ class RQMetaTransactionBuffer(BaseModel):
 
 
 class RSMetaTransactionBuffer(BaseModel):
-    id: int
-    uid: str
     key: str
     value: str
     ref_transaction_buffer: int

@@ -129,11 +129,7 @@ class ValuesService(Service):
         # If meta is provided, delete existing and create new
         if value_data.meta is not None:
             # Delete existing meta
-            existing_meta = await MetaValue.find_all(
-                db, status="exists", filters={"ref_value": value.id}
-            )
-            for meta in existing_meta:
-                await MetaValue.delete(db, meta.id)
+            await MetaValue.delete_by_specification(db, specification={"ref_value": value.id})
 
             # Create new meta
             for meta_item in value_data.meta:

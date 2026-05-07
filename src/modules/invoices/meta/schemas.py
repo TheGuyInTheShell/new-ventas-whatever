@@ -9,8 +9,6 @@ class RQMetaInvoice(BaseModel):
 
 
 class RSMetaInvoice(BaseModel):
-    id: int
-    uid: str
     key: str
     value: str
     ref_invoice: int

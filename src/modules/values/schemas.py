@@ -38,8 +38,6 @@ class RQValueQuery(BaseModel):
 
 class RSMetaValue(BaseModel):
     """Response schema for value metadata"""
-    uid: str
-    id: int
     key: str
     value: Optional[str] = None
 

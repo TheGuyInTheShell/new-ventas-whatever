@@ -116,7 +116,7 @@ class TestValuesServiceUnitaries:
     @patch("src.modules.values.models.Value.update", new_callable=AsyncMock)
     @patch("src.modules.values.models.Value.find_one", new_callable=AsyncMock)
     @patch("src.modules.values.meta.models.MetaValue.find_all", new_callable=AsyncMock)
-    @patch("src.modules.values.meta.models.MetaValue.delete", new_callable=AsyncMock)
+    @patch("src.modules.values.meta.models.MetaValue.delete_by_specification", new_callable=AsyncMock)
     @patch("src.modules.values.meta.models.MetaValue.save", new_callable=AsyncMock)
     async def test_update_value_with_meta(self, mock_meta_save, mock_meta_delete, mock_meta_find_all, mock_value_find_one, mock_value_update, values_service, mock_db):
         update_dto = RQValue(
@@ -150,8 +150,8 @@ class TestValuesServiceUnitaries:
         assert error is None
         
         mock_value_update.assert_called_once()
-        mock_meta_find_all.assert_called_once()
-        mock_meta_delete.assert_called_once_with(mock_db, 10)
+        # delete_by_specification is called with the ref_value spec — find_all is no longer used
+        mock_meta_delete.assert_called_once_with(mock_db, specification={"ref_value": mock_value.id})
         mock_meta_save.assert_called_once()
         
         mock_db.commit.assert_called_once()

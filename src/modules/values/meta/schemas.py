@@ -11,8 +11,6 @@ class RQMetaValue(BaseModel):
 
 class RSMetaValue(BaseModel):
     """Response schema for meta"""
-    id: int
-    uid: str
     key: str
     value: str
     ref_value: int

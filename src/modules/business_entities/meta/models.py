@@ -2,17 +2,17 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Integer, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database import BasicBaseAsync
+from core.database import RelationBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.business_entities.models import BusinessEntity
 
 
-class MetaBusinessEntity(BasicBaseAsync):
+class MetaBusinessEntity(RelationBaseAsync):
     __tablename__ = "meta_business_entities"
-    key: Mapped[str] = mapped_column(String(100), nullable=False)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True, nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)
-    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False)
+    ref_business_entity: Mapped[int] = mapped_column(Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False, primary_key=True)
     business_entity: Mapped["BusinessEntity"] = relationship("BusinessEntity", foreign_keys=[ref_business_entity])
 
     __table_args__ = (

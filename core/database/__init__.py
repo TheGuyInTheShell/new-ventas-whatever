@@ -13,8 +13,14 @@ driver = settings.DB_DRIVER
 
 if driver == "postgres":
 
-    from .drivers.postgres.base import BaseAsync, BaseSync, SessionAsync, BasicBaseAsync
+    from .drivers.postgres.base import (
+        BaseAsync,
+        BaseSync,
+        SessionAsync,
+        BasicBaseAsync,
+        RelationBaseAsync,
+    )
 
     from .drivers.postgres.async_connection import engineAsync, get_async_db
-    
+
     from .drivers.postgres.sync_connection import engineSync, get_sync_db, SessionSync
