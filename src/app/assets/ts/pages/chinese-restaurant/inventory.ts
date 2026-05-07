@@ -69,7 +69,7 @@ document.addEventListener('alpine:init', () => {
                     notifyError(`Failed to load currency data: ${msg}`, 'Error');
                 }
             }
-            
+
             if (!this.viewFiatId) {
                 this.viewFiatId = this.fiatContext.mainFiatId;
             }
