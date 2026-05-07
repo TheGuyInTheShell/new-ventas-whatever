@@ -15,7 +15,7 @@ from src.modules.d.schemas.business_entities_hierarchy_groups import (
 )
 
 
-@Shield.register(context="business_entities_hierarchy_groups")
+@Shield.register(context="business_entities_search_by")
 @Services(BusinessEntitiesSearchByService)
 class BusinessEntitiesSearchByController(Controller):
 

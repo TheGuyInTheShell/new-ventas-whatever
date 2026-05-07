@@ -281,7 +281,7 @@ class BusinessEntitiesSearchByService(Service):
             return None, error
 
         if not result:
-            return None, BusinessEntityNotFoundError('Business entity not found')
+            return None, BusinessEntityNotFoundError("Business entity not found")
 
         if not result.data:
             return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
@@ -303,7 +303,7 @@ class BusinessEntitiesSearchByService(Service):
             return None, error
 
         if not result:
-            return None, BusinessEntityNotFoundError('Business entity not found')
+            return None, BusinessEntityNotFoundError("Business entity not found")
 
         if not result.data:
             return None, ParentEntityNotFoundError(
@@ -331,9 +331,9 @@ class BusinessEntitiesSearchByService(Service):
         result, error = await self.search_business_entities(query.to_generic(), db=db)
         if error:
             return None, error
-        
+
         if not result:
-            return None, BusinessEntityNotFoundError('Business entity not found')
+            return None, BusinessEntityNotFoundError("Business entity not found")
 
         if not result.data:
             return None, BusinessEntityNotFoundError(f"Entity '{query.name}' not found")
@@ -363,7 +363,7 @@ class BusinessEntitiesSearchByService(Service):
                 h_stmt = select(BusinessEntitiesHierarchy).where(
                     and_(
                         BusinessEntitiesHierarchy.ref_entity_top == parent_id,
-                        BusinessEntitiesHierarchy.ref_entity_bottom == entity.id
+                        BusinessEntitiesHierarchy.ref_entity_bottom == entity.id,
                     )
                 )
                 h_result = await db.execute(h_stmt)
@@ -371,8 +371,7 @@ class BusinessEntitiesSearchByService(Service):
 
                 if not hierarchy:
                     hierarchy = BusinessEntitiesHierarchy(
-                        ref_entity_top=parent_id,
-                        ref_entity_bottom=entity.id
+                        ref_entity_top=parent_id, ref_entity_bottom=entity.id
                     )
                     db.add(hierarchy)
                     await db.flush()
@@ -383,14 +382,10 @@ class BusinessEntitiesSearchByService(Service):
 
     @on_app_init
     @injectable
-    async def _initialize_business_entity_global(
-        self, app: FastAPI
-    ):
+    async def _initialize_business_entity_global(self, app: FastAPI):
         """
         Inicializa las entidades de negocio globales según el árbol jerárquico.
         """
-        print("DEBUG: _initialize_business_entity_global START")
         async with SessionAsync() as db:
             await self._sync_entity_tree(BUSINESS_ENTITY_TREE, None, db)
             await db.commit()
-        print("DEBUG: _initialize_business_entity_global END")
