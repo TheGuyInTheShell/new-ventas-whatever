@@ -171,7 +171,7 @@ export const inventoryActions = {
                 },
                 ref_super_values_ids: itemData.ref_super_values_ids || [],
                 business_entity_ids: [inventoryId],
-                balance_type: 'inventory'
+                balance_type: 'basic'
             };
 
             const url = itemData.id ? `/values_with_comparison/id/${itemData.uid}` : `/values_with_comparison`;
