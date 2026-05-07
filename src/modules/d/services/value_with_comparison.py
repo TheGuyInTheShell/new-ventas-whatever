@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from typing import Tuple, Any
+from typing import Tuple, Any, Sequence
 
 from core.lib.register.service import Service
 from core.lib.decorators.services import Services
@@ -30,7 +30,10 @@ from ...balances.models import Balance, BalanceType
 from ...balances_business_entities.models import BalanceBusinessEntity
 from ...comparison_values.models import ComparisonValue
 from ...comparison_values.meta.models import MetaComparisonValue
-from ..hooks.value_with_comparison import on_value_with_comparison_updated, trigger_value_with_comparison_updated
+from ..hooks.value_with_comparison import (
+    on_value_with_comparison_updated,
+    trigger_value_with_comparison_updated,
+)
 
 
 @Services(ValuesService, ComparisonValuesService)
@@ -272,8 +275,11 @@ async def recursive_hierarchy_comparison_update(
     result: Tuple[RSValueWithComparison, Any] | RSValueWithComparison, *args, **kwargs
 ):
     """
-    Background hook to recursively update comparison values in the hierarchy
-    when a child comparison value is updated.
+    Background hook that propagates a price/comparison change DOWNWARD through
+    the hierarchy when a value's comparison is updated.
+
+    Any descendant flagged with ``REACTIVE_UPDATE=1`` in its comparison meta will
+    have its comparison recalculated from the aggregated values of all its parents.
     """
     rs_data = None
     if isinstance(result, tuple) and len(result) == 2:
@@ -286,52 +292,125 @@ async def recursive_hierarchy_comparison_update(
     if not rs_data:
         return
 
-    child_value_id = rs_data.value.id
-    comparison_data = rs_data.comparison_value
+    updated_value_id = rs_data.value.id
 
     async with SessionAsync() as db:
-        await _update_parents_recursively(child_value_id, comparison_data, db=db)
+        await _update_children_recursively(updated_value_id, db=db)
         await db.commit()
 
 
+async def _compute_comparison_update(
+    parent_comparisons: Sequence[ComparisonValue],
+    child_comparison: ComparisonValue,
+) -> dict:
+    """
+    Pure computation step: derive the new comparison fields for a reactive child
+    from its parents' current comparison values.
+
+    Default strategy — sum all parent ``quantity_to`` values so that the child's
+    cost equals the total cost of its components (e.g. arroz + agua + gas → arroz
+    cocido).
+
+    Extensibility:
+        When ``DECORATORS_QUANTITY`` is present in the child comparison's meta it
+        will define a JSON-schema pipeline that transforms the raw aggregated value
+        before it is persisted.  Possible decorators: taxes, profit margin,
+        marginal costs, etc.  Example meta field::
+
+            {
+                "DECORATORS_QUANTITY": [
+                    {"type": "tax",    "rate": 0.16},
+                    {"type": "margin", "rate": 0.20}
+                ]
+            }
+
+    Args:
+        parent_comparisons: All ``ComparisonValue`` rows whose ``value_from`` is a
+                            direct parent of the reactive child.
+        child_comparison:   The child's own ``ComparisonValue`` (available for
+                            context / future decorator pipeline).
+
+    Returns:
+        A ``{field: new_value}`` dict ready to be applied via ``setattr``.
+    """
+    total_quantity_to = sum(
+        (comp.quantity_to or 0) for comp in parent_comparisons
+    )
+
+    # TODO: apply DECORATORS_QUANTITY pipeline from child comparison meta
+    # meta_decorators = child_meta.get("DECORATORS_QUANTITY")
+    # if meta_decorators:
+    #     total_quantity_to = run_decorators_pipeline(total_quantity_to, meta_decorators)
+
+    return {"quantity_to": total_quantity_to}
+
+
 @injectable
-async def _update_parents_recursively(
-    child_id: int,
-    comparison_data: RSComparisonValue,
+async def _update_children_recursively(
+    updated_value_id: int,
     db: AsyncSession = Depends(get_async_db),
 ):
-    stmt = select(ValuesHierarchy.ref_value_top).where(
-        ValuesHierarchy.ref_value_bottom == child_id
+    """
+    Traverse the hierarchy DOWNWARD from ``updated_value_id``.
+
+    For every direct child:
+    - If the child's comparison meta contains ``REACTIVE_UPDATE=1``:
+        1. Fetch *all* of that child's parent comparisons (not just the one that
+           triggered the update, since the child may depend on several parents).
+        2. Delegate the calculation to ``_compute_comparison_update``.
+        3. Persist the result.
+    - Recurse into the child's own subtree regardless of its reactive flag, so
+      that deeper reactive descendants are also updated.
+    """
+    # Direct children of the updated value
+    stmt = select(ValuesHierarchy.ref_value_bottom).where(
+        ValuesHierarchy.ref_value_top == updated_value_id
     )
     res = await db.execute(stmt)
-    parent_ids = res.scalars().all()
+    child_ids = res.scalars().all()
 
-    for parent_id in parent_ids:
-        # Get the comparison value of the parent
+    for child_id in child_ids:
+        # Fetch the child's own comparison value
         comp_stmt = select(ComparisonValue).where(
-            ComparisonValue.value_from == parent_id
+            ComparisonValue.value_from == child_id
         )
         comp_res = await db.execute(comp_stmt)
-        parent_comp = comp_res.scalars().first()
+        child_comp = comp_res.scalars().first()
 
-        if parent_comp:
-            # Check for LOCK_UPDATE in meta_comparison
+        if child_comp:
+            # Check for REACTIVE_UPDATE=1 in the child's comparison meta
             meta_stmt = select(MetaComparisonValue).where(
-                MetaComparisonValue.ref_comparison_value == parent_comp.id,
-                MetaComparisonValue.key == "LOCK_UPDATE",
+                MetaComparisonValue.ref_comparison_value == child_comp.id,
+                MetaComparisonValue.key == "REACTIVE_UPDATE",
                 MetaComparisonValue.value == "1",
             )
             meta_res = await db.execute(meta_stmt)
-            if meta_res.scalars().first():
-                continue  # Skip update due to lock
+            is_reactive = meta_res.scalars().first() is not None
 
-            # Update parent comparison fields based on the child's new comparison data
-            parent_comp.quantity_to = comparison_data.quantity_to
-            parent_comp.quantity_from = comparison_data.quantity_from
-            parent_comp.value_to = comparison_data.value_to
+            if is_reactive:
+                # Gather ALL parent IDs of this reactive child (not just the
+                # one that changed – the child aggregates all of them).
+                all_parents_stmt = select(ValuesHierarchy.ref_value_top).where(
+                    ValuesHierarchy.ref_value_bottom == child_id
+                )
+                all_parents_res = await db.execute(all_parents_stmt)
+                all_parent_ids = all_parents_res.scalars().all()
 
-            db.add(parent_comp)
-            await db.flush()
+                # Fetch the current comparison for every parent
+                parent_comps_stmt = select(ComparisonValue).where(
+                    ComparisonValue.value_from.in_(all_parent_ids)
+                )
+                parent_comps_res = await db.execute(parent_comps_stmt)
+                parent_comps = parent_comps_res.scalars().all()
 
-            # Recurse up the hierarchy
-            await _update_parents_recursively(parent_id, comparison_data, db=db)
+                # Compute and apply updated comparison fields
+                updates = await _compute_comparison_update(parent_comps, child_comp)
+                for field, new_value in updates.items():
+                    setattr(child_comp, field, new_value)
+
+                db.add(child_comp)
+                await db.flush()
+
+        # Always recurse — deeper descendants may be reactive even if this
+        # child is not.
+        await _update_children_recursively(child_id, db=db)

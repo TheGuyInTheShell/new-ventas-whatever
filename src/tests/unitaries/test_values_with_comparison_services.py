@@ -110,67 +110,100 @@ class TestValuesWithComparisonServiceUnitaries:
             mock_builder_instance.build.assert_called_once()
             mock_builder_instance.execute.assert_called_once()
 
-    async def test_update_parents_recursively_lock_and_unlock(self, mock_db):
-        from src.modules.d.services.value_with_comparison import _update_parents_recursively
-        from src.modules.comparison_values.schemas import RSComparisonValue
+    async def test_update_children_recursively_reactive(self, mock_db):
+        from src.modules.d.services.value_with_comparison import _update_children_recursively
 
-        # Mocks
-        mock_comp_20 = MagicMock()
-        mock_comp_20.id = 200
-        mock_comp_20.value_from = 20
-        mock_comp_20.quantity_to = 0
+        class MockComp:
+            def __init__(self, id, value_from, quantity_to):
+                self.id = id
+                self.value_from = value_from
+                self.quantity_to = quantity_to
 
-        mock_comp_30 = MagicMock()
-        mock_comp_30.id = 300
-        mock_comp_30.value_from = 30
-        mock_comp_30.quantity_to = 0
-
-        mock_comp_40 = MagicMock()
-        mock_comp_40.id = 400
-        mock_comp_40.value_from = 40
-        mock_comp_40.quantity_to = 0
+        # Data for Comparisons
+        mock_comp_10 = MockComp(100, 10, 100.0) # Parent 1 (Updated)
+        mock_comp_11 = MockComp(110, 11, 50.0)  # Parent 2 (Static)
+        mock_comp_20 = MockComp(200, 20, 0.0)   # Child 1 (Reactive)
+        mock_comp_30 = MockComp(300, 30, 0.0)   # Child 2 (Not Reactive)
+        mock_comp_40 = MockComp(400, 40, 0.0)   # Grandchild (Reactive)
 
         affected_comparisons = []
 
         def execute_side_effect(stmt):
             stmt_str = str(stmt).lower()
             mock_res = MagicMock()
-            
-            # Using basic string matching since we know the order of queries
-            # or checking params
             params = stmt.compile().params
             
+            def get_all_vals(prefix):
+                return [v for k, v in params.items() if k.startswith(prefix)]
+            
+            def get_single_val(prefix):
+                vals = get_all_vals(prefix)
+                return vals[0] if vals else None
+
+            # 1. Hierarchy Queries
+            # Distinguish by which parameter is present in the WHERE clause,
+            # NOT by what appears in the SELECT clause (both queries SELECT
+            # ref_value_top, so string-matching on the SQL text is unreliable).
             if "values_hierarchy" in stmt_str:
-                child_val = list(params.values())[0] if params else None
-                if child_val == 10:
-                    mock_res.scalars.return_value.all.return_value = [20, 30]
-                elif child_val == 30:
-                    mock_res.scalars.return_value.all.return_value = [40]
-                else:
-                    mock_res.scalars.return_value.all.return_value = []
-                    
+                child_val = get_single_val("ref_value_bottom")  # WHERE ref_value_bottom = ?
+                parent_val = get_single_val("ref_value_top")    # WHERE ref_value_top = ?
+
+                if child_val is not None:
+                    # SELECT ref_value_top WHERE ref_value_bottom = child_val → get parents
+                    if child_val == 20:
+                        mock_res.scalars.return_value.all.return_value = [10, 11]
+                    elif child_val == 40:
+                        mock_res.scalars.return_value.all.return_value = [20]
+                    else:
+                        mock_res.scalars.return_value.all.return_value = []
+
+                elif parent_val is not None:
+                    # SELECT ref_value_bottom WHERE ref_value_top = parent_val → get children
+                    if parent_val == 10:
+                        mock_res.scalars.return_value.all.return_value = [20, 30]
+                    elif parent_val == 20:
+                        mock_res.scalars.return_value.all.return_value = [40]
+                    else:
+                        mock_res.scalars.return_value.all.return_value = []
+
+            # 2. Comparison Value Queries (using 'comparation_values' due to DB naming)
             elif "comparation_values" in stmt_str and "meta_comparison_values" not in stmt_str:
-                parent_val = list(params.values())[0] if params else None
-                if parent_val == 20:
-                    mock_res.scalars.return_value.first.return_value = mock_comp_20
-                elif parent_val == 30:
-                    mock_res.scalars.return_value.first.return_value = mock_comp_30
-                elif parent_val == 40:
-                    mock_res.scalars.return_value.first.return_value = mock_comp_40
+                # SQLAlchemy postcompile stores IN-list as a single param value that is a list,
+                # e.g. {'value_from_1': [10, 11]} — flatten all value_from params into one list.
+                raw_vals = get_all_vals("value_from")
+                flat_vals = []
+                for v in raw_vals:
+                    if isinstance(v, (list, tuple)):
+                        flat_vals.extend(v)
+                    else:
+                        flat_vals.append(v)
+
+                if "postcompile" in str(stmt).lower() or len(flat_vals) > 1:
+                    # IN query (SQLAlchemy uses postcompile for .in_())
+                    comps = []
+                    if 10 in flat_vals: comps.append(mock_comp_10)
+                    if 11 in flat_vals: comps.append(mock_comp_11)
+                    if 20 in flat_vals: comps.append(mock_comp_20)
+                    mock_res.scalars.return_value.all.return_value = comps
+                else:
+                    # Single fetch
+                    val_from = flat_vals[0] if flat_vals else None
+                    if val_from == 20:
+                        mock_res.scalars.return_value.first.return_value = mock_comp_20
+                    elif val_from == 30:
+                        mock_res.scalars.return_value.first.return_value = mock_comp_30
+                    elif val_from == 40:
+                        mock_res.scalars.return_value.first.return_value = mock_comp_40
+                    else:
+                        mock_res.scalars.return_value.first.return_value = None
+
+            # 3. Meta Comparison Queries (REACTIVE_UPDATE)
+            elif "meta_comparison_values" in stmt_str:
+                comp_id = get_single_val("ref_comparison_value")
+                if comp_id in [200, 400]: # Child 20 and Grandchild 40 are reactive
+                    mock_res.scalars.return_value.first.return_value = MagicMock()
                 else:
                     mock_res.scalars.return_value.first.return_value = None
-                    
-            elif "meta_comparison_values" in stmt_str:
-                # Find the comparison ID in the params
-                comp_val = None
-                for k, v in params.items():
-                    if isinstance(v, int):
-                        comp_val = v
-                
-                if comp_val == 200: # Parent 20's comparison ID
-                    mock_res.scalars.return_value.first.return_value = True # Is locked
-                else:
-                    mock_res.scalars.return_value.first.return_value = None # Not locked
                     
             return mock_res
             
@@ -178,31 +211,20 @@ class TestValuesWithComparisonServiceUnitaries:
         
         def add_side_effect(obj):
             affected_comparisons.append(obj)
-            print(f"Affected comparison updated: value_from={obj.value_from}, new_quantity_to={obj.quantity_to}")
             
         mock_db.add.side_effect = add_side_effect
         
-        comparison_data = RSComparisonValue(
-            id=99,
-            uid="child-comp",
-            quantity_from=1,
-            quantity_to=5.5,
-            value_from=10,
-            value_to=2,
-            ref_business_entity=1
-        )
-        
-        await _update_parents_recursively(child_id=10, comparison_data=comparison_data, db=mock_db)
+        # Act: Update parent 10 and trigger recursive update
+        await _update_children_recursively(updated_value_id=10, db=mock_db)
         
         # Assertions
-        assert mock_comp_20 not in affected_comparisons, "Locked comparison should not be updated"
-        assert mock_comp_30 in affected_comparisons, "Unlocked comparison should be updated"
-        assert mock_comp_40 in affected_comparisons, "Unlocked child's parent should be updated"
+        assert mock_comp_20 in affected_comparisons, "Reactive child 20 should be updated"
+        assert mock_comp_30 not in affected_comparisons, "Non-reactive child 30 should not be updated"
+        assert mock_comp_40 in affected_comparisons, "Reactive grandchild 40 should be updated via recursion"
         
-        assert mock_comp_30.quantity_to == 5.5
-        assert mock_comp_40.quantity_to == 5.5
+        # Check aggregation for child 20: 100 (parent 10) + 50 (parent 11) = 150
+        assert mock_comp_20.quantity_to == 150.0
         
-        print("\n--- Final Results ---")
-        print(f"Total affected comparisons: {len(affected_comparisons)}")
-        for comp in affected_comparisons:
-            print(f"- Comparison for parent Value ID {comp.value_from} updated to {comp.quantity_to}")
+        # Check propagation to grandchild 40: inherits from parent 20 (which is now 150)
+        assert mock_comp_40.quantity_to == 150.0
+
