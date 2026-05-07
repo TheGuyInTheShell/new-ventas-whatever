@@ -18,7 +18,14 @@ class Balance(BasicBaseAsync):
     __tablename__ = "balances"
 
     type: Mapped[BalanceType] = mapped_column(
-        Enum(BalanceType, name="balance_type_enum"), nullable=False
+        Enum(
+            BalanceType,
+            name="balance_type_enum",
+            create_type=False,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
     )
 
     quantity: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
