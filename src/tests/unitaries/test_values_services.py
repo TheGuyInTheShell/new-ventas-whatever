@@ -47,8 +47,13 @@ class TestValuesServiceUnitaries:
         mock_result = MagicMock()
         mock_value = MagicMock()
         mock_value.id = 1
+        mock_value.uid = "test-uid-1"
         mock_value.name = "Test Value"
+        mock_value.expression = "USD"
+        mock_value.type = "currency"
         mock_value.ref_business_entity = 1
+        mock_value.identifier = "test-123"
+        mock_value.comparison = None
         mock_value.balances = []
         mock_value.meta = []
         mock_result.scalar_one_or_none.return_value = mock_value
@@ -79,6 +84,13 @@ class TestValuesServiceUnitaries:
         mock_result = MagicMock()
         mock_value = MagicMock()
         mock_value.id = 5
+        mock_value.uid = "test-uid-5"
+        mock_value.name = "Test Item"
+        mock_value.expression = "ITEM"
+        mock_value.type = "inventory"
+        mock_value.ref_business_entity = 2
+        mock_value.identifier = None
+        mock_value.comparison = None
         mock_value.balances = []
         mock_value.meta = []
         mock_result.scalar_one_or_none.return_value = mock_value
@@ -123,6 +135,7 @@ class TestValuesServiceUnitaries:
         mock_value.type = "currency"
         mock_value.ref_business_entity = 1
         mock_value.identifier = None
+        mock_value.comparison = None
         mock_value.meta = []
         mock_value.balances = []
         mock_value_update.return_value = mock_value
@@ -147,9 +160,9 @@ class TestValuesServiceUnitaries:
     @patch("src.modules.values.models.Value.query", new_callable=AsyncMock)
     async def test_get_values_paginated(self, mock_query, values_service, mock_db):
         m1 = MagicMock()
-        m1.id = 1; m1.uid = "uid1"; m1.name = "n1"; m1.expression = "e1"; m1.type = "t1"; m1.ref_business_entity = 1; m1.identifier = "i1"; m1.meta = []; m1.balances = []
+        m1.id = 1; m1.uid = "uid1"; m1.name = "n1"; m1.expression = "e1"; m1.type = "t1"; m1.ref_business_entity = 1; m1.identifier = "i1"; m1.meta = []; m1.balances = []; m1.comparison = None
         m2 = MagicMock()
-        m2.id = 2; m2.uid = "uid2"; m2.name = "n2"; m2.expression = "e2"; m2.type = "t2"; m2.ref_business_entity = 1; m2.identifier = "i2"; m2.meta = []; m2.balances = []
+        m2.id = 2; m2.uid = "uid2"; m2.name = "n2"; m2.expression = "e2"; m2.type = "t2"; m2.ref_business_entity = 1; m2.identifier = "i2"; m2.meta = []; m2.balances = []; m2.comparison = None
         
         mock_query.return_value = ([m1, m2], 3)
         

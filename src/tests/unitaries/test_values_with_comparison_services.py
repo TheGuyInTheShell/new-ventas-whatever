@@ -5,8 +5,8 @@ from src.modules.d.services.value_with_comparison import DValueWithComparisonSer
 from src.modules.d.schemas.values_with_comparison import (
     RQValueWithComparison, QueryValuesWithComparison
 )
-from src.modules.values.schemas import RQValue
-from src.modules.comparison_values.schemas import RQComparisonValue
+from src.modules.values.schemas import RQValue, RSValue
+from src.modules.comparison_values.schemas import RQComparisonValue, RSComparisonValue
 from src.modules.business_entities.models import BusinessEntity
 from src.modules.business_entities.meta.models import MetaBusinessEntity
 from src.modules.business_entities_groups.models import BusinessEntitiesGroup
@@ -51,24 +51,30 @@ class TestValuesWithComparisonServiceUnitaries:
         )
         
         # Mock sub-services
-        mock_saved_value = MagicMock()
-        mock_saved_value.id = 10
-        mock_saved_value.uid = "val-123"
-        mock_saved_value.name = "Test Comp Val"
-        mock_saved_value.expression = "EUR"
-        mock_saved_value.type = "currency"
-        mock_saved_value.ref_business_entity = 1
-        mock_saved_value.identifier = None
+        mock_saved_value = RSValue(
+            id=10,
+            uid="val-123",
+            name="Test Comp Val",
+            expression="EUR",
+            type="currency",
+            ref_business_entity=1,
+            identifier=None,
+            meta=[],
+            balances=[],
+            comparison=None
+        )
         values_with_comparison_service.ValuesService.create_value_with_meta = AsyncMock(return_value=(mock_saved_value, None))
         
-        mock_saved_comp = MagicMock()
-        mock_saved_comp.id = 20
-        mock_saved_comp.uid = "comp-123"
-        mock_saved_comp.quantity_from = 1
-        mock_saved_comp.quantity_to = 1.2
-        mock_saved_comp.value_from = 10 # Inherited from saved_value
-        mock_saved_comp.value_to = 2
-        mock_saved_comp.ref_business_entity = 1
+        mock_saved_comp = RSComparisonValue(
+            id=20,
+            uid="comp-123",
+            quantity_from=1,
+            quantity_to=1.2,
+            value_from=10, # Inherited from saved_value
+            value_to=2,
+            ref_business_entity=1,
+            meta=[]
+        )
         values_with_comparison_service.ComparisonValuesService.create_comparison = AsyncMock(return_value=(mock_saved_comp, None))
         
         result, error = await values_with_comparison_service.save_value_with_comparison_service(create_dto, db=mock_db)
