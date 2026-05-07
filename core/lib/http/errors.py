@@ -1,15 +1,10 @@
-from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
 from core.lib.decorators.exceptions import BaseError
 
-def error_response(error: BaseError, status_code: int = 400) -> JSONResponse:
+
+def error_response(error: BaseError, status_code: int = 400) -> HTTPException:
     """
     Converts a domain BaseError into a FastAPI JSONResponse.
     This keeps HTTP responsibility in the web/api layer.
     """
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "detail": error.message,
-            "code": error.code
-        }
-    )
+    return HTTPException(status_code=status_code, detail=error)
