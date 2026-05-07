@@ -54,7 +54,6 @@ class ValuesHierarchyService(Service):
         stmt = (
             select(ValuesHierarchy)
             .where(ValuesHierarchy.ref_value_top == value_id)
-            .where(ValuesHierarchy.is_deleted == False)
         )
         result = await db.execute(stmt)
         items = result.scalars().all()
@@ -73,7 +72,6 @@ class ValuesHierarchyService(Service):
         stmt = (
             select(ValuesHierarchy)
             .where(ValuesHierarchy.ref_value_bottom == value_id)
-            .where(ValuesHierarchy.is_deleted == False)
         )
         result = await db.execute(stmt)
         items = result.scalars().all()
@@ -94,10 +92,7 @@ class ValuesHierarchyService(Service):
         """
         stmt = select(ValuesHierarchy)
 
-        if status == "exists":
-            stmt = stmt.where(ValuesHierarchy.is_deleted == False)
-        elif status == "deleted":
-            stmt = stmt.where(ValuesHierarchy.is_deleted == True)
+        stmt = select(ValuesHierarchy)
 
         # Count total
         count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -105,9 +100,9 @@ class ValuesHierarchyService(Service):
 
         # Ordering
         if order == "desc":
-            stmt = stmt.order_by(ValuesHierarchy.id.desc())
+            stmt = stmt.order_by(ValuesHierarchy.ref_value_top.desc())
         else:
-            stmt = stmt.order_by(ValuesHierarchy.id.asc())
+            stmt = stmt.order_by(ValuesHierarchy.ref_value_top.asc())
 
         # Pagination
         offset = (max(page, 1) - 1) * page_size

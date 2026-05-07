@@ -2,21 +2,21 @@ from sqlalchemy import String, Integer, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
-from core.database import BasicBaseAsync
+from core.database import RelationBaseAsync
 
 if TYPE_CHECKING:
     from src.modules.business_entities_groups.models import BusinessEntitiesGroup
     from src.modules.business_entities.models import BusinessEntity
 
 
-class BusinessEntitiesGroupConnection(BasicBaseAsync):
+class BusinessEntitiesGroupConnection(RelationBaseAsync):
     __tablename__ = "business_entities_groups_connections"
 
     ref_business_entities_group: Mapped[int] = mapped_column(
-        Integer, ForeignKey("business_entities_groups.id"), nullable=False
+        Integer, ForeignKey("business_entities_groups.id"), nullable=False, primary_key=True
     )
     ref_business_entities: Mapped[int] = mapped_column(
-        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("business_entities.id", ondelete="CASCADE"), nullable=False, primary_key=True
     )
 
     # Relationships

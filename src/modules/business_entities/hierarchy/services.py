@@ -40,7 +40,6 @@ class BusinessEntitiesHierarchyService(Service):
         stmt = (
             select(BusinessEntitiesHierarchy)
             .where(BusinessEntitiesHierarchy.ref_entity_top == entity_id)
-            .where(BusinessEntitiesHierarchy.is_deleted == False)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
@@ -57,7 +56,6 @@ class BusinessEntitiesHierarchyService(Service):
         stmt = (
             select(BusinessEntitiesHierarchy)
             .where(BusinessEntitiesHierarchy.ref_entity_bottom == entity_id)
-            .where(BusinessEntitiesHierarchy.is_deleted == False)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
@@ -76,10 +74,7 @@ class BusinessEntitiesHierarchyService(Service):
         """
         stmt = select(BusinessEntitiesHierarchy)
 
-        if status == "exists":
-            stmt = stmt.where(BusinessEntitiesHierarchy.is_deleted == False)
-        elif status == "deleted":
-            stmt = stmt.where(BusinessEntitiesHierarchy.is_deleted == True)
+        stmt = select(BusinessEntitiesHierarchy)
 
         # Count total
         count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -87,9 +82,9 @@ class BusinessEntitiesHierarchyService(Service):
 
         # Ordering
         if order == "desc":
-            stmt = stmt.order_by(BusinessEntitiesHierarchy.id.desc())
+            stmt = stmt.order_by(BusinessEntitiesHierarchy.ref_entity_top.desc())
         else:
-            stmt = stmt.order_by(BusinessEntitiesHierarchy.id.asc())
+            stmt = stmt.order_by(BusinessEntitiesHierarchy.ref_entity_top.asc())
 
         # Pagination
         offset = (max(page, 1) - 1) * page_size
@@ -114,7 +109,6 @@ class BusinessEntitiesHierarchyService(Service):
             select(BusinessEntitiesHierarchy)
             .where(BusinessEntitiesHierarchy.ref_entity_top == ref_entity_top)
             .where(BusinessEntitiesHierarchy.ref_entity_bottom == ref_entity_bottom)
-            .where(BusinessEntitiesHierarchy.is_deleted == False)
         )
         result = await db.execute(stmt)
         return result.scalars().first()

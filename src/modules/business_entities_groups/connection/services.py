@@ -40,7 +40,6 @@ class BusinessEntitiesGroupConnectionService(Service):
         stmt = (
             select(BusinessEntitiesGroupConnection)
             .where(BusinessEntitiesGroupConnection.ref_business_entities_group == group_id)
-            .where(BusinessEntitiesGroupConnection.is_deleted == False)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
@@ -57,7 +56,6 @@ class BusinessEntitiesGroupConnectionService(Service):
         stmt = (
             select(BusinessEntitiesGroupConnection)
             .where(BusinessEntitiesGroupConnection.ref_business_entities == entity_id)
-            .where(BusinessEntitiesGroupConnection.is_deleted == False)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
@@ -76,10 +74,7 @@ class BusinessEntitiesGroupConnectionService(Service):
         """
         stmt = select(BusinessEntitiesGroupConnection)
 
-        if status == "exists":
-            stmt = stmt.where(BusinessEntitiesGroupConnection.is_deleted == False)
-        elif status == "deleted":
-            stmt = stmt.where(BusinessEntitiesGroupConnection.is_deleted == True)
+        stmt = select(BusinessEntitiesGroupConnection)
 
         # Count total
         count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -87,9 +82,9 @@ class BusinessEntitiesGroupConnectionService(Service):
 
         # Ordering
         if order == "desc":
-            stmt = stmt.order_by(BusinessEntitiesGroupConnection.id.desc())
+            stmt = stmt.order_by(BusinessEntitiesGroupConnection.ref_business_entities_group.desc())
         else:
-            stmt = stmt.order_by(BusinessEntitiesGroupConnection.id.asc())
+            stmt = stmt.order_by(BusinessEntitiesGroupConnection.ref_business_entities_group.asc())
 
         # Pagination
         offset = (max(page, 1) - 1) * page_size
