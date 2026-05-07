@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from fastapi import HTTPException
-from typing import Optional, TYPE_CHECKING, List, Tuple
+from typing import Tuple, Any
 
 from core.lib.register.service import Service
 from core.lib.decorators.services import Services
@@ -9,7 +8,7 @@ from fastapi import Depends
 from fastapi_injectable import injectable
 
 from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
-from core.database import get_async_db
+from core.database import get_async_db, SessionAsync
 
 from ...values.services import ValuesService
 from ...comparison_values.services import ComparisonValuesService
@@ -30,9 +29,8 @@ from ...values.hierarchy.models import ValuesHierarchy
 from ...balances.models import Balance, BalanceType
 from ...balances_business_entities.models import BalanceBusinessEntity
 from ...comparison_values.models import ComparisonValue
-
-if TYPE_CHECKING:
-    from ...values.models import Value
+from ...comparison_values.meta.models import MetaComparisonValue
+from ..hooks.value_with_comparison import on_value_with_comparison_updated, trigger_value_with_comparison_updated
 
 
 @Services(ValuesService, ComparisonValuesService)
@@ -122,6 +120,7 @@ class DValueWithComparisonService(Service):
 
     @handle_service_errors
     @injectable
+    @trigger_value_with_comparison_updated
     async def update_value_with_comparison_service(
         self,
         id: str,
@@ -266,3 +265,73 @@ class DValueWithComparisonService(Service):
         builder = BuilderValueWithComparison(db)
         result = await builder.set_query(data).build().execute()
         return result, None
+
+
+@on_value_with_comparison_updated
+async def recursive_hierarchy_comparison_update(
+    result: Tuple[RSValueWithComparison, Any] | RSValueWithComparison, *args, **kwargs
+):
+    """
+    Background hook to recursively update comparison values in the hierarchy
+    when a child comparison value is updated.
+    """
+    rs_data = None
+    if isinstance(result, tuple) and len(result) == 2:
+        val, err = result
+        if not err and val:
+            rs_data = val
+    elif isinstance(result, RSValueWithComparison):
+        rs_data = result
+
+    if not rs_data:
+        return
+
+    child_value_id = rs_data.value.id
+    comparison_data = rs_data.comparison_value
+
+    async with SessionAsync() as db:
+        await _update_parents_recursively(child_value_id, comparison_data, db=db)
+        await db.commit()
+
+
+@injectable
+async def _update_parents_recursively(
+    child_id: int,
+    comparison_data: RSComparisonValue,
+    db: AsyncSession = Depends(get_async_db),
+):
+    stmt = select(ValuesHierarchy.ref_value_top).where(
+        ValuesHierarchy.ref_value_bottom == child_id
+    )
+    res = await db.execute(stmt)
+    parent_ids = res.scalars().all()
+
+    for parent_id in parent_ids:
+        # Get the comparison value of the parent
+        comp_stmt = select(ComparisonValue).where(
+            ComparisonValue.value_from == parent_id
+        )
+        comp_res = await db.execute(comp_stmt)
+        parent_comp = comp_res.scalars().first()
+
+        if parent_comp:
+            # Check for LOCK_UPDATE in meta_comparison
+            meta_stmt = select(MetaComparisonValue).where(
+                MetaComparisonValue.ref_comparison_value == parent_comp.id,
+                MetaComparisonValue.key == "LOCK_UPDATE",
+                MetaComparisonValue.value == "1",
+            )
+            meta_res = await db.execute(meta_stmt)
+            if meta_res.scalars().first():
+                continue  # Skip update due to lock
+
+            # Update parent comparison fields based on the child's new comparison data
+            parent_comp.quantity_to = comparison_data.quantity_to
+            parent_comp.quantity_from = comparison_data.quantity_from
+            parent_comp.value_to = comparison_data.value_to
+
+            db.add(parent_comp)
+            await db.flush()
+
+            # Recurse up the hierarchy
+            await _update_parents_recursively(parent_id, comparison_data, db=db)
