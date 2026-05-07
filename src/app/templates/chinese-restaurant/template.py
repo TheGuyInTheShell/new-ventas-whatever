@@ -315,8 +315,7 @@ class ChineseRestaurant(Template):
 
         # 2. Fetch inventory using DValueWithComparisonService
         query_data = QueryValuesWithComparison(
-            ref_business_entity=entity_id,
-            value=QueryValue(full_meta=True)
+            ref_business_entity=entity_id, value=QueryValue(full_meta=True)
         )
         result, error = (
             await self.DValueWithComparisonService.get_values_with_comparison_service(
@@ -328,6 +327,12 @@ class ChineseRestaurant(Template):
             raise HTTPException(
                 status_code=400,
                 detail=str(error.message),
+            )
+
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail="Inventory not found",
             )
 
         from src.modules.balances.models import BalanceType
@@ -344,12 +349,16 @@ class ChineseRestaurant(Template):
                     ),
                     None,
                 )
-                
+
                 # Extract balances by type
                 balances = getattr(val, "balances", [])
-                basic_balance = next((b for b in balances if b.type == BalanceType.BASIC), None)
-                adj_balance = next((b for b in balances if b.type == BalanceType.ADJUSTMENT), None)
-                
+                basic_balance = next(
+                    (b for b in balances if b.type == BalanceType.BASIC), None
+                )
+                adj_balance = next(
+                    (b for b in balances if b.type == BalanceType.ADJUSTMENT), None
+                )
+
                 inventory_items.append(
                     {
                         "id": val.id,
@@ -366,8 +375,12 @@ class ChineseRestaurant(Template):
                         # From balance
                         "basic_balance": basic_balance.quantity if basic_balance else 0,
                         "basic_balance_id": basic_balance.id if basic_balance else None,
-                        "adjustment_balance": adj_balance.quantity if adj_balance else 0,
-                        "adjustment_balance_id": adj_balance.id if adj_balance else None,
+                        "adjustment_balance": (
+                            adj_balance.quantity if adj_balance else 0
+                        ),
+                        "adjustment_balance_id": (
+                            adj_balance.id if adj_balance else None
+                        ),
                         # Legacy support
                         "balance": basic_balance.quantity if basic_balance else 0,
                         "balance_id": basic_balance.id if basic_balance else None,
