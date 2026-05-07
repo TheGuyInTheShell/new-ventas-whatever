@@ -15,7 +15,7 @@ from typing import (
     Optional,
     Iterator,
     ParamSpec,
-    TypeVar
+    TypeVar,
 )
 from .base.event import Event
 
@@ -33,13 +33,13 @@ class EventDependency:
     def __init__(self, dependency: Callable):
         self.dependency = dependency
 
+
 # interator injection of result
 def event_result(event: "ABCEvent"):
     try:
         return event.result
     except NameError:
         return None
-    
 
 
 class ChannelEvent(ABCChannelEvent):
@@ -57,8 +57,6 @@ class ChannelEvent(ABCChannelEvent):
     def __init__(self):
         # Override to prevent ABCChannelEvent.__init__ from resetting self.events
         pass
-        
-
 
     async def _call_listeners(
         self, listeners: Set[Callable], args: Tuple, kwargs: Dict, event: "ABCEvent"
@@ -75,12 +73,12 @@ class ChannelEvent(ABCChannelEvent):
             # Handle regular params and DependsEvent
             for name, param in sig.parameters.items():
                 if isinstance(param.default, EventDependency):
-                     # dependency logic
-                     dep_res = param.default.dependency(event)
-                     target_kwargs[name] = dep_res
+                    # dependency logic
+                    dep_res = param.default.dependency(event)
+                    target_kwargs[name] = dep_res
                 elif name in kwargs:
                     target_kwargs[name] = kwargs[name]
-                
+
             if has_var_kwargs:
                 # Add remaining kwargs if **kwargs exists
                 for k, v in kwargs.items():
@@ -174,7 +172,7 @@ class ChannelEvent(ABCChannelEvent):
             handler: Callable[P, R],
         ) -> Callable[P, R]:
 
-            event: "ABCEvent" | None = self.events.get(event_key)
+            event: ABCEvent | None = self.events.get(event_key)
 
             # If event not found create it
 
@@ -209,7 +207,7 @@ class ChannelEvent(ABCChannelEvent):
 
         """
 
-        event: "ABCEvent" | None = self.events.get(event_key)
+        event: ABCEvent | None = self.events.get(event_key)
 
         if event is None:
 
@@ -218,7 +216,6 @@ class ChannelEvent(ABCChannelEvent):
             self.events[event_key] = event
 
         try:
-
 
             return event.prepare(self)
 
