@@ -3,7 +3,7 @@ from core.lib.register import Partial
 
 from src.modules.auth.services import AuthService
 from src.modules.users.services import UsersService
-from src.modules.d.services.menu import MenuService
+from src.domain.services.menu import MenuService
 from fastapi.responses import HTMLResponse
 from fastcore.xml import Div, Ul, Li, A, Details, Summary, I, Span, to_xml
 from core.security.shield.shield import Shield

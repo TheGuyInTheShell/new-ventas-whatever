@@ -6,13 +6,13 @@ from core.lib.register import Controller
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 
-from src.modules.d.schemas.values_with_comparison import (
+from src.domain.schemas.values_with_comparison import (
     RQValueWithComparison,
     QueryValuesWithComparison,
     ResultValueWithComparison,
     RSValueWithComparison,
 )
-from src.modules.d.services.value_with_comparison import DValueWithComparisonService
+from src.domain.services.value_with_comparison import DValueWithComparisonService
 
 
 @Shield.register(context="Values With Comparison API")

@@ -10,10 +10,10 @@ from fastapi_injectable import injectable
 from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 from core.database import get_async_db, SessionAsync
 
-from ...values.services import ValuesService
-from ...comparison_values.services import ComparisonValuesService
-from ...values.schemas import RSValue
-from ...comparison_values.schemas import RSComparisonValue
+from ...modules.values.services import ValuesService
+from ...modules.comparison_values.services import ComparisonValuesService
+from ...modules.values.schemas import RSValue
+from ...modules.comparison_values.schemas import RSComparisonValue
 from ..schemas.values_with_comparison import (
     RQValueWithComparison,
     RSValueWithComparison,
@@ -25,11 +25,11 @@ from ..exceptions.value_with_comparison import (
     ComparisonCreationFailedError,
     ComparisonUpdateFailedError,
 )
-from ...values.hierarchy.models import ValuesHierarchy
-from ...balances.models import Balance, BalanceType
-from ...balances_business_entities.models import BalanceBusinessEntity
-from ...comparison_values.models import ComparisonValue
-from ...comparison_values.meta.models import MetaComparisonValue
+from ...modules.values.hierarchy.models import ValuesHierarchy
+from ...modules.balances.models import Balance, BalanceType
+from ...modules.balances_business_entities.models import BalanceBusinessEntity
+from ...modules.comparison_values.models import ComparisonValue
+from ...modules.comparison_values.meta.models import MetaComparisonValue
 from ..hooks.value_with_comparison import (
     on_value_with_comparison_updated,
     trigger_value_with_comparison_updated,

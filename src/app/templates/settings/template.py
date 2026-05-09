@@ -8,7 +8,7 @@ from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.csrf.csrf import CSRF
 from core.security.shield import Shield
 
-from src.modules.d.services.menu import MenuService
+from src.domain.services.menu import MenuService
 
 
 @Services(MenuService)

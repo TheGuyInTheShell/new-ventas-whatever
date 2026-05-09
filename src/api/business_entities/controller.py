@@ -5,10 +5,10 @@ from core.lib.decorators import Post, Services
 from core.security.shield import Shield
 from core.lib.http.errors import error_response
 
-from src.modules.d.services.business_entities_hierarchy_groups import (
+from src.domain.services.business_entities_hierarchy_groups import (
     BusinessEntitiesSearchByService,
 )
-from src.modules.d.schemas.business_entities_hierarchy_groups import (
+from src.domain.schemas.business_entities_hierarchy_groups import (
     RQBusinessEntitiesSearch,
     RQBusinessEntitySearch,
     RQBusinessEntitySearchChild,

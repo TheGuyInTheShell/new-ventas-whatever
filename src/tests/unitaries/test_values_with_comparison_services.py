@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.modules.d.services.value_with_comparison import DValueWithComparisonService
-from src.modules.d.schemas.values_with_comparison import (
+from src.domain.services.value_with_comparison import DValueWithComparisonService
+from src.domain.schemas.values_with_comparison import (
     RQValueWithComparison, QueryValuesWithComparison
 )
 from src.modules.values.schemas import RQValue, RSValue
@@ -73,7 +73,6 @@ class TestValuesWithComparisonServiceUnitaries:
             value_from=10, # Inherited from saved_value
             value_to=2,
             ref_business_entity=1,
-            meta=[]
         )
         values_with_comparison_service.ComparisonValuesService.create_comparison = AsyncMock(return_value=(mock_saved_comp, None))
         
@@ -117,7 +116,7 @@ class TestValuesWithComparisonServiceUnitaries:
             mock_builder_instance.execute.assert_called_once()
 
     async def test_update_children_recursively_reactive(self, mock_db):
-        from src.modules.d.services.value_with_comparison import _update_children_recursively
+        from src.domain.services.value_with_comparison import _update_children_recursively
 
         class MockComp:
             def __init__(self, id, value_from, quantity_to):

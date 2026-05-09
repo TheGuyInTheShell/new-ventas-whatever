@@ -6,7 +6,7 @@ from typing import Optional, List
 from src.modules.values.models import Value
 from src.modules.comparison_values.models import ComparisonValue
 from src.modules.values.hierarchy.models import ValuesHierarchy
-from src.modules.d.schemas.values_with_comparison import (
+from src.domain.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     ResultValueWithComparison,
     RSValueWithHierarchy,
@@ -173,7 +173,7 @@ class BuilderValueWithComparison:
                     meta_list = []
                     for m in getattr(value_obj, "meta", []):
                         meta_list.append(
-                            RSMetaValue(uid=m.uid, id=m.id, key=m.key, value=m.value)
+                            RSMetaValue(key=m.key, value=m.value)
                         )
 
                 balance_list = None

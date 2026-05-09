@@ -13,7 +13,7 @@ from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.shield import Shield
 
-from src.modules.d.services.menu import MenuService
+from src.domain.services.menu import MenuService
 
 
 @Services(MenuService)

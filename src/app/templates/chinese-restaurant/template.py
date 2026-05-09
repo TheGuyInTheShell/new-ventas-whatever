@@ -11,16 +11,16 @@ from core.services.ui.enqueue_js import enqueue_js, Site, Script
 from core.services.ui.enqueue_css import enqueue_css, CssSite, Style
 from core.security.shield import Shield
 
-from src.modules.d.services.menu import MenuService
-from src.modules.d.services.value_with_comparison import DValueWithComparisonService
-from src.modules.d.services.business_entities_hierarchy_groups import (
+from src.domain.services.menu import MenuService
+from src.domain.services.value_with_comparison import DValueWithComparisonService
+from src.domain.services.business_entities_hierarchy_groups import (
     BusinessEntitiesSearchByService,
 )
-from src.modules.d.schemas.business_entities_hierarchy_groups import (
+from src.domain.schemas.business_entities_hierarchy_groups import (
     RQBusinessEntitiesSearch,
     RQBusinessEntitySearchChild,
 )
-from src.modules.d.schemas.values_with_comparison import (
+from src.domain.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     QueryValue,
 )

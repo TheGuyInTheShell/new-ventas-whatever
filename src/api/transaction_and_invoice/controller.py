@@ -4,8 +4,8 @@ from core.lib.register import Controller
 from core.security.shield import Shield
 from core.lib.decorators.services import Services
 
-from src.modules.d.schemas.transaction_and_invoice import RQAdjustBalance, InvoiceSales
-from src.modules.d.services.transaction_and_invoice import DTransactionAndInvoiceService
+from src.domain.schemas.transaction_and_invoice import RQAdjustBalance, InvoiceSales
+from src.domain.services.transaction_and_invoice import DTransactionAndInvoiceService
 from core.lib.http.errors import error_response
 
 @Shield.register(context="Transaction and Invoice API")
