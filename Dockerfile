@@ -57,13 +57,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies explicitly
-COPY requirements.txt .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+# Add virtual environment to PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Install python dependencies explicitly
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
 
 # Copy application source code
 COPY . .
+
+# Sync project code (optional, ensures venv consistency)
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
 # Copy built frontend assets from the builder stage
 COPY --from=builder /app/src/app/web/out ./src/app/web/out
