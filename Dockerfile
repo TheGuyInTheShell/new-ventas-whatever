@@ -60,18 +60,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Add virtual environment to PATH
-ENV PATH="/app/.venv/bin:$PATH"
-
 # Install python dependencies explicitly
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project --system
 
 # Copy application source code
 COPY . .
 
-# Sync project code (optional, ensures venv consistency)
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
+# Sync project code (system-wide)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --system
 
 # Copy built frontend assets from the builder stage
 COPY --from=builder /app/src/app/web/out ./src/app/web/out
