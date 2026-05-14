@@ -60,28 +60,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Create non-root user (Coolify / Security best practice)
+# Create non-root user with home directory
 RUN addgroup --system --gid 1001 pythonapp && \
-    adduser --system --uid 1001 pythonapp
-RUN chown -R pythonapp:pythonapp /app
+    adduser --system --uid 1001 --gid 1001 --create-home pythonapp
 
 # Switch to non-root user
 USER pythonapp
+WORKDIR /app
 
 # Add virtual environment to PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Install python dependencies explicitly
 COPY --chown=pythonapp:pythonapp pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001,gid=1001 \
-    uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001 \
+    uv sync -v --frozen --no-dev --no-install-project
 
 # Copy application source code
 COPY --chown=pythonapp:pythonapp . .
 
 # Sync project code
-RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001,gid=1001 \
-    uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001 \
+    uv sync -v --frozen --no-dev
 
 # Copy built frontend assets from the builder stage
 COPY --chown=pythonapp:pythonapp --from=builder /app/src/app/web/out ./src/app/web/out
