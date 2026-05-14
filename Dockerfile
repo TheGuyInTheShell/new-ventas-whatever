@@ -62,7 +62,8 @@ RUN pip install --no-cache-dir uv==0.10.7
 
 # Create non-root user with home directory
 RUN addgroup --system --gid 1001 pythonapp && \
-    adduser --system --uid 1001 pythonapp
+    adduser --system --uid 1001 pythonapp && \
+    mkdir -p /app && chown pythonapp:pythonapp /app
 
 # Switch to non-root user
 USER pythonapp
