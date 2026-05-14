@@ -57,8 +57,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Install uv matching local version precisely
+RUN pip install --no-cache-dir uv==0.10.7
 
 # Create non-root user with home directory
 RUN addgroup --system --gid 1001 pythonapp && \
