@@ -1,5 +1,5 @@
 from sqlalchemy import Select, select, desc
-from database import BaseAsync, BaseSync
+from core.database import BaseAsync, BaseSync
 from typing import TypeVar, Union
 
 # Define the TypeVar to represent the instance

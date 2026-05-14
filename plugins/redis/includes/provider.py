@@ -1,12 +1,12 @@
 import asyncio
 import json
-from typing import Any, Awaitable, Callable, Optional, TypeVar, Union
+from typing import Any, Awaitable, Callable, Optional, TypeVar, Union, cast
 
 from redis.asyncio import Redis
 
 from core.lib.base.cache_provider import CacheProvider
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RedisProvider(CacheProvider):
@@ -52,15 +52,16 @@ class RedisProvider(CacheProvider):
     ) -> T:
         cached = await self.get(key)
         if cached is not None:
-            return cached  # type: ignore[return-value]
+            return cast(T, cached)
 
-        result = (
-            await callback()
-            if asyncio.iscoroutinefunction(callback)
-            else callback()
-        )
+        import inspect
+
+        result = callback()
+        if inspect.isawaitable(result):
+            result = await result
+
         await self.set(key, result, ttl or 300)
-        return result  # type: ignore[return-value]
+        return cast(T, result)
 
     async def flush_pattern(self, pattern: str) -> int:
         cursor: int = 0

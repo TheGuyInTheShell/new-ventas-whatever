@@ -23,7 +23,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, OperationalError
 
 
-from sqlalchemy_utils import create_view, get_mapper  # type: ignore
+from sqlalchemy_utils import create_view, get_mapper
 
 from sqlalchemy import MetaData
 
@@ -31,7 +31,15 @@ from .async_connection import SessionAsync
 
 from .sync_connection import SessionSync
 
-from core.database.exceptions import DatabaseError, DatabaseConnectionError, DatabaseQueryError, DatabaseIntegrityError, DatabaseDataError, DatabaseOperationalError, DatabaseProgrammingError  # type: ignore
+from core.database.exceptions import (
+    DatabaseError,
+    DatabaseConnectionError,
+    DatabaseQueryError,
+    DatabaseIntegrityError,
+    DatabaseDataError,
+    DatabaseOperationalError,
+    DatabaseProgrammingError,
+)
 
 from .async_connection import engineAsync
 
@@ -65,12 +73,15 @@ def generate_dll_view(tablename: str, is_deleted: str) -> str:
 
 class VanillaBaseAsync(DeclarativeBase):
     """Single DeclarativeBase — the one shared SQLAlchemy metadata registry."""
+
     pass
 
 
 class RelationBaseAsync(VanillaBaseAsync):
     """Base for pivot / metadata tables: no id, uid or soft-delete columns."""
+
     __abstract__ = True
+
     @classmethod
     async def count(cls, db: AsyncSession) -> int:
         try:
@@ -98,9 +109,12 @@ class RelationBaseAsync(VanillaBaseAsync):
             raise DatabaseError(str(e))
 
     @classmethod
-    async def delete_by_specification(cls, db: AsyncSession, specification: dict, auto_commit: bool = True):
+    async def delete_by_specification(
+        cls, db: AsyncSession, specification: dict, auto_commit: bool = True
+    ):
         try:
             from sqlalchemy import delete as sa_delete
+
             query = sa_delete(cls).where(**specification)
             result = await db.execute(query)
             if auto_commit:
@@ -134,6 +148,7 @@ class RelationBaseAsync(VanillaBaseAsync):
     def get_order_by(cls, order_by: str) -> Column | None:
         from sqlalchemy import MetaData, Table
         from .sync_connection import engineSync
+
         table = Table(cls.__tablename__, MetaData(), autoload_with=engineSync)
         return table.c.get(order_by)
 
@@ -142,14 +157,14 @@ class RelationBaseAsync(VanillaBaseAsync):
         cls,
         db: AsyncSession,
         pag: int = 1,
-        order_by: str = None,
+        order_by: Optional[str] = None,
         ord: str = "asc",
         filters: dict = {},
         options: Optional[List[Any]] = None,
     ) -> List[Self]:
         try:
             query = select(cls).filter_by(**filters)
-            
+
             if order_by:
                 order_column = getattr(cls, order_by, None)
                 if order_column is not None:
@@ -182,15 +197,57 @@ class RelationBaseAsync(VanillaBaseAsync):
     @classmethod
     async def find_by_specification(cls, db: AsyncSession, specification: dict):
         try:
-            result = await db.execute(select(cls).where(**specification))
+            result = await db.execute(select(cls).filter_by(**specification))
             return result
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 
+    @classmethod
+    async def find_one(
+        cls,
+        db: AsyncSession,
+        id: Union[int, str, dict],
+        options: Optional[List[Any]] = None,
+    ) -> Optional[Self]:
+        try:
+            if isinstance(id, dict):
+                query = select(cls).filter_by(**id)
+            else:
+                # Fallback for when single ID is passed to RelationBase (unsupported but avoids crashes)
+                return None
+
+            if options:
+                for opt in options:
+                    query = query.options(opt)
+
+            result = (await db.execute(query)).scalar_one_or_none()
+            return result
+        except SQLAlchemyError as e:
+            raise DatabaseQueryError(str(e))
+
+    @classmethod
+    async def delete(
+        cls, db: AsyncSession, id: Union[int, str, dict], auto_commit: bool = True
+    ):
+        if isinstance(id, dict):
+            return await cls.delete_by_specification(db, id, auto_commit)
+        return 0
+
+    @classmethod
+    async def update(
+        cls,
+        db: AsyncSession,
+        id: Union[int, str, dict],
+        data: dict,
+        auto_commit: bool = True,
+    ):
+        # Placeholder for relation updates
+        return None
 
 
 class BasicBaseAsync(VanillaBaseAsync):
     """Base for main entity tables: id, uid, soft-delete columns + RLS helpers."""
+
     __abstract__ = True
     uid: Mapped[str] = mapped_column(
         String,
@@ -545,15 +602,15 @@ class BaseAsync(DeclarativeBase):
 
     @classmethod
     def get_deleted(cls) -> Table:
-        return cls.deleted  # type: ignore
+        return getattr(cls, "deleted")
 
     @classmethod
     def get_exists(cls) -> Table:
 
-        return cls.exists  # type: ignore
+        return getattr(cls, "exists")
 
     @classmethod
-    def touple_to_dict(cls, arr: Sequence[Self]) -> List[Self]:
+    def touple_to_dict(cls, arr: Sequence[Any]) -> List[Self]:
 
         mapped = get_mapper(cls)
 
@@ -566,7 +623,7 @@ class BaseAsync(DeclarativeBase):
 
             for i, column in enumerate(colums):
 
-                obj.__setattr__(column.name, touple[i])  # type: ignore
+                obj.__setattr__(column.name, touple[i])
 
             result.append(obj)
         return result
@@ -606,16 +663,28 @@ class BaseAsync(DeclarativeBase):
 
                 sync_conn.commit()
 
-                model_cls.deleted = create_view(
-                    name=f"{model_cls.__tablename__}_deleted",
-                    selectable=select(model_cls).where(model_cls.is_deleted == True),
-                    metadata=BaseAsync.metadata,
+                setattr(
+                    model_cls,
+                    "deleted",
+                    create_view(
+                        name=f"{model_cls.__tablename__}_deleted",
+                        selectable=select(model_cls).where(
+                            model_cls.is_deleted == True
+                        ),
+                        metadata=BaseAsync.metadata,
+                    ),
                 )
 
-                model_cls.exists = create_view(
-                    name=f"{model_cls.__tablename__}_exists",
-                    selectable=select(model_cls).where(model_cls.is_deleted == False),
-                    metadata=BaseAsync.metadata,
+                setattr(
+                    model_cls,
+                    "exists",
+                    create_view(
+                        name=f"{model_cls.__tablename__}_exists",
+                        selectable=select(model_cls).where(
+                            model_cls.is_deleted == False
+                        ),
+                        metadata=BaseAsync.metadata,
+                    ),
                 )
 
                 sync_conn.close()
@@ -763,7 +832,9 @@ class BaseAsync(DeclarativeBase):
                 if status == "all"
                 else (await db.execute(base_query)).all()
             )
-            return result  # type: ignore
+            from typing import cast
+
+            return cast(List[Self], result)
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 
@@ -802,7 +873,9 @@ class BaseAsync(DeclarativeBase):
 
             else:  # status == 'all'
 
-                selectable = cls.__table__  # type: ignore
+                from typing import cast
+
+                selectable = cast(Table, cls.__table__)
 
                 base_query = select(cls).filter_by(**filters)
 
@@ -866,7 +939,11 @@ class BaseAsync(DeclarativeBase):
 
             exec_result = await db.execute(query)
             rows = exec_result.scalars().all() if status == "all" else exec_result.all()
-            return rows if status == "all" else cls.touple_to_dict(rows)  # type: ignore
+            from typing import cast
+
+            return cast(
+                List[Self], rows if status == "all" else cls.touple_to_dict(rows)
+            )
         except SQLAlchemyError as e:
             raise DatabaseQueryError(str(e))
 

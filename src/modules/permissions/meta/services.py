@@ -37,7 +37,10 @@ class PermissionsMetaService(Service):
         """
         Get a meta_permissions by ID from the database.
         """
-        return await MetaPermissions.find_one(db, id)
+        meta_obj = await MetaPermissions.find_one(db, id)
+        if not meta_obj:
+            raise Exception(f"MetaPermissions not found for id {id}")
+        return meta_obj
 
     @injectable
     async def get_meta_permissions_all(
@@ -76,6 +79,8 @@ class PermissionsMetaService(Service):
         Update a meta_permissions in the database.
         """
         meta_obj = await MetaPermissions.find_one(db, id)
+        if not meta_obj:
+            raise Exception(f"MetaPermissions not found for id {id}")
         meta_obj.key = key
         meta_obj.value = value
         meta_obj.ref_permission = ref_permission

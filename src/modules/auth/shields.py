@@ -199,11 +199,14 @@ class SysInitShield(ResolverProvider):
         type_str: str,
         action: str,
         context: str,
-        request: Request,
-        **kwargs,
+        request: Optional[Request] = None,
+        **kwargs: Any,
     ) -> bool:
 
         if settings.MODE == "DEVELOPMENT":
+            return True
+
+        if not request:
             return True
 
         # Use caching for system initialization check
@@ -234,7 +237,6 @@ class SignInShield(BasicResolverProvider):
     async def resolve(
         self,
         request: Request,
-        **kwargs,
     ) -> bool:
         if settings.MODE == "DEVELOPMENT":
             return True

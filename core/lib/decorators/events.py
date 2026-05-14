@@ -13,8 +13,8 @@ class Channel:
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
             
             # Annote the function for potential auto-routers (e.g. class methods)
-            func.__channel_event__ = event
-            func.__channel_action__ = action
+            setattr(func, "__channel_event__", event)
+            setattr(func, "__channel_action__", action)
             
             # Auto-register global functions (not attached to a class natively).
             # We assume it's global if 'self' is not the first parameter.

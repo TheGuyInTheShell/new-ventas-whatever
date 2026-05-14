@@ -72,4 +72,13 @@ class OptionsService(Service):
             Options.value == value,
         )
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        options_obj = result.scalar_one_or_none()
+        if options_obj:
+            return Option(
+                id=options_obj.id,
+                uid=options_obj.uid,
+                name=options_obj.name,
+                context=options_obj.context,
+                value=options_obj.value,
+            )
+        return None

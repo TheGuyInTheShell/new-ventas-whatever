@@ -61,7 +61,9 @@ def with_permission_hash_guard(func: Callable):
             option_record = query.scalar_one_or_none()
 
             if option_record and option_record.value == current_hash:
-                print(f"[Permissions] No changes detected for '{type}' permissions (Hash: {current_hash[:8]}...). Skipping sync.")  # type: ignore
+                print(
+                    f"[Permissions] No changes detected for '{type}' permissions (Hash: {current_hash[:8]}...). Skipping sync."
+                )
                 return
 
             # If hash is different or missing, proceed with the original function

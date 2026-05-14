@@ -47,6 +47,8 @@ class SignPartial(Partial):
                 "id": user.id,
             }
         )
+        if error or not access_token:
+            return HTMLResponse(content="Error creating access token", status_code=500)
 
         refresh_token, error = self.AuthService.create_refresh_token(
             data={
@@ -57,6 +59,8 @@ class SignPartial(Partial):
                 "id": user.id,
             }
         )
+        if error or not refresh_token:
+            return HTMLResponse(content="Error creating refresh token", status_code=500)
 
         content = to_xml(
             Div(

@@ -26,7 +26,7 @@ import hashlib
 import json
 import inspect
 from functools import wraps
-from typing import Callable, Optional, Annotated
+from typing import Callable, Optional, Annotated, cast, Any
 
 from fastapi import Request, Depends
 from fastapi_injectable import injectable
@@ -59,7 +59,7 @@ def cached(
 
         @wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> object:
-            request: Optional[Request] = kwargs.get("request")  # type: ignore[assignment]
+            request = cast(Optional[Request], kwargs.get("request"))
 
             if needs_request and "request" in kwargs:
                 # Remove dynamically injected request to avoid unexpected kwarg errors
@@ -84,7 +84,7 @@ def cached(
             if key_builder is not None:
                 cache_key = key_builder(request)
             else:
-                effective_prefix = prefix or func.__name__
+                effective_prefix = prefix or getattr(func, "__name__", "unknown")
                 key_data = json.dumps(
                     {
                         "path": request.url.path,
@@ -118,7 +118,7 @@ def cached(
                     "request", inspect.Parameter.KEYWORD_ONLY, annotation=Request
                 ),
             )
-            wrapper.__signature__ = sig.replace(parameters=params_list)  # type: ignore[attr-defined]
+            setattr(wrapper, "__signature__", sig.replace(parameters=params_list))
 
         return wrapper
 
@@ -126,7 +126,7 @@ def cached(
 
 
 # Define your dependencies that need app state access
-async def get_request(*, request: Request) -> Request:  # type: ignore[return-value]
+async def get_request(*, request: Request) -> Request:
     return request
 
 
@@ -203,7 +203,7 @@ def func_cached(
             if key_builder is not None:
                 cache_key = key_builder(func, args, kwargs)
             else:
-                effective_prefix = prefix or func.__qualname__
+                effective_prefix = prefix or getattr(func, "__qualname__", "unknown")
 
                 # Map positional args to their parameter names (skip 'self')
                 named: dict = {}

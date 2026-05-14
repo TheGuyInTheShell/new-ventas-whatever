@@ -11,16 +11,16 @@ from core.lib.register.service import Service
 
 # Shared float precision for all inventory/balance quantities
 from src.context.globals.round_quantity import _round_quantity
-from ...modules.balances.models import Balance, BalanceType
-from ..schemas.transaction_and_invoice import RQAdjustBalance
-from ...modules.invoices.models import Invoice
-from ...modules.transactions.models import Transaction
-from ...modules.invoice_transactions.models import InvoiceTransaction
-from ...modules.invoice_business_entities.models import InvoiceBusinessEntity
+from src.modules.balances.models import Balance, BalanceType
+from src.domain.schemas.transaction_and_invoice import RQAdjustBalance
+from src.modules.invoices.models import Invoice
+from src.modules.transactions.models import Transaction
+from src.modules.invoice_transactions.models import InvoiceTransaction
+from src.modules.invoice_business_entities.models import InvoiceBusinessEntity
 
-from ...modules.comparison_values.historical.models import ComparisonValueHistorical
-from ...modules.balances_business_entities.models import BalanceBusinessEntity
-from ..schemas.transaction_and_invoice import InvoiceSales
+from src.modules.comparison_values.historical.models import ComparisonValueHistorical
+from src.modules.balances_business_entities.models import BalanceBusinessEntity
+from src.domain.schemas.transaction_and_invoice import InvoiceSales
 
 
 class DTransactionAndInvoiceService(Service):

@@ -1,5 +1,5 @@
 import functools
-import asyncio
+import inspect
 from typing import Callable, TypeVar, Any, ParamSpec, Optional
 from enum import Enum
 from fastcore.xml import Link
@@ -27,12 +27,13 @@ def Style(
     if media:
         attrs["media"] = media
     attrs.update(kw)
-    
+
     return str(Link(**attrs))
 
 
 class CssSite(Enum):
     """Available locations for injecting CSS in the HTML template."""
+
     HEAD = "head"
 
 
@@ -42,11 +43,12 @@ def enqueue_css(
     """Decorator to enqueue a CSS link tag into the template globals."""
 
     def decorator(class_method: Callable[P, R]) -> Callable[P, R]:
-        
+
         # We need to check if the route is async so we handle it properly.
-        is_coroutine = asyncio.iscoroutinefunction(class_method)
+        is_coroutine = inspect.iscoroutinefunction(class_method)
 
         if is_coroutine:
+
             @functools.wraps(class_method)
             async def async_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
                 injectable = None
@@ -55,23 +57,32 @@ def enqueue_css(
                         instance: Any = args[0]
                         if hasattr(instance, "templates"):
                             template_provider: Any = instance.templates
-                            injectable = template_provider.env.globals.get("_injectable")
-                            
+                            injectable = template_provider.env.globals.get(
+                                "_injectable"
+                            )
+
                             if injectable:
                                 section = position.value
                                 if section == "head":
                                     injectable["head"]["styles"] += f"\n{css_tag}"
 
                     import typing
-                    _async_callable = typing.cast(typing.Callable[..., typing.Awaitable[typing.Any]], class_method)
+
+                    _async_callable = typing.cast(
+                        typing.Callable[..., typing.Awaitable[typing.Any]], class_method
+                    )
                     return await _async_callable(*args, **kwargs)
                 finally:
                     if injectable:
                         # Ensures the context gets emptied after being returned to client.
                         injectable["head"]["styles"] = ""
-            return async_inner  # type: ignore
+
+            from typing import cast
+
+            return cast(Callable[P, R], async_inner)
 
         else:
+
             @functools.wraps(class_method)
             def sync_inner(*args: P.args, **kwargs: P.kwargs) -> Any:
                 injectable = None
@@ -80,8 +91,10 @@ def enqueue_css(
                         instance: Any = args[0]
                         if hasattr(instance, "templates"):
                             template_provider: Any = instance.templates
-                            injectable = template_provider.env.globals.get("_injectable")
-                            
+                            injectable = template_provider.env.globals.get(
+                                "_injectable"
+                            )
+
                             if injectable:
                                 section = position.value
                                 if section == "head":
@@ -91,6 +104,9 @@ def enqueue_css(
                 finally:
                     if injectable:
                         injectable["head"]["styles"] = ""
-            return sync_inner  # type: ignore
+
+            from typing import cast
+
+            return cast(Callable[P, R], sync_inner)
 
     return decorator

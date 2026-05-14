@@ -37,7 +37,10 @@ class UsersMetaService(Service):
         """
         Get a meta by ID from the database.
         """
-        return await MetaUsers.find_one(db, id)
+        meta_obj = await MetaUsers.find_one(db, id)
+        if not meta_obj:
+            raise Exception(f"MetaUsers not found for id {id}")
+        return meta_obj
 
     @injectable
     async def get_meta_users_all(
@@ -76,6 +79,8 @@ class UsersMetaService(Service):
         Update a meta in the database.
         """
         meta_obj = await MetaUsers.find_one(db, id)
+        if not meta_obj:
+            raise Exception(f"MetaUsers not found for id {id}")
         meta_obj.key = key
         meta_obj.value = value
         meta_obj.ref_user = ref_user

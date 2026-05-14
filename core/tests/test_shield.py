@@ -37,7 +37,7 @@ def test_shield_create():
         type="action",
         description="A manual permission",
         context="GlobalContext",
-        meta=("module", "tests")
+        meta=[("module", "tests")]
     )
     
     # check if it ended up in registry under "GlobalContext"
@@ -45,8 +45,8 @@ def test_shield_create():
     assert node is not None
     assert len(node.permissions) == 1
     assert node.permissions[0].name == "test:manual"
-    assert node.permissions[0].meta.key == "module"
-    assert node.permissions[0].meta.value == "tests"
+    assert node.permissions[0].meta.pairs[0][0] == "module"
+    assert node.permissions[0].meta.pairs[0][1] == "tests"
 
 def test_shield_create_duplication_fails():
     Shield.create(name="test:dup", action="create", type="action", description="1", context="Ctx")

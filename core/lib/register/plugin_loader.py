@@ -1,4 +1,5 @@
 import importlib.util
+import importlib.machinery
 import inspect
 import sys
 from contextlib import asynccontextmanager

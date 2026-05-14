@@ -9,6 +9,7 @@ class SocketIO:
 
     sio: "AsyncServer"
     namespace: str
+    instance: "SocketIO"
 
     def __new__(cls):
         if not hasattr(cls, "instance"):

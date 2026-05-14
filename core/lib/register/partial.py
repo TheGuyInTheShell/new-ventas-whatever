@@ -29,7 +29,7 @@ class Partial:
 
     templates:  Union["Jinja2Templates", Any]
 
-    def __init__(self, template_provider: any) -> None:
+    def __init__(self, template_provider: Any) -> None:
         """Inicializa el controller de partials con el proveedor de templates.
 
         Args:

@@ -98,9 +98,10 @@ class Shield:
             # registered without an explicit context (holder[0] is None).
             # This avoids the fragile runtime globals lookup in shield_guard.
             for _, method_obj in inspect.getmembers(cls, predicate=callable):
-                if hasattr(method_obj, "__shield_context_holders__"):
-                    for holder in method_obj.__shield_context_holders__:
-                        if holder[0] is None:
+                holders = getattr(method_obj, "__shield_context_holders__", [])
+                if isinstance(holders, list):
+                    for holder in holders:
+                        if isinstance(holder, list) and holder and holder[0] is None:
                             holder[0] = ctx
 
             return cls
@@ -156,9 +157,11 @@ class Shield:
                 # 2. Fallback: runtime globals lookup (in case @Shield.register was not used)
                 if actual_context is None:
                     try:
-                        cls_name = func.__qualname__.split(".")[0]
-                        if cls_name in func.__globals__:
-                            cls_obj = func.__globals__[cls_name]
+                        qualname = getattr(func, "__qualname__", "")
+                        cls_name = qualname.split(".")[0]
+                        globals_dict = getattr(func, "__globals__", {})
+                        if cls_name in globals_dict:
+                            cls_obj = globals_dict[cls_name]
                             if hasattr(cls_obj, "__shield_context__"):
                                 actual_context = getattr(cls_obj, "__shield_context__")
                     except Exception:
@@ -222,9 +225,9 @@ class Shield:
 
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> R:
-                return func(*args, **kwargs)  # type: ignore
+                return func(*args, **kwargs) 
 
-            return wrapper  # type: ignore
+            return wrapper 
 
         return decorator
 
@@ -259,9 +262,9 @@ class Shield:
 
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> R:
-                return func(*args, **kwargs)  # type: ignore
+                return func(*args, **kwargs) 
 
-            return wrapper  # type: ignore
+            return wrapper 
 
         return decorator
 

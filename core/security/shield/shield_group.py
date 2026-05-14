@@ -223,9 +223,9 @@ class ShieldGroup:
     # Representación de depuración
     # ------------------------------------------------------------------
 
-    def __repr__(cls) -> str:  # type: ignore[override]
-        context = cls.__context__ or cls.__name__
-        nodes = list(cls._collect_nodes().keys())
+    def __repr__(self) -> str:
+        context = self.__context__ or type(self).__name__
+        nodes = list(self._collect_nodes().keys())
         return f"<ShieldGroup context={context!r} nodes={nodes}>"
 
 

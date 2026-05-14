@@ -244,7 +244,7 @@ def route(
             all_kwargs["dependencies"] = provided_deps + list(shield_deps)
 
         route_definition: RouteDefinition = RouteDefinition(
-            handler_name=func.__name__,
+            handler_name=getattr(func, "__name__", "unknown"),
             http_method=http_method,
             route_path=route_path,
             handler=func,
@@ -252,10 +252,10 @@ def route(
         )
 
         # Almacenar metadata en el método decorado para inspección posterior
-        func.__route_definition__ = route_definition  # type: ignore[attr-defined]
-        func.__http_method__ = http_method  # type: ignore[attr-defined]
-        func.__route_path__ = route_path  # type: ignore[attr-defined]
-        func.__kwargs__ = all_kwargs  # type: ignore[attr-defined]
+        setattr(func, "__route_definition__", route_definition)
+        setattr(func, "__http_method__", http_method)
+        setattr(func, "__route_path__", route_path)
+        setattr(func, "__kwargs__", all_kwargs)
 
         return func
 

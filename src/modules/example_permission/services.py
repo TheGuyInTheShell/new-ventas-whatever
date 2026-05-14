@@ -37,4 +37,4 @@ class ExamplePermissionService(Service):
             action="execute",
             type="service_action",
             context="ExamplePermissionService"
-        )(provider, callback=internal_action)
+        )(provider, internal_action)

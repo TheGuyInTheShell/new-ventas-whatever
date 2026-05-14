@@ -1,4 +1,4 @@
-﻿from fastapi_injectable import injectable
+from fastapi_injectable import injectable
 from core.config.settings import settings
 import time
 from typing import Union
@@ -99,7 +99,7 @@ class AuthService(Service):
     @handle_service_errors
     async def get_user(
         self, username: str, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[User]:
+    ) -> ServiceResult[UserModel]:
         try:
             query = await UserModel.find_by_colunm(db, "username", username)
             user = query.scalar_one_or_none()
@@ -114,9 +114,12 @@ class AuthService(Service):
     def verify_password(
         self, plane_password: str, current_password: str
     ) -> ServiceResult[bool]:
-        return bcrypt.checkpw(
-            plane_password.encode("utf-8"),
-            current_password.encode("utf-8"),
+        return (
+            bcrypt.checkpw(
+                plane_password.encode("utf-8"),
+                current_password.encode("utf-8"),
+            ),
+            None,
         )
 
     @handle_service_errors
@@ -135,7 +138,7 @@ class AuthService(Service):
         if not is_valid:
             return None, AuthenticationError()
 
-        user = User(
+        user_schema = User(
             uid=user.uid,
             id=user.id,
             username=user.username,
@@ -144,7 +147,7 @@ class AuthService(Service):
             role=user.role_ref,
             otp_enabled=user.otp_enabled,
         )
-        return user
+        return user_schema, None
 
     @handle_service_errors
     async def create_user(
@@ -167,7 +170,7 @@ class AuthService(Service):
             "email": user.email,
             "full_name": user.full_name,
             "role": user.role_ref,
-        }
+        }, None
 
     @handle_sync_errors
     def create_token(
@@ -185,7 +188,7 @@ class AuthService(Service):
         token_jwt = jwt.encode(
             copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM
         )
-        return token_jwt
+        return token_jwt, None
 
     @handle_sync_errors
     def create_refresh_token(
@@ -201,7 +204,7 @@ class AuthService(Service):
         token_jwt = jwt.encode(
             copy_user, key=self.SECRET_KEY_JWT, algorithm=self.USED_ALGORITHM
         )
-        return token_jwt
+        return token_jwt, None
 
     @handle_sync_errors
     def decode_token(self, token: str) -> ServiceResult[TokenData]:
@@ -214,7 +217,7 @@ class AuthService(Service):
         if not is_valid_time:
             raise TokenExpiredError()
 
-        return TokenData(**decode_cotent)
+        return TokenData(**decode_cotent), None
 
     @injectable
     @handle_service_errors
@@ -233,4 +236,4 @@ class AuthService(Service):
         user = query.scalar_one_or_none()
         if not user:
             return None, UserNotFoundError()
-        return user
+        return user, None

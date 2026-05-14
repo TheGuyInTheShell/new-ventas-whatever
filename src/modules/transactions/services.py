@@ -13,6 +13,7 @@ from .models import Transaction
 from .schemas import RQTransaction
 from ..comparison_values.models import ComparisonValue
 from ..comparison_values.services import ComparisonValuesService
+from core.lib.decorators.exceptions import BaseError
 
 if TYPE_CHECKING:
     from .schemas import RQSale
@@ -83,9 +84,9 @@ class TransactionsService(Service):
                     comparison, db=db
                 )
             )
-            if error:
+            if error or not historical:
                 await db.rollback()
-                return None, error
+                return None, error or BaseError("Failed to create historical snapshot")
 
             # Create Transaction
             transaction = Transaction(

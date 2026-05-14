@@ -34,7 +34,7 @@ class UsersService(Service):
         """
         auth_header = request.cookies.get("access_token")
         if not auth_header:
-            return None
+            return None, None
 
         payload, error = self.AuthService.decode_token(auth_header)
         if error or not payload:
@@ -48,14 +48,17 @@ class UsersService(Service):
             return None, UserNotFoundError()
 
         # Retornar el schema Pydantic con los datos del usuario
-        return UserSchema(
-            id=user.id,
-            username=user.username,
-            full_name=user.full_name,
-            email=user.email,
-            role=user.role_ref,
-            otp_enabled=user.otp_enabled,
-            created_at=user.created_at,
+        return (
+            UserSchema(
+                id=user.id,
+                username=user.username,
+                full_name=user.full_name,
+                email=user.email,
+                role=user.role_ref,
+                otp_enabled=user.otp_enabled,
+                created_at=user.created_at,
+            ),
+            None,
         )
 
     @injectable
@@ -81,14 +84,17 @@ class UsersService(Service):
             return None, UserNotFoundError()
 
         # Retornar el schema Pydantic con los datos del usuario
-        return UserSchema(
-            id=user.id,
-            username=user.username,
-            full_name=user.full_name,
-            email=user.email,
-            role=user.role_ref,
-            otp_enabled=user.otp_enabled,
-            created_at=user.created_at,
+        return (
+            UserSchema(
+                id=user.id,
+                username=user.username,
+                full_name=user.full_name,
+                email=user.email,
+                role=user.role_ref,
+                otp_enabled=user.otp_enabled,
+                created_at=user.created_at,
+            ),
+            None,
         )
 
     @injectable

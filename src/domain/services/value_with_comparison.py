@@ -10,27 +10,27 @@ from fastapi_injectable import injectable
 from core.lib.decorators.exceptions import handle_service_errors, ServiceResult
 from core.database import get_async_db, SessionAsync
 
-from ...modules.values.services import ValuesService
-from ...modules.comparison_values.services import ComparisonValuesService
-from ...modules.values.schemas import RSValue
-from ...modules.comparison_values.schemas import RSComparisonValue
-from ..schemas.values_with_comparison import (
+from src.modules.values.services import ValuesService
+from src.modules.comparison_values.services import ComparisonValuesService
+from src.modules.values.schemas import RSValue
+from src.modules.comparison_values.schemas import RSComparisonValue
+from src.domain.schemas.values_with_comparison import (
     RQValueWithComparison,
     RSValueWithComparison,
     QueryValuesWithComparison,
     ResultValueWithComparison,
 )
-from ..models.values_with_comparison import BuilderValueWithComparison
-from ..exceptions.value_with_comparison import (
+from src.domain.models.values_with_comparison import BuilderValueWithComparison
+from src.domain.exceptions.value_with_comparison import (
     ComparisonCreationFailedError,
     ComparisonUpdateFailedError,
 )
-from ...modules.values.hierarchy.models import ValuesHierarchy
-from ...modules.balances.models import Balance, BalanceType
-from ...modules.balances_business_entities.models import BalanceBusinessEntity
-from ...modules.comparison_values.models import ComparisonValue
-from ...modules.comparison_values.meta.models import MetaComparisonValue
-from ..hooks.value_with_comparison import (
+from src.modules.values.hierarchy.models import ValuesHierarchy
+from src.modules.balances.models import Balance
+from src.modules.balances_business_entities.models import BalanceBusinessEntity
+from src.modules.comparison_values.models import ComparisonValue
+from src.modules.comparison_values.meta.models import MetaComparisonValue
+from src.domain.hooks.value_with_comparison import (
     on_value_with_comparison_updated,
     trigger_value_with_comparison_updated,
 )

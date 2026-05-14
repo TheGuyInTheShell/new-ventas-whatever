@@ -13,8 +13,10 @@ class AdminCore(Plugin):
         
         try:
             admin_templates: Jinja2Templates = Jinja2Templates(directory="plugins/admin_core/web")
-            admin_templates.env.globals["_injectable"] = CONTEXT_INJECTABLE
-            admin_templates.env.globals["STATIC_URL"] = "/admin-static"
+            from typing import Any, cast
+            globals_dict = cast(dict[str, Any], admin_templates.env.globals)
+            globals_dict["_injectable"] = CONTEXT_INJECTABLE
+            globals_dict["STATIC_URL"] = "/admin-static"
 
 
             # Admin: prefix /admin

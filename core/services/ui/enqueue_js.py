@@ -1,5 +1,6 @@
+import inspect
 import functools
-import asyncio
+import inspect
 from typing import Callable, TypeVar, Any, ParamSpec, Coroutine, Optional
 from enum import Enum
 from fastcore.xml import Script as ScriptX
@@ -53,7 +54,7 @@ def enqueue_js(
     def decorator(class_method: Callable[P, R]) -> Callable[P, R]:
 
         # We need to check if the route is async so we handle it properly.
-        is_coroutine = asyncio.iscoroutinefunction(class_method)
+        is_coroutine = inspect.iscoroutinefunction(class_method)
 
         if is_coroutine:
 
@@ -93,7 +94,9 @@ def enqueue_js(
                         injectable["body"]["scripts_before"] = ""
                         injectable["head"]["scripts"] = ""
 
-            return async_inner  # type: ignore
+            from typing import cast
+
+            return cast(Callable[P, R], async_inner)
 
         else:
 
@@ -127,6 +130,8 @@ def enqueue_js(
                         injectable["body"]["scripts_before"] = ""
                         injectable["head"]["scripts"] = ""
 
-            return sync_inner  # type: ignore
+            from typing import cast
+
+            return cast(Callable[P, R], sync_inner)
 
     return decorator

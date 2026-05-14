@@ -13,8 +13,11 @@ def fastapi_class(tags: List[str | Enum] = []):
 
     @cbv(internal_router)
     class ViewFast:
+        router: APIRouter
+
         def __new__(cls):
             cls.router = internal_router
+            return super().__new__(cls)
            
 
         def __init__(self, templates: "Jinja2Templates"):

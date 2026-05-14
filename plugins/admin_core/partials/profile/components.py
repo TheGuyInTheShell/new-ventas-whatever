@@ -1,4 +1,4 @@
-from fastcore.xml import *
+from fastcore.xml import Div
 
 
 Div(cls='text-white bg-black')

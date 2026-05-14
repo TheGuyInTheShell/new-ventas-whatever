@@ -36,8 +36,10 @@ class RedisBridge(Plugin):
             # Late import to avoid circular references at module load time
             from .includes.provider import RedisProvider
 
+            from redis.asyncio import Redis
+            from typing import cast
             self.app.state.CACHE = RedisProvider(
-                client=redis_plugin.redis,
+                client=cast(Redis, redis_plugin.redis),
                 prefix="cache",
             )
             print("✅ Redis CacheProvider registered on app.state.CACHE")
