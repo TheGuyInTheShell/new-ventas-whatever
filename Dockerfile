@@ -68,8 +68,9 @@ RUN addgroup --system --gid 1001 pythonapp && \
 USER pythonapp
 WORKDIR /app
 
-# Add virtual environment to PATH
-ENV PATH="/app/.venv/bin:$PATH"
+# Add virtual environment to PATH and set UV cache directory to a writable path
+ENV PATH="/app/.venv/bin:$PATH" \
+    UV_CACHE_DIR="/app/.cache/uv"
 
 # Install python dependencies explicitly
 COPY --chown=pythonapp:pythonapp pyproject.toml uv.lock ./
