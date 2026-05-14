@@ -60,31 +60,35 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install python dependencies explicitly
-COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project --system
-
-# Copy application source code
-COPY . .
-
-# Sync project code (system-wide)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --system
-
-# Copy built frontend assets from the builder stage
-COPY --from=builder /app/src/app/web/out ./src/app/web/out
-COPY --from=builder /app/plugins ./plugins
-
-# Prepare start script
-COPY start.sh ./
-RUN chmod +x start.sh
-
 # Create non-root user (Coolify / Security best practice)
 RUN addgroup --system --gid 1001 pythonapp && \
     adduser --system --uid 1001 pythonapp
 RUN chown -R pythonapp:pythonapp /app
+
+# Switch to non-root user
 USER pythonapp
+
+# Add virtual environment to PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Install python dependencies explicitly
+COPY --chown=pythonapp:pythonapp pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001,gid=1001 \
+    uv sync --frozen --no-dev --no-install-project
+
+# Copy application source code
+COPY --chown=pythonapp:pythonapp . .
+
+# Sync project code
+RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001,gid=1001 \
+    uv sync --frozen --no-dev
+
+# Copy built frontend assets from the builder stage
+COPY --chown=pythonapp:pythonapp --from=builder /app/src/app/web/out ./src/app/web/out
+COPY --chown=pythonapp:pythonapp --from=builder /app/plugins ./plugins
+
+# Make start script executable
+RUN chmod +x start.sh
 
 EXPOSE 8000
 
