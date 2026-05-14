@@ -74,7 +74,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Install python dependencies explicitly
 COPY --chown=pythonapp:pythonapp pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001,gid=1001 \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --frozen --no-dev
 
 # Copy application source code
 COPY --chown=pythonapp:pythonapp . .
