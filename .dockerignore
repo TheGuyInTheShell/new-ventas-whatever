@@ -22,6 +22,7 @@ venv.bak/
 .mypy_cache/
 .pytest_cache/
 pytest_cache/
+.python-version
 
 # Project
 logs
