@@ -73,15 +73,13 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Install python dependencies explicitly
 COPY --chown=pythonapp:pythonapp pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001 \
-    uv sync -v --frozen --no-dev
+RUN uv sync -v --frozen --no-dev
 
 # Copy application source code
 COPY --chown=pythonapp:pythonapp . .
 
 # Sync project code
-RUN --mount=type=cache,target=/home/pythonapp/.cache/uv,uid=1001 \
-    uv sync -v --frozen --no-dev
+RUN uv sync -v --frozen --no-dev
 
 # Copy built frontend assets from the builder stage
 COPY --chown=pythonapp:pythonapp --from=builder /app/src/app/web/out ./src/app/web/out
