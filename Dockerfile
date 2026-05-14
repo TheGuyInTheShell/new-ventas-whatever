@@ -62,7 +62,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Create non-root user with home directory
 RUN addgroup --system --gid 1001 pythonapp && \
-    adduser --system --uid 1001 --gid 1001 --create-home pythonapp
+    adduser --system --uid 1001 pythonapp
 
 # Switch to non-root user
 USER pythonapp
