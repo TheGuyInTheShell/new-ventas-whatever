@@ -1,13 +1,13 @@
 import asyncio
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.modules.business_entities.models import BusinessEntity
-from src.modules.business_entities.meta.models import MetaBusinessEntity
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.modules.business_entities_groups.models import BusinessEntitiesGroup
-from src.modules.business_entities_groups.connection.models import (
-    BusinessEntitiesGroupConnection,
+from src.domain.services.business_entities_hierarchy_groups import (
+    BusinessEntitiesSearchByService,
 )
-from src.modules.business_entities.hierarchy.models import BusinessEntitiesHierarchy
+from src.domain.schemas.business_entities_hierarchy_groups import (
+    RQBusinessEntitiesSearch,
+)
 
 from core.config.settings import settings
 
