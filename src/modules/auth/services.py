@@ -96,19 +96,14 @@ class AuthService(Service):
         ).decode("utf-8")
 
     @injectable
-    @handle_service_errors
     async def get_user(
         self, username: str, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[UserModel]:
-        try:
-            query = await UserModel.find_by_colunm(db, "username", username)
-            user = query.scalar_one_or_none()
-            if user is None:
-                return None, UserNotFoundError()
-            return user, None
-        except Exception as e:
-            print(f"UserNotFoundError: {e}")
-            return None, UserNotFoundError(str(e))
+    ) -> UserModel:
+        query = await UserModel.find_by_colunm(db, "username", username)
+        user = query.scalar_one_or_none()
+        if user is None:
+            raise UserNotFoundError(f"User {username} not found")
+        return user
 
     @handle_sync_errors
     def verify_password(
@@ -126,11 +121,7 @@ class AuthService(Service):
     async def authenticate_user(
         self, username: str, password: str
     ) -> ServiceResult[User]:
-        user, error = await self.get_user(username)
-        if error:
-            return None, error
-        if user is None:
-            return None, UserNotFoundError()
+        user = await self.get_user(username)
 
         is_valid, error = self.verify_password(password, user.password)
         if error:
@@ -152,7 +143,7 @@ class AuthService(Service):
     @handle_service_errors
     async def create_user(
         self, db: AsyncSession, user_data: CreateUser
-    ) -> ServiceResult[dict]:
+    ) -> ServiceResult[User]:
         user = await UserModel(
             username=user_data.username,
             password=bcrypt.hashpw(
@@ -163,14 +154,18 @@ class AuthService(Service):
             role_ref=1,
         ).save(db)
 
-        return {
-            "uid": user.uid,
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.full_name,
-            "role": user.role_ref,
-        }, None
+        return (
+            User(
+                uid=user.uid,
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role_ref,
+                otp_enabled=user.otp_enabled,
+            ),
+            None,
+        )
 
     @handle_sync_errors
     def create_token(
@@ -236,4 +231,16 @@ class AuthService(Service):
         user = query.scalar_one_or_none()
         if not user:
             return None, UserNotFoundError()
-        return user, None
+
+        return (
+            User(
+                uid=user.uid,
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role_ref,
+                otp_enabled=user.otp_enabled,
+            ),
+            None,
+        )

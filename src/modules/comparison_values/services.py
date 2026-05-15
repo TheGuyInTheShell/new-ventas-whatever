@@ -16,7 +16,13 @@ from core.database import get_async_db
 
 from .models import ComparisonValue
 from .historical import ComparisonValueHistorical
-from .schemas import RQComparisonValue
+from .schemas import (
+    RQComparisonValue,
+    RSComparisonValue,
+    RSComparisonValueList,
+    RSConvert,
+    RSComparisonValueSimple,
+)
 from ..values.models import Value
 from .meta.models import MetaComparisonValue
 from src.modules.business_entities.meta.models import (
@@ -25,12 +31,10 @@ from src.modules.business_entities.meta.models import (
 
 
 class ComparisonValuesService(Service):
-    @handle_service_errors
-    @injectable
-    async def create_comparison(
-        self, data: RQComparisonValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[ComparisonValue]:
-        """Create a new comparison value or restore a deleted one (Upsert)"""
+    async def _create_comparison(
+        self, data: RQComparisonValue, db: AsyncSession
+    ) -> RSComparisonValue:
+        """Internal procedural method to create a comparison"""
         # Check if it exists (even if deleted) to handle UniqueConstraint conflicts
         stmt = select(ComparisonValue).where(
             ComparisonValue.value_from == data.value_from,
@@ -50,7 +54,6 @@ class ComparisonValuesService(Service):
             }
             await ComparisonValue.update(db, existing.id, update_data)
             comparison_id = existing.id
-            comparison = existing  # To use below
         else:
             comparison = ComparisonValue(
                 quantity_from=data.quantity_from,
@@ -82,17 +85,20 @@ class ComparisonValuesService(Service):
         result = await db.execute(stmt)
         comparison = result.scalar_one()
 
-        return comparison, None
+        return RSComparisonValue.model_validate(comparison)
 
     @handle_service_errors
     @injectable
-    async def update_comparison(
-        self,
-        comparison_id: int | str,
-        data: RQComparisonValue,
-        db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[ComparisonValue]:
-        """Update a comparison value"""
+    async def create_comparison(
+        self, data: RQComparisonValue, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSComparisonValue]:
+        """Public entry point for creating a comparison"""
+        return await self._create_comparison(data, db), None
+
+    async def _update_comparison(
+        self, comparison_id: int | str, data: RQComparisonValue, db: AsyncSession
+    ) -> RSComparisonValue:
+        """Internal procedural method to update a comparison"""
         # Fetch existing comparison to check for changes and snapshot if needed
         comparison = await ComparisonValue.find_one(db, comparison_id)
         if not comparison:
@@ -100,9 +106,7 @@ class ComparisonValuesService(Service):
 
         # Check if price (quantity_to) has changed
         if float(comparison.quantity_to) != float(data.quantity_to):
-            _, error = await self.create_historical_snapshot(comparison, db=db)
-            if error:
-                return None, error
+            await self.create_historical_snapshot(comparison, db=db)
 
         update_data = {
             "quantity_from": data.quantity_from,
@@ -124,7 +128,18 @@ class ComparisonValuesService(Service):
         )
 
         result = await db.execute(stmt)
-        return result.scalar_one(), None
+        return RSComparisonValue.model_validate(result.scalar_one())
+
+    @handle_service_errors
+    @injectable
+    async def update_comparison(
+        self,
+        comparison_id: int | str,
+        data: RQComparisonValue,
+        db: AsyncSession = Depends(get_async_db),
+    ) -> ServiceResult[RSComparisonValue]:
+        """Public entry point for updating a comparison"""
+        return await self._update_comparison(comparison_id, data, db), None
 
     @handle_service_errors
     @injectable
@@ -139,7 +154,7 @@ class ComparisonValuesService(Service):
         value_to: Optional[int | str] = None,
         ref_business_entity: Optional[int] = None,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[tuple[list[ComparisonValue], int]]:
+    ) -> ServiceResult[RSComparisonValueList]:
         """Get paginated list of comparisons with total count"""
         # Build filters dict, only include non-None values
         filters = {}
@@ -156,19 +171,33 @@ class ComparisonValuesService(Service):
 
         total = await ComparisonValue.count(db, status=status)
 
-        return (comparisons, total), None
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
-    @handle_service_errors
+        return (
+            RSComparisonValueList(
+                data=[RSComparisonValue.model_validate(c) for c in comparisons],
+                total=total,
+                page=page,
+                page_size=page_size,
+                total_pages=total_pages,
+                has_next=page < total_pages,
+                has_prev=page > 1,
+                next_page=page + 1 if page < total_pages else None,
+                prev_page=page - 1 if page > 1 else None,
+            ),
+            None,
+        )
+
     @injectable
     async def find_comparison_rate(
         self,
         from_value_id: int,
         to_value_id: int,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[tuple[float, bool]]:
+    ) -> tuple[float, bool]:
         """
         Find the conversion rate between two values.
-        Returns (rate, is_direct) tuple or None if not found.
+        Returns (rate, is_direct) tuple or raises ComparisonRateNotFoundError if not found.
         is_direct=True means from->to exists, False means to->from exists (inverse).
         """
         # Try direct comparison
@@ -181,7 +210,7 @@ class ComparisonValuesService(Service):
 
         if result:
             rate = result.quantity_to / result.quantity_from
-            return (rate, True), None
+            return (rate, True)
 
         # Try inverse comparison
         query = select(ComparisonValue).where(
@@ -194,9 +223,9 @@ class ComparisonValuesService(Service):
         if result:
             # Inverse rate: if 1 USD = 46 VES, then 1 VES = 1/46 USD
             rate = result.quantity_from / result.quantity_to
-            return (rate, False), None
+            return (rate, False)
 
-        return None, ComparisonRateNotFoundError()
+        raise ComparisonRateNotFoundError()
 
     @handle_service_errors
     @injectable
@@ -206,10 +235,10 @@ class ComparisonValuesService(Service):
         to_value_id: int,
         amount: float,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Optional[dict]]:
+    ) -> ServiceResult[RSConvert]:
         """
         Convert an amount from one value to another.
-        Returns conversion details or None if no rate found.
+        Returns conversion details or raises ComparisonRateNotFoundError if no rate found.
         """
         # Get the values
         from_value = await Value.find_one(db, from_value_id)
@@ -220,33 +249,27 @@ class ComparisonValuesService(Service):
         if not to_value:
             raise ValueNotFoundError(f"Target value with ID {to_value_id} not found.")
 
-        # Find the rate
-        rate_result, error = await self.find_comparison_rate(
-            from_value_id, to_value_id, db=db
-        )
-        if error:
-            return None, error
+        # Find the rate (will raise if not found)
+        rate, _ = await self.find_comparison_rate(from_value_id, to_value_id, db=db)
 
-        if not rate_result:
-            return None, ComparisonRateNotFoundError()
-
-        rate, _ = rate_result
         converted_amount = amount * rate
 
-        return {
-            "from_value": from_value,
-            "to_value": to_value,
-            "original_amount": amount,
-            "converted_amount": converted_amount,
-            "rate": rate,
-            "inverse_rate": 1 / rate if rate != 0 else 0,
-        }, None
+        return (
+            RSConvert(
+                from_value=RSComparisonValueSimple.model_validate(from_value),
+                to_value=RSComparisonValueSimple.model_validate(to_value),
+                original_amount=amount,
+                converted_amount=converted_amount,
+                rate=rate,
+                inverse_rate=1 / rate if rate != 0 else 0,
+            ),
+            None,
+        )
 
-    @handle_service_errors
     @injectable
     async def create_historical_snapshot(
         self, comparison: ComparisonValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[ComparisonValueHistorical]:
+    ) -> ComparisonValueHistorical:
         """Create a historical snapshot from a comparison value"""
         historical = ComparisonValueHistorical(
             quantity_from=comparison.quantity_from,
@@ -257,4 +280,4 @@ class ComparisonValuesService(Service):
             original_comparison_id=comparison.id,
         )
         await historical.save(db)
-        return historical, None
+        return historical

@@ -24,14 +24,11 @@ from core.lib.decorators.exceptions import handle_service_errors
 
 
 class ValuesService(Service):
-    @handle_service_errors
-    @injectable
-    async def create_value_with_meta(
-        self, value_data: RQValue, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[RSValue]:
+    async def _create_value_with_meta(
+        self, value_data: RQValue, db: AsyncSession
+    ) -> RSValue:
         """
-        Create a new value with optional metadata.
-        Also creates a price comparison if provided.
+        Internal procedural method to create a value.
         """
         value = Value(
             name=value_data.name,
@@ -41,11 +38,7 @@ class ValuesService(Service):
             identifier=value_data.identifier,
         )
         db.add(value)
-        try:
-            await db.flush()
-        except Exception as e:
-            await db.rollback()
-            raise ValueCreationError(f"Failed to create value: {str(e)}")
+        await db.flush()
 
         # Create metadata if provided
         if value_data.meta:
@@ -61,8 +54,8 @@ class ValuesService(Service):
             comparison = ComparisonValue(
                 quantity_from=1,
                 quantity_to=value_data.price,
-                value_from=value.id,  # The item we just created
-                value_to=value_data.currency_id,  # The currency (e.g. USD)
+                value_from=value.id,
+                value_to=value_data.currency_id,
                 ref_business_entity=value_data.ref_business_entity,
             )
             db.add(comparison)
@@ -83,7 +76,17 @@ class ValuesService(Service):
         await db.commit()
         await db.refresh(refreshed_value)
 
-        return RSValue.model_validate(refreshed_value), None
+        return RSValue.model_validate(refreshed_value)
+
+    @handle_service_errors
+    @injectable
+    async def create_value_with_meta(
+        self, value_data: RQValue, db: AsyncSession = Depends(get_async_db)
+    ) -> ServiceResult[RSValue]:
+        """
+        Public entry point for creating a single value.
+        """
+        return await self._create_value_with_meta(value_data, db), None
 
     @handle_service_errors
     @injectable
@@ -96,23 +99,19 @@ class ValuesService(Service):
         created_values: List[RSValue] = []
 
         for value_data in values_data:
-            value, error = await self.create_value_with_meta(value_data, db=db)
-            if error or value is None:
-                return None, error
+            value = await self._create_value_with_meta(value_data, db=db)
             created_values.append(value)
 
         return created_values, None
 
-    @handle_service_errors
-    @injectable
-    async def update_value_with_meta(
+    async def _update_value_with_meta(
         self,
         value_id: int | str,
         value_data: RQValue,
-        db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[RSValue]:
+        db: AsyncSession,
+    ) -> RSValue:
         """
-        Update a value and its metadata.
+        Internal procedural method to update a value.
         """
         # Check if exists
         value = await Value.find_one(db, value_id)
@@ -121,15 +120,14 @@ class ValuesService(Service):
 
         # Update main value
         update_data = {"name": value_data.name, "expression": value_data.expression}
-        try:
-            value = await Value.update(db, value_id, update_data)
-        except Exception as e:
-            raise ValueUpdateError(f"Failed to update value: {str(e)}")
+        value = await Value.update(db, value_id, update_data)
 
         # If meta is provided, delete existing and create new
         if value_data.meta is not None:
             # Delete existing meta
-            await MetaValue.delete_by_specification(db, specification={"ref_value": value.id})
+            await MetaValue.delete_by_specification(
+                db, specification={"ref_value": value.id}
+            )
 
             # Create new meta
             for meta_item in value_data.meta:
@@ -140,7 +138,20 @@ class ValuesService(Service):
 
         await db.commit()
         await db.refresh(value)
-        return RSValue.model_validate(value), None
+        return RSValue.model_validate(value)
+
+    @handle_service_errors
+    @injectable
+    async def update_value_with_meta(
+        self,
+        value_id: int | str,
+        value_data: RQValue,
+        db: AsyncSession = Depends(get_async_db),
+    ) -> ServiceResult[RSValue]:
+        """
+        Public entry point for updating a value.
+        """
+        return await self._update_value_with_meta(value_id, value_data, db), None
 
     @handle_service_errors
     @injectable

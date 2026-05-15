@@ -10,7 +10,7 @@ from core.lib.register.service import Service
 from core.lib.decorators.services import Services
 
 from .models import Transaction
-from .schemas import RQTransaction
+from .schemas import RQTransaction, RSTransaction
 from ..comparison_values.models import ComparisonValue
 from ..comparison_values.services import ComparisonValuesService
 from core.lib.decorators.exceptions import BaseError
@@ -29,7 +29,7 @@ class TransactionsService(Service):
         self,
         transaction_data: RQTransaction,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[Transaction]:
+    ) -> ServiceResult[RSTransaction]:
         transaction = Transaction(
             quantity=transaction_data.quantity,
             operation_type=transaction_data.operation_type,
@@ -46,7 +46,7 @@ class TransactionsService(Service):
         db.add(transaction)
         await db.commit()
         await db.refresh(transaction)
-        return transaction, None
+        return RSTransaction.model_validate(transaction), None
 
     @handle_service_errors
     @injectable
@@ -54,7 +54,7 @@ class TransactionsService(Service):
         self,
         sale_data: "RQSale",
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[List[Transaction]]:
+    ) -> ServiceResult[List[RSTransaction]]:
         """
         Process a sale:
         For each item:
@@ -78,15 +78,10 @@ class TransactionsService(Service):
                     f"No price comparison found for value {item.value_id} to currency {sale_data.currency_id}"
                 )
 
-            # Create snapshot
-            historical, error = (
-                await self.ComparisonValuesService.create_historical_snapshot(
-                    comparison, db=db
-                )
+            # Create snapshot (will now return the model directly or raise)
+            historical = await self.ComparisonValuesService.create_historical_snapshot(
+                comparison, db=db
             )
-            if error or not historical:
-                await db.rollback()
-                return None, error or BaseError("Failed to create historical snapshot")
 
             # Create Transaction
             transaction = Transaction(
@@ -109,4 +104,4 @@ class TransactionsService(Service):
         for t in transactions:
             await db.refresh(t)
 
-        return transactions, None
+        return [RSTransaction.model_validate(t) for t in transactions], None

@@ -43,7 +43,15 @@ class TestComparisonValuesServiceUnitaries:
         mock_result = MagicMock()
         mock_comparison = MagicMock()
         mock_comparison.id = 1
+        mock_comparison.uid = "test-uid"
+        mock_comparison.quantity_from = 1
+        mock_comparison.quantity_to = 10.5
+        mock_comparison.value_from = 1
+        mock_comparison.value_to = 2
         mock_comparison.ref_business_entity = 100
+        mock_comparison.source_value = None
+        mock_comparison.target_value = None
+        
         mock_result.scalar_one.return_value = mock_comparison
         mock_result.scalar_one_or_none.return_value = None # Ensure we take the create path
         mock_db.execute.return_value = mock_result
@@ -75,8 +83,14 @@ class TestComparisonValuesServiceUnitaries:
         
         mock_existing = MagicMock()
         mock_existing.id = 1
+        mock_existing.uid = "test-uid"
+        mock_existing.quantity_from = 1
         mock_existing.quantity_to = 10.5 # old price
+        mock_existing.value_from = 1
+        mock_existing.value_to = 2
         mock_existing.ref_business_entity = 100
+        mock_existing.source_value = None
+        mock_existing.target_value = None
         mock_find_one.return_value = mock_existing
         
         # Mock DB execute for the refresh query
@@ -85,7 +99,7 @@ class TestComparisonValuesServiceUnitaries:
         mock_db.execute.return_value = mock_result
         
         with patch.object(comparison_values_service, "create_historical_snapshot", new_callable=AsyncMock) as mock_snapshot:
-            mock_snapshot.return_value = (MagicMock(), None)
+            mock_snapshot.return_value = MagicMock()
             result, error = await comparison_values_service.update_comparison(1, update_dto, db=mock_db)
             assert error is None
             
@@ -101,11 +115,8 @@ class TestComparisonValuesServiceUnitaries:
         mock_result.scalar_one_or_none.return_value = mock_comp
         mock_db.execute.return_value = mock_result
         
-        result, error = await comparison_values_service.find_comparison_rate(1, 2, db=mock_db)
+        rate, is_direct = await comparison_values_service.find_comparison_rate(1, 2, db=mock_db)
         
-        assert error is None
-        assert result is not None
-        rate, is_direct = result
         assert rate == 50.0
         assert is_direct is True
         
@@ -125,11 +136,8 @@ class TestComparisonValuesServiceUnitaries:
         # First call returns None (direct not found), second returns comp (inverse found)
         mock_db.execute.side_effect = [mock_result_none, mock_result_found]
         
-        result, error = await comparison_values_service.find_comparison_rate(2, 1, db=mock_db)
+        rate, is_direct = await comparison_values_service.find_comparison_rate(2, 1, db=mock_db)
         
-        assert error is None
-        assert result is not None
-        rate, is_direct = result
         assert rate == 1.0 / 50.0
         assert is_direct is False
         
@@ -138,16 +146,26 @@ class TestComparisonValuesServiceUnitaries:
     @patch("src.modules.values.models.Value.find_one", new_callable=AsyncMock)
     async def test_convert_value(self, mock_find_value, comparison_values_service, mock_db):
         mock_from_value = MagicMock()
+        mock_from_value.id = 1
+        mock_from_value.uid = "val-1"
+        mock_from_value.name = "Val 1"
+        mock_from_value.expression = "EXP 1"
+        
         mock_to_value = MagicMock()
+        mock_to_value.id = 2
+        mock_to_value.uid = "val-2"
+        mock_to_value.name = "Val 2"
+        mock_to_value.expression = "EXP 2"
+        
         mock_find_value.side_effect = [mock_from_value, mock_to_value]
         
         with patch.object(comparison_values_service, "find_comparison_rate", new_callable=AsyncMock) as mock_rate:
-            mock_rate.return_value = ((50.0, True), None) # 1 USD = 50 VES
+            mock_rate.return_value = (50.0, True) # 1 USD = 50 VES
             
             result, error = await comparison_values_service.convert_value(1, 2, 10.0, db=mock_db)
             
             assert error is None
             assert result is not None
-            assert result["original_amount"] == 10.0
-            assert result["converted_amount"] == 500.0
-            assert result["rate"] == 50.0
+            assert result.original_amount == 10.0
+            assert result.converted_amount == 500.0
+            assert result.rate == 50.0

@@ -106,7 +106,7 @@ class UsersService(Service):
         email: str,
         full_name: str,
         db: AsyncSession = Depends(get_async_db),
-    ) -> ServiceResult[UserModel]:
+    ) -> ServiceResult[UserSchema]:
         """
         Crea el primer usuario owner del sistema y marca la inicialización como lista.
         """
@@ -138,4 +138,15 @@ class UsersService(Service):
             context="system_init", name="owner_signup", value="ready"
         )
 
-        return new_user, None
+        return (
+            UserSchema(
+                id=new_user.id,
+                username=new_user.username,
+                full_name=new_user.full_name,
+                email=new_user.email,
+                role=new_user.role_ref,
+                otp_enabled=new_user.otp_enabled,
+                created_at=new_user.created_at,
+            ),
+            None,
+        )

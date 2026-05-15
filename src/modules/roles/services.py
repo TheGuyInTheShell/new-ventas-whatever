@@ -35,6 +35,18 @@ class RolesService(Service):
     @injectable
     async def get_role_by_name(
         self, name: str, db: AsyncSession = Depends(get_async_db)
-    ) -> ServiceResult[Role | None]:
+    ) -> ServiceResult[RSRole]:
         result = await Role.find_by_colunm(db, "name", name)
-        return result.scalar_one_or_none(), None
+        role = result.scalar_one_or_none()
+        if not role:
+            return None, None
+        return (
+            RSRole(
+                id=role.id,
+                uid=role.uid,
+                name=role.name,
+                description=role.description,
+                level=role.level,
+            ),
+            None,
+        )

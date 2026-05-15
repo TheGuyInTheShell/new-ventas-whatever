@@ -68,8 +68,8 @@ class TestValuesWithComparisonServiceUnitaries:
             balances=[],
             comparison=None,
         )
-        values_with_comparison_service.ValuesService.create_value_with_meta = AsyncMock(
-            return_value=(mock_saved_value, None)
+        values_with_comparison_service.ValuesService._create_value_with_meta = AsyncMock(
+            return_value=mock_saved_value
         )
 
         mock_saved_comp = RSComparisonValue(
@@ -81,8 +81,8 @@ class TestValuesWithComparisonServiceUnitaries:
             value_to=2,
             ref_business_entity=1,
         )
-        values_with_comparison_service.ComparisonValuesService.create_comparison = (
-            AsyncMock(return_value=(mock_saved_comp, None))
+        values_with_comparison_service.ComparisonValuesService._create_comparison = (
+            AsyncMock(return_value=mock_saved_comp)
         )
 
         result, error = (
@@ -102,8 +102,6 @@ class TestValuesWithComparisonServiceUnitaries:
 
         # DB Commit was called
         mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_any_call(mock_saved_value)
-        mock_db.refresh.assert_any_call(mock_saved_comp)
 
     async def test_get_values_with_comparison_service(
         self, values_with_comparison_service, mock_db
