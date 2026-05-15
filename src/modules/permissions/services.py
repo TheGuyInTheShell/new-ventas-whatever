@@ -619,30 +619,24 @@ class PermissionsService(Service):
         type_str: str,
         db: AsyncSession = Depends(get_async_db),
     ):
-        try:
-            query = await db.execute(
-                select(Permission).where(
-                    Permission.name == name,
-                    Permission.context == context,
-                    Permission.action == action,
-                    Permission.type == type_str,
-                )
+        query = await db.execute(
+            select(Permission).where(
+                Permission.name == name,
+                Permission.context == context,
+                Permission.action == action,
+                Permission.type == type_str,
             )
-            return query.scalar_one_or_none()
-        finally:
-            await db.close()
+        )
+        return query.scalar_one_or_none()
 
     @injectable
     async def check_role_has_permission(
         self, role_id: int, permission_id: int, db: AsyncSession = Depends(get_async_db)
     ) -> bool:
-        try:
-            query = await db.execute(
-                select(RolePermission).where(
-                    RolePermission.role_id == role_id,
-                    RolePermission.permission_id == permission_id,
-                )
+        query = await db.execute(
+            select(RolePermission).where(
+                RolePermission.role_id == role_id,
+                RolePermission.permission_id == permission_id,
             )
-            return query.scalar_one_or_none() is not None
-        finally:
-            await db.close()
+        )
+        return query.scalar_one_or_none() is not None

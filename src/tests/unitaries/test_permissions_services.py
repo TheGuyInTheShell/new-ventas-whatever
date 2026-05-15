@@ -100,7 +100,6 @@ class TestPermissionsServiceUnitaries:
         assert result is not None
         assert result.name == "test"
         mock_db.execute.assert_called_once()
-        mock_db.close.assert_called_once()
 
     async def test_check_role_has_permission(self, permissions_service, mock_db):
         mock_result = MagicMock()
@@ -111,7 +110,6 @@ class TestPermissionsServiceUnitaries:
         
         assert result is True
         mock_db.execute.assert_called_once()
-        mock_db.close.assert_called_once()
 
 @pytest.mark.asyncio
 class TestPermissionsServiceIntegration:

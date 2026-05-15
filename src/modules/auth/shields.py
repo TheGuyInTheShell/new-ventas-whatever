@@ -1,4 +1,5 @@
 from typing import Optional, Any
+from loguru import logger
 
 from core.lib.decorators import Services
 from src.modules.permissions.services import PermissionsService
@@ -86,10 +87,13 @@ class AuthShieldApi(ResolverProvider):
                 )
 
             return True
-        except HTTPException as he:
-            raise he
+        except HTTPException:
+            raise
         except Exception as e:
-            raise HTTPException(status_code=403, detail=str(e))
+            # Re-raise unexpected exceptions to let FastAPI handle them (usually 500)
+            # instead of masking them as 403.
+            logger.error(f"[AuthShield] Unexpected error during resolution: {str(e)}")
+            raise e
 
 
 @Services(PermissionsService, AuthService)
