@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, JSON
+from sqlalchemy import ForeignKey, Integer, JSON, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -28,6 +28,8 @@ class ComparisonValueDecorator(RelationBaseAsync):
     comparison_decorators: Mapped[Optional[dict[str, Any]]] = mapped_column(
         JSON, nullable=True
     )
+
+    is_reactive: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     source_comparison: Mapped["ComparisonValue"] = relationship(
@@ -61,6 +63,8 @@ class ComparisonValueDecoratorHistorical(RelationBaseAsync):
     comparison_decorators: Mapped[Optional[dict[str, Any]]] = mapped_column(
         JSON, nullable=True
     )
+
+    is_reactive: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     source_comparison: Mapped["ComparisonValueHistorical"] = relationship(

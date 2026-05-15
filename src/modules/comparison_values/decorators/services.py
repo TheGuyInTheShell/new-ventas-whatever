@@ -44,11 +44,13 @@ class ComparisonValueDecoratorService(Service):
 
         if decorator:
             decorator.comparison_decorators = data.comparison_decorators
+            decorator.is_reactive = data.is_reactive
         else:
             decorator = ComparisonValueDecorator(
                 ref_comparation_values_from=data.ref_comparation_values_from,
                 ref_comparation_values_to=data.ref_comparation_values_to,
                 comparison_decorators=data.comparison_decorators,
+                is_reactive=data.is_reactive,
             )
             db.add(decorator)
 

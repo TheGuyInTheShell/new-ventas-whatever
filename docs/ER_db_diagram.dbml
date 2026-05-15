@@ -152,6 +152,14 @@ Table balances {
 }
 
 
+Table decorators_balances{
+  ref_balance_from varchar [ref: - balances.id, not null] // USD
+  balance_decorators json
+  is_reactive bool [default: false]
+  ref_balance_to varchar [ref: - balances.id, not null] // USD
+}
+
+
 Table transactions {
   ~shared
   quantity varchar
@@ -308,6 +316,7 @@ Table comparation_values{ // comparation values are the values that are compared
 Table decorators_comparation_values{
   ref_comparation_values_from int [ref: - comparation_values.id, not null] // USD
   comparison_decorators json
+  is_reactive bool [default: false]
   ref_comparation_values_to int [ref: - comparation_values.id, not null] // USD
 
 }

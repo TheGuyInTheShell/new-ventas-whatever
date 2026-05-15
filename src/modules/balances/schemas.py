@@ -1,17 +1,22 @@
 from typing import Optional, List
 from pydantic import BaseModel
-# from src.modules.values.schemas import RSValue # Avoid circular imports if possible or use if needed
 
 class RQBalance(BaseModel):
-    currency: str
+    type: str
+    quantity: float
     ref_value: int
 
+class RQUpdateBalance(BaseModel):
+    quantity: float
 
 class RSBalance(BaseModel):
     uid: str
     id: int
-    currency: str
+    type: str
+    quantity: float
     ref_value: int
+
+    model_config = {"from_attributes": True}
 
 class RSBalanceList(BaseModel):
     data: List[RSBalance]

@@ -5,6 +5,7 @@ class RQComparisonValueDecorator(BaseModel):
     ref_comparation_values_from: int
     ref_comparation_values_to: int
     comparison_decorators: Optional[dict[str, Any]] = None
+    is_reactive: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -12,6 +13,7 @@ class RSComparisonValueDecorator(BaseModel):
     ref_comparation_values_from: int
     ref_comparation_values_to: int
     comparison_decorators: Optional[dict[str, Any]] = None
+    is_reactive: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
