@@ -51,7 +51,9 @@ class DValueWithComparisonService(Service):
         The comparison automatically uses the newly created value as its source if not provided.
         Also handles optional linking to an inventory value and auto-creating balances.
         """
-        saved_value = await self.ValuesService._create_value_with_meta(data.value, db=db)
+        saved_value = await self.ValuesService._create_value_with_meta(
+            data.value, db=db
+        )
 
         if data.comparison_value.value_from is None:
             data.comparison_value.value_from = saved_value.id
@@ -120,18 +122,14 @@ class DValueWithComparisonService(Service):
         if existing_comparison:
             if data.comparison_value.value_from is None:
                 data.comparison_value.value_from = updated_value.id
-            updated_comparison = (
-                await self.ComparisonValuesService._update_comparison(
-                    existing_comparison.uid, data.comparison_value, db=db
-                )
+            updated_comparison = await self.ComparisonValuesService._update_comparison(
+                existing_comparison.uid, data.comparison_value, db=db
             )
         else:
             if data.comparison_value.value_from is None:
                 data.comparison_value.value_from = updated_value.id
-            updated_comparison = (
-                await self.ComparisonValuesService._create_comparison(
-                    data.comparison_value, db=db
-                )
+            updated_comparison = await self.ComparisonValuesService._create_comparison(
+                data.comparison_value, db=db
             )
 
         # 1. Sync Hierarchy: replace all parent links with the provided list

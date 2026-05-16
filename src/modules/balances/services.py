@@ -8,7 +8,7 @@ from core.database import get_async_db
 from .models import Balance
 from .schemas import RQBalance, RQUpdateBalance, RSBalance
 from .exceptions import BalanceNotFoundError
-from src.domain.hooks.balances import trigger_balance_updated
+from core.events import ChannelEvent
 
 
 class BalancesService(Service):
@@ -29,7 +29,6 @@ class BalancesService(Service):
 
     @handle_service_errors
     @injectable
-    @trigger_balance_updated
     async def update_balance(
         self,
         id: int,
@@ -47,4 +46,8 @@ class BalancesService(Service):
         await db.commit()
         await db.refresh(balance)
 
-        return RSBalance.model_validate(balance), None
+        balance_result = RSBalance.model_validate(balance)
+
+        ChannelEvent().emit_to("balance.updated").run(balance_result)
+
+        return balance_result, None
