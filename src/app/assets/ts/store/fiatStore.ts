@@ -2,7 +2,7 @@ import { createStore } from '@xstate/store';
 import { globalStore, globalActions } from './global-store';
 import { Comparison, Fiat, FiatStoreContext } from '../types/fiat';
 import { api } from '../lib/api';
-import { RSValue, RSComparisonValue, RSOption } from '../types/api';
+import { RSComparisonValue, RSOption } from '../types/api';
 
 const PERSIST_KEY = 'fiat-store-persist';
 
@@ -34,86 +34,117 @@ export const fiatStore = createStore({
 });
 
 fiatStore.subscribe((snapshot: { context: FiatStoreContext }) => {
-    localStorage.setItem(PERSIST_KEY, JSON.stringify(snapshot.context));
+    // Only persist serializable data — never persist Promises or functions
+    const { fiats, mainFiatId, comparisons, exchangeRates } = snapshot.context;
+    localStorage.setItem(PERSIST_KEY, JSON.stringify({ fiats, mainFiatId, comparisons, exchangeRates }));
 });
+
+// Module-level concurrency guard: Promises are NOT serializable and cannot live in XState context.
+let _fetchFiatPromise: Promise<void> | null = null;
 
 const API_BASE = '/api/v1';
 
 export const fiatActions = {
     async fetchFiats(): Promise<void> {
-        fiatStore.trigger.setLoading({ value: true });
-        try {
-            await globalActions.fetchFinanceHierarchy();
-            const snap = globalStore.getSnapshot().context;
-            console.log("[FiatStore] Snapshot before check:", snap);
-            const globalId = snap.globalEntityId;
-            const currentId = snap.entities['current'];
-            const customId = snap.entities['custom'];
+        // If already in-flight, return the same promise — prevents concurrent duplicate requests
+        if (_fetchFiatPromise) return _fetchFiatPromise;
 
-            if (!globalId) {
-                console.error("[FiatStore] Global ID missing. Context entities:", snap.entities);
-                throw new Error("Global business entity ID not found");
-            }
-            
-            console.log(`[FiatStore] Using globalId: ${globalId}, currentId: ${currentId}, customId: ${customId}`);
+        _fetchFiatPromise = (async () => {
+            fiatStore.trigger.setLoading({ value: true });
+            try {
+                await globalActions.fetchFinanceHierarchy();
+                const hierarchySnap = globalStore.getSnapshot().context;
+                const globalId = hierarchySnap.globalEntityId;
+                const currentId = hierarchySnap.entities['current'];
+                const customId = hierarchySnap.entities['custom'];
 
-            // Fetch fiats (usually from current or global)
-            const baseEntityId = currentId || globalId;
+                if (!globalId) {
+                    console.error("[FiatStore] Global ID missing. Context entities:", hierarchySnap.entities);
+                    throw new Error("Global business entity ID not found");
+                }
 
-            const { data: result } = await api.post<RSValue[]>('/values/query', {
-                type: 'fiat',
-                page_size: 100,
-                balances: true,
-                ref_business_entity: baseEntityId
-            });
-            const fiatList = Array.isArray(result) ? result : (result && (result as any).data && Array.isArray((result as any).data) ? (result as any).data : []);
-            fiatStore.trigger.setFiats({ data: fiatList as unknown as Fiat[] });
+                // 1. Fetch comparisons from entities that hold exchange-rate records.
+                //    The response embeds source_value + target_value with name & expression —
+                //    we derive the full Fiat list from these, avoiding entity-hierarchy guessing.
+                const fetchComps = async (id: number): Promise<RSComparisonValue[]> => {
+                    const { data } = await api.get<{ data: RSComparisonValue[] }>(`/comparison_values/?ref_business_entity=${id}`);
+                    return data.data || [];
+                };
 
-            // Fetch comparisons for both current and custom if they exist
-            const fetchComps = async (id: number): Promise<RSComparisonValue[]> => {
-                const { data } = await api.get<{ data: RSComparisonValue[] }>(`/comparison_values/?ref_business_entity=${id}`);
-                return data.data || [];
-            };
+                const compEntityIds = [currentId, customId].filter((id): id is number => id !== null);
+                const uniqueCompIds = [...new Set(compEntityIds)];
 
-            const [currentComps, customComps] = await Promise.all([
-                currentId ? fetchComps(currentId).then(list => list.map((c: RSComparisonValue) => ({ ...c, context: 'current' as const }))) : Promise.resolve([]),
-                customId ? fetchComps(customId).then(list => list.map((c: RSComparisonValue) => ({ ...c, context: 'custom' as const }))) : Promise.resolve([])
-            ]);
+                console.log(`[FiatStore] Fetching comparisons from entities: ${uniqueCompIds.join(', ')}`);
 
-            const comps: Comparison[] = [...currentComps, ...customComps];
-            fiatStore.trigger.setComparisons({ data: comps });
+                const compResults = await Promise.all(
+                    uniqueCompIds.map(id => fetchComps(id).then(list => list.map(c => ({
+                        ...c,
+                        context: id === currentId ? 'current' : 'custom'
+                    }))))
+                );
 
-            const { data: optData } = await api.get<RSOption[]>('/options/?context=global');
-            const mainOption = optData.find((o: RSOption) => o.name === 'main_fiat_currency');
-            if (mainOption) {
-                fiatStore.trigger.setMainFiat({ id: parseInt(mainOption.value) });
-            }
+                const comps: Comparison[] = compResults.flat();
+                fiatStore.trigger.setComparisons({ data: comps });
 
-            const rates: Record<number, number> = {};
-            const mainFiatId = fiatStore.getSnapshot().context.mainFiatId;
-            if (comps && mainFiatId) {
-                comps.forEach(comp => {
-                    if (Number(comp.value_from) === Number(mainFiatId) || Number(comp.value_to) === Number(mainFiatId)) {
-                        if (comp.value_from === mainFiatId) {
-                            rates[comp.value_to] = comp.quantity_to / comp.quantity_from;
-                        } else if (comp.value_to === mainFiatId) {
-                            rates[comp.value_from] = comp.quantity_from / comp.quantity_to;
+                // 2. Extract unique currencies from the embedded source_value / target_value.
+                //    This is authoritative: if a currency appears in a comparison, it exists.
+                const fiatMap = new Map<number, Fiat>();
+                comps.forEach((comp: any) => {
+                    [comp.source_value, comp.target_value].forEach((v: any) => {
+                        if (v && v.id != null) {
+                            const numId = Number(v.id);
+                            if (!fiatMap.has(numId)) {
+                                fiatMap.set(numId, {
+                                    id: numId,
+                                    name: v.name,
+                                    expression: v.expression
+                                });
+                            }
                         }
-                    }
+                    });
                 });
+
+                const fiatList = Array.from(fiatMap.values());
+                fiatStore.trigger.setFiats({ data: fiatList });
+
+                // 3. Fetch main currency option
+                const { data: optData } = await api.get<RSOption[]>('/options/?context=global');
+                const mainOption = optData.find((o: RSOption) => o.name === 'main_fiat_currency');
+                if (mainOption) {
+                    fiatStore.trigger.setMainFiat({ id: parseInt(mainOption.value) });
+                }
+
+                // 4. Build exchange rate map — always use Number() to avoid string/number mismatches
+                const rates: Record<number, number> = {};
+                const mainId = Number(fiatStore.getSnapshot().context.mainFiatId);
+                if (mainId && comps.length) {
+                    comps.forEach(comp => {
+                        const from = Number(comp.value_from);
+                        const to = Number(comp.value_to);
+                        if (from === mainId) {
+                            rates[to] = comp.quantity_to / comp.quantity_from;
+                        } else if (to === mainId) {
+                            rates[from] = comp.quantity_from / comp.quantity_to;
+                        }
+                    });
+                }
+                fiatStore.trigger.setExchangeRates({ rates });
+
+                console.log("[FiatStore] Successfully fetched context.", {
+                    fiats: fiatList.length,
+                    comparisons: comps.length,
+                    rates: Object.keys(rates).length
+                });
+
+            } catch (error) {
+                console.error("[FiatStore] Failed to fetch fiats: ", error);
+            } finally {
+                fiatStore.trigger.setLoading({ value: false });
+                _fetchFiatPromise = null;
             }
-            fiatStore.trigger.setExchangeRates({ rates });
+        })();
 
-            console.log("[FiatStore] Successfully fetched fiats and comparisons.", {
-                fiats: fiatList.length,
-                comparisons: comps.length
-            });
-
-        } catch (error) {
-            console.error("[FiatStore] Failed to fetch fiats: ", error);
-        } finally {
-            fiatStore.trigger.setLoading({ value: false });
-        }
+        return _fetchFiatPromise;
     },
 
     async setMainFiat(id: number): Promise<boolean> {

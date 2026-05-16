@@ -34,6 +34,9 @@ export interface RSComparisonValue {
     value_from: number;
     value_to: number;
     ref_business_entity: number;
+    // Eagerly loaded by the backend when selectinload is applied
+    source_value?: { id: number; name: string; expression: string };
+    target_value?: { id: number; name: string; expression: string };
 }
 
 /**

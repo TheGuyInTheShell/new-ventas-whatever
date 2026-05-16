@@ -20,6 +20,8 @@ export interface FiatStoreContext {
     comparisons: Comparison[];
     exchangeRates: Record<number, number>;
     loading: boolean;
+    // NOTE: fetchingPromise must NOT be here — Promises are not serializable.
+    // The concurrency guard lives as a module-level variable in fiatStore.ts.
 }
 
 export interface FiatStoreEventPayloads {

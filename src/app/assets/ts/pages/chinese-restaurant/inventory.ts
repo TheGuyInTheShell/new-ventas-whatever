@@ -54,21 +54,21 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             fiatStore.subscribe((snapshot: { context: FiatStoreContext }) => {
+                const oldMainId = this.fiatContext.mainFiatId;
                 this.fiatContext = snapshot.context;
+
+                // If mainFiatId just loaded and we don't have a viewFiatId yet, sync it
+                if (this.fiatContext.mainFiatId && (!this.viewFiatId || this.viewFiatId === oldMainId)) {
+                    this.viewFiatId = this.fiatContext.mainFiatId;
+                }
             });
 
             inventoryStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
                 this.inventoryContext = snapshot.context;
             });
 
-            if (this.fiatContext.fiats.length === 0) {
-                try {
-                    await fiatActions.fetchFiats();
-                } catch (e) {
-                    const msg = e instanceof Error ? e.message : 'Unknown error';
-                    notifyError(`Failed to load currency data: ${msg}`, 'Error');
-                }
-            }
+            // Initial fetch
+            await fiatActions.fetchFiats();
 
             if (!this.viewFiatId) {
                 this.viewFiatId = this.fiatContext.mainFiatId;
@@ -127,28 +127,29 @@ document.addEventListener('alpine:init', () => {
         },
 
         getViewFiatExpression(): string {
-            const fiatId = this.viewFiatId || this.fiatContext.mainFiatId;
+            const fiatId = Number(this.viewFiatId || this.fiatContext.mainFiatId);
             if (!fiatId) return '';
-            const fiat = this.fiatContext.fiats.find((f: any) => f.id === fiatId);
-            return fiat ? (fiat as any).expression : '';
+
+            const fiat = this.fiatContext.fiats.find((f: any) => Number(f.id) === fiatId);
+            return fiat ? ((fiat as any).expression || (fiat as any).name || '') : '';
         },
 
         getMainFiatName(): string {
-            const mainId = this.fiatContext.mainFiatId;
+            const mainId = Number(this.fiatContext.mainFiatId);
             if (!mainId) return '';
-            const fiat = this.fiatContext.fiats.find((f: any) => f.id === mainId);
+            const fiat = this.fiatContext.fiats.find((f: any) => Number(f.id) === mainId);
             return fiat ? (fiat as any).name : '';
         },
 
         calculatePrice(item: InventoryItem): number | string {
             if (!item.quantity_to || item.quantity_to <= 0) return '-';
 
-            const viewId = this.viewFiatId || this.fiatContext.mainFiatId;
+            const viewId = Number(this.viewFiatId || this.fiatContext.mainFiatId);
             if (!viewId) return item.quantity_to;
 
             // 1. Try to find an exact price match in the prices array
             if (item.prices && item.prices.length > 0) {
-                const exactMatch = item.prices.find(p => p.fiat_id === viewId);
+                const exactMatch = item.prices.find(p => Number(p.fiat_id) === viewId);
                 if (exactMatch) {
                     return parseFloat((exactMatch.quantity_to / exactMatch.quantity_from).toFixed(2));
                 }
@@ -158,13 +159,14 @@ document.addEventListener('alpine:init', () => {
             let price = item.quantity_to / item.quantity_from;
 
             // If item primary currency is different from view currency
-            if (item.value_to && item.value_to !== viewId) {
-                const mainId = this.fiatContext.mainFiatId;
+            const itemValueTo = Number(item.value_to);
+            if (itemValueTo && itemValueTo !== viewId) {
+                const mainId = Number(this.fiatContext.mainFiatId);
                 if (!mainId) return '-';
 
                 let priceInMain = price;
-                if (item.value_to !== mainId) {
-                    const rateToMain = this.fiatContext.exchangeRates[item.value_to];
+                if (itemValueTo !== mainId) {
+                    const rateToMain = this.fiatContext.exchangeRates[itemValueTo];
                     if (rateToMain) {
                         priceInMain = price / rateToMain;
                     } else {
