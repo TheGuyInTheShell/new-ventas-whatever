@@ -1,3 +1,4 @@
+import math
 from typing import Any, Tuple
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,8 +48,8 @@ async def _update_children_recursively(parent_balance_id: int, db: AsyncSession)
     for decorator in decorators:
         child_id = decorator.ref_balance_to
         
-        # Calculate new quantity for the child: Sum of all its reactive parents
-        parents_stmt = select(Balance).join(
+        # Calculate new quantity for the child: BOM / Limiting Reagent Logic
+        parents_stmt = select(Balance, BalanceDecorator).join(
             BalanceDecorator,
             BalanceDecorator.ref_balance_from == Balance.id
         ).where(
@@ -56,9 +57,23 @@ async def _update_children_recursively(parent_balance_id: int, db: AsyncSession)
             BalanceDecorator.is_reactive == True
         )
         parents_result = await db.execute(parents_stmt)
-        parents = parents_result.scalars().all()
+        parents_and_decorators = parents_result.all()
 
-        new_quantity = sum(p.quantity for p in parents)
+        possible_yields = []
+        for p_balance, p_decorator in parents_and_decorators:
+            ratio = 1.0
+            if p_decorator.balance_decorators and isinstance(p_decorator.balance_decorators, dict):
+                ratio = float(p_decorator.balance_decorators.get("required_quantity_per_unit", 1.0))
+            
+            if ratio <= 0:
+                ratio = 1.0 # Prevent division by zero
+                
+            max_yield = p_balance.quantity / ratio
+            possible_yields.append(max_yield)
+
+        new_quantity = 0.0
+        if possible_yields:
+            new_quantity = float(math.floor(min(possible_yields)))
 
         # Update the child balance
         child_stmt = select(Balance).where(Balance.id == child_id)

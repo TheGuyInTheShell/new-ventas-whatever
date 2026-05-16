@@ -75,8 +75,8 @@ class TestBalancesReactiveUpdate:
                 # First query: select(BalanceDecorator)
                 mock_res.scalars().all.return_value = [mock_decorator]
             elif call_count == 2:
-                # Second query: select(Balance).join(...)
-                mock_res.scalars().all.return_value = [mock_parent_balance]
+                # Second query: select(Balance, BalanceDecorator).join(...)
+                mock_res.all.return_value = [(mock_parent_balance, mock_decorator)]
             elif call_count == 3:
                 # Third query: select(Balance).where(id=child)
                 mock_res.scalar_one.return_value = mock_child_balance
@@ -90,7 +90,7 @@ class TestBalancesReactiveUpdate:
 
         await _update_children_recursively(parent_id, mock_db)
 
-        # Verify child was updated to sum of parents (100.0)
+        # Verify child was updated to min of yields (100.0 / 1.0 = 100.0)
         assert mock_child_balance.quantity == 100.0
 
     @pytest.mark.asyncio
