@@ -20,7 +20,7 @@ from src.domain.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     ResultValueWithComparison,
 )
-from src.domain.models.values_with_comparison import BuilderValueWithComparison
+from src.domain.repository.values_with_comparison import BuilderValueWithComparison
 from src.domain.exceptions.value_with_comparison import (
     ComparisonCreationFailedError,
     ComparisonUpdateFailedError,
