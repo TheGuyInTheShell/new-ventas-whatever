@@ -7,15 +7,37 @@ from core.security.shield import Shield, ShieldGroup
 
 
 class ChineseRestaurantChildren:
+    sells = Shield.can(
+        "chinese_restaurant.sells",
+        "read",
+        "ui",
+        description="Punto de venta y visualización final",
+        meta=[
+            ("icon", "badge-dollar-sign"),
+            ("route", "/chinese-restaurant/sells"),
+            ("name", "Ventas"),
+        ],
+    )
     menu = Shield.can(
         "chinese_restaurant.menu",
         "read",
         "ui",
-        description="Ver el menú del restaurante chino",
+        description="Gestión de platillos del menú",
         meta=[
-            ("icon", "utensils"),
+            ("icon", "book-open"),
             ("route", "/chinese-restaurant/menu"),
             ("name", "Menú"),
+        ],
+    )
+    preparations = Shield.can(
+        "chinese_restaurant.preparations",
+        "read",
+        "ui",
+        description="Gestión de preparaciones intermedias",
+        meta=[
+            ("icon", "chef-hat"),
+            ("route", "/chinese-restaurant/preparations"),
+            ("name", "Preparaciones"),
         ],
     )
     orders = Shield.can(

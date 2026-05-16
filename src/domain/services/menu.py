@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, Any, Set
+from typing import Dict, Any, Set, cast
 
 from fastapi import Depends, Request
 from sqlalchemy import select
@@ -149,11 +149,11 @@ class MenuService(Service):
                 k = item.get("key")
                 v = item.get("value")
                 if k == "icon":
-                    icon = v
+                    icon = cast(str, v)
                 elif k == "route":
-                    route = v
+                    route = cast(str, v)
                 elif k == "name":
-                    display_name = v
+                    display_name = cast(str, v)
 
         # Limpiamos prefijo mdi- por compatibilidad si es necesario,
         # pero se usará el valor directo que viene de base de datos
@@ -185,21 +185,35 @@ class MenuService(Service):
                     child_node.get("description") or child_key.replace("_", " ").title()
                 )
 
+                child_icon = "circle"  # default for children
                 for item in child_meta_list:
                     if isinstance(item, dict):
                         chk = item.get("key")
                         chv = item.get("value")
                         if chk == "route":
-                            child_route = chv
+                            child_route = cast(str, chv)
                         elif chk == "name":
-                            child_display = chv
+                            child_display = cast(str, chv)
+                        elif chk == "icon":
+                            child_icon = cast(str, chv)
+
+                lucide_child_icon = (
+                    child_icon.replace("mdi-", "")
+                    if child_icon.startswith("mdi-")
+                    else child_icon
+                )
+                child_icon_elem = I(
+                    data_lucide=lucide_child_icon,
+                    cls="size-3.5 transition-premium group-hover/child:scale-110",
+                )
 
                 child_items.append(
                     Li(
                         A(
-                            child_display,
+                            child_icon_elem,
+                            Span(child_display),
                             href=child_route,
-                            cls="text-xs py-1.5 transition-premium hover:text-white hover:translate-x-1 inline-block text-base-content/70",
+                            cls="group/child flex items-center gap-2 text-xs py-1.5 transition-premium hover:text-white hover:translate-x-1 text-base-content/70",
                         )
                     )
                 )

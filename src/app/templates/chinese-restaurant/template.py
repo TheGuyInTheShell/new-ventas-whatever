@@ -141,6 +141,29 @@ class ChineseRestaurant(Template):
             "menu": await self.MenuService.get_menu_component(request),
         }
 
+    @Get("/sells", response_class=HTMLResponse)
+    @Shield.need(name="chinese_restaurant.sells_page", action="read", type="template")
+    @enqueue_css(Style(href="/app-static/css/app.css"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
+    @enqueue_js(
+        Script(
+            src="/app-static/ts/pages/chinese-restaurant/sells.js",
+            type="module",
+            defer=True,
+        ),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
+        position=Site.BODY_AFTER,
+    )
+    async def sells_page(self, request: Request) -> HTMLResponse:
+        context = await self._get_common_context(request)
+        context.update({"dishes": self.mock_dishes})
+        return self.templates.TemplateResponse(
+            request, name="pages/chinese-restaurant/sells.html", context=context
+        )
+
     @Get("/menu", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.menu_page", action="read", type="template")
     @enqueue_css(Style(href="/app-static/css/app.css"))
@@ -159,10 +182,120 @@ class ChineseRestaurant(Template):
     )
     async def menu_page(self, request: Request) -> HTMLResponse:
         context = await self._get_common_context(request)
-        context.update({"dishes": self.mock_dishes})
+        dishes = await self._fetch_inventory_items(["dish"])
+        context.update({"dishes": dishes or self.mock_dishes})
         return self.templates.TemplateResponse(
             request, name="pages/chinese-restaurant/menu.html", context=context
         )
+
+    @Get("/preparations", response_class=HTMLResponse)
+    @Shield.need(name="chinese_restaurant.preparations_page", action="read", type="template")
+    @enqueue_css(Style(href="/app-static/css/app.css"))
+    @enqueue_js(Script(src="/app-static/ts/icons.js", type="module"))
+    @enqueue_js(
+        Script(
+            src="/app-static/ts/pages/chinese-restaurant/preparations.js",
+            type="module",
+            defer=True,
+        ),
+        position=Site.HEAD,
+    )
+    @enqueue_js(
+        Script(src="/app-static/ts/index.js", type="module", defer=True),
+        position=Site.BODY_AFTER,
+    )
+    async def preparations_page(self, request: Request) -> HTMLResponse:
+        context = await self._get_common_context(request)
+        items = await self._fetch_inventory_items(["made-from", "by-product"])
+        context.update({"preparations_items": items})
+        return self.templates.TemplateResponse(
+            request, name="pages/chinese-restaurant/preparations.html", context=context
+        )
+
+    async def _fetch_inventory_items(self, allowed_types: list[str]) -> list[dict]:
+        # 1. Fetch the business entity ID for 'chinese-restaurant' -> 'inventory'
+        entity_search_query = RQBusinessEntitySearchChild(
+            name="chinese-restaurant", child_name="inventory"
+        )
+        entity_result, error = (
+            await self.BusinessEntitiesSearchByService.search_entity_by_child(
+                entity_search_query
+            )
+        )
+
+        if error or not entity_result:
+            return []
+
+        entity_id = entity_result.child.id
+
+        # 2. Fetch inventory using DValueWithComparisonService
+        query_data = QueryValuesWithComparison(
+            ref_business_entity=entity_id, value=QueryValue(full_meta=True)
+        )
+        result, error = (
+            await self.DValueWithComparisonService.get_values_with_comparison_service(
+                query_data
+            )
+        )
+
+        if error or not result:
+            return []
+
+        from src.modules.balances.models import BalanceType
+
+        items = []
+        if result.value:
+            for val in result.value:
+                if val.type not in allowed_types:
+                    continue
+
+                # Find matching comparison
+                comp = next(
+                    (
+                        c
+                        for c in (result.comparison_value or [])
+                        if c.value_from == val.id
+                    ),
+                    None,
+                )
+
+                # Extract balances by type
+                balances = getattr(val, "balances", [])
+                basic_balance = next(
+                    (b for b in balances if b.type == BalanceType.BASIC), None
+                )
+                adj_balance = next(
+                    (b for b in balances if b.type == BalanceType.ADJUSTMENT), None
+                )
+
+                items.append(
+                    {
+                        "id": val.id,
+                        "uid": val.uid,
+                        "name": val.name,
+                        "type": val.type,
+                        "expression": val.expression,
+                        "identifier": val.identifier,
+                        # From comparison
+                        "comparison_id": comp.id if comp else None,
+                        "quantity_from": comp.quantity_from if comp else 1,
+                        "quantity_to": comp.quantity_to if comp else 0,
+                        "value_to": comp.value_to if comp else None,
+                        # From balance
+                        "basic_balance": basic_balance.quantity if basic_balance else 0,
+                        "basic_balance_id": basic_balance.id if basic_balance else None,
+                        "adjustment_balance": (
+                            adj_balance.quantity if adj_balance else 0
+                        ),
+                        "adjustment_balance_id": (
+                            adj_balance.id if adj_balance else None
+                        ),
+                        # Legacy support
+                        "balance": basic_balance.quantity if basic_balance else 0,
+                        "balance_id": basic_balance.id if basic_balance else None,
+                    }
+                )
+        return items
 
     @Get("/orders", response_class=HTMLResponse)
     @Shield.need(name="chinese_restaurant.orders_page", action="read", type="template")
@@ -295,98 +428,9 @@ class ChineseRestaurant(Template):
         position=Site.HEAD,
     )
     async def inventory_page(self, request: Request) -> HTMLResponse:
-        # 1. Fetch the business entity ID for 'chinese-restaurant'
-        entity_search_query = RQBusinessEntitySearchChild(
-            name="chinese-restaurant", child_name="inventory"
+        inventory_items = await self._fetch_inventory_items(
+            ["ingredient", "consumable", "utensil", "other"]
         )
-        entity_result, error = (
-            await self.BusinessEntitiesSearchByService.search_entity_by_child(
-                entity_search_query
-            )
-        )
-
-        if error or not entity_result:
-            raise HTTPException(
-                status_code=404,
-                detail=str(error.message) if error else "Business entity not found",
-            )
-
-        entity_id = entity_result.child.id
-
-        # 2. Fetch inventory using DValueWithComparisonService
-        query_data = QueryValuesWithComparison(
-            ref_business_entity=entity_id, value=QueryValue(full_meta=True)
-        )
-        result, error = (
-            await self.DValueWithComparisonService.get_values_with_comparison_service(
-                query_data
-            )
-        )
-
-        if error:
-            raise HTTPException(
-                status_code=400,
-                detail=str(error.message),
-            )
-
-        if not result:
-            raise HTTPException(
-                status_code=404,
-                detail="Inventory not found",
-            )
-
-        from src.modules.balances.models import BalanceType
-
-        inventory_items = []
-        if result.value:
-            for val in result.value:
-                # Find matching comparison
-                comp = next(
-                    (
-                        c
-                        for c in (result.comparison_value or [])
-                        if c.value_from == val.id
-                    ),
-                    None,
-                )
-
-                # Extract balances by type
-                balances = getattr(val, "balances", [])
-                basic_balance = next(
-                    (b for b in balances if b.type == BalanceType.BASIC), None
-                )
-                adj_balance = next(
-                    (b for b in balances if b.type == BalanceType.ADJUSTMENT), None
-                )
-
-                inventory_items.append(
-                    {
-                        "id": val.id,
-                        "uid": val.uid,
-                        "name": val.name,
-                        "type": val.type,
-                        "expression": val.expression,
-                        "identifier": val.identifier,
-                        # From comparison
-                        "comparison_id": comp.id if comp else None,
-                        "quantity_from": comp.quantity_from if comp else 1,
-                        "quantity_to": comp.quantity_to if comp else 0,
-                        "value_to": comp.value_to if comp else None,
-                        # From balance
-                        "basic_balance": basic_balance.quantity if basic_balance else 0,
-                        "basic_balance_id": basic_balance.id if basic_balance else None,
-                        "adjustment_balance": (
-                            adj_balance.quantity if adj_balance else 0
-                        ),
-                        "adjustment_balance_id": (
-                            adj_balance.id if adj_balance else None
-                        ),
-                        # Legacy support
-                        "balance": basic_balance.quantity if basic_balance else 0,
-                        "balance_id": basic_balance.id if basic_balance else None,
-                    }
-                )
-
         context = await self._get_common_context(request)
         context.update({"inventory_items": inventory_items})
 

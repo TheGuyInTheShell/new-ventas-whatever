@@ -1,12 +1,12 @@
 {% extends "layouts/panel.html" %}
 
 {% block content %}
-<div x-data="chineseRestaurantMenu({{ dishes | tojson }})" class="space-y-6">
+<div x-data="chineseRestaurantSells({{ dishes | tojson }})" class="space-y-6">
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-base-content">Restaurant Menu Builder</h1>
+            <h1 class="text-2xl font-bold text-base-content">Restaurant Sells (POS)</h1>
             <p class="text-sm text-base-content/60">Manage your dishes and pricing</p>
         </div>
         <button @click="isModalOpen = true" class="btn btn-primary btn-sm md:btn-md shadow-lg shadow-primary/20">
@@ -19,8 +19,8 @@
     <div class="flex flex-col md:flex-row gap-4 bg-base-200/50 p-4 rounded-2xl border border-base-300">
         <div class="relative flex-1">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40"></i>
-            <input type="text" x-model="search" placeholder="Search dishes..." 
-                   class="input input-bordered w-full pl-10 bg-base-100 focus:border-primary">
+            <input type="text" x-model="search" placeholder="Search dishes..."
+                class="input input-bordered w-full pl-10 bg-base-100 focus:border-primary">
         </div>
         <div class="flex gap-2">
             <select x-model="sortBy" class="select select-bordered bg-base-100">
@@ -106,10 +106,11 @@
                     <i data-lucide="x" class="size-5"></i>
                 </button>
             </div>
-            
+
             <div class="space-y-3">
                 <template x-for="ing in ingredientsData.list" :key="ing.name">
-                    <div class="flex items-center justify-between p-3 rounded-2xl bg-base-200/50 border border-base-300">
+                    <div
+                        class="flex items-center justify-between p-3 rounded-2xl bg-base-200/50 border border-base-300">
                         <div class="flex flex-col">
                             <span class="font-semibold text-sm" x-text="ing.name"></span>
                             <span class="text-[10px] text-base-content/50" x-text="ing.qty + ' units'"></span>

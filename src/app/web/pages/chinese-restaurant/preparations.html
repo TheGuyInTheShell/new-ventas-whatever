@@ -1,0 +1,180 @@
+{% extends "layouts/panel.html" %}
+
+{% block content %}
+<div class="p-4 space-y-4 w-full relative min-h-screen pb-24" x-data='preparationsPage({{ preparations_items | tojson | safe if preparations_items is not none else "[]" }})'>
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Preparations</h1>
+        <button class="btn btn-primary hidden sm:flex" @click="openAddModal">
+            <i data-lucide="plus" class="w-5 h-5"></i> Add Item
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-3">
+        <div class="join">
+            <span class="join-item btn btn-square btn-ghost pointer-events-none">
+                <i data-lucide="search" class="w-5 h-5 text-gray-500"></i>
+            </span>
+            <input type="text" x-model="searchQuery" placeholder="Search by name..."
+                class="input input-bordered join-item w-64" />
+        </div>
+        <select x-model="typeFilter" class="select select-bordered w-40">
+            <option value="all">All types</option>
+            <option value="ingredient">Ingredient</option>
+            <option value="utensil">Utensil</option>
+            <option value="consumable">Consumable</option>
+            <option value="by-product">By-product</option>
+            <option value="made-from">Made-from</option>
+            <option value="other">Other</option>
+        </select>
+        <button class="btn btn-outline" @click="toggleSort">
+            <i :data-lucide="sortOrder === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow'"
+                class="w-5 h-5"></i>
+            <span x-text="sortOrder === 'asc' ? 'A → Z' : 'Z → A'"></span>
+        </button>
+
+        <!-- Currency Selector -->
+        <div class="flex items-center gap-2 ml-2">
+            <span class="text-sm font-semibold opacity-50 uppercase">Currency:</span>
+            <select x-model.number="viewFiatId" class="select select-bordered select-sm w-32 focus:select-primary">
+                <template x-for="fiat in fiatContext.fiats" :key="fiat.id">
+                    <option :value="fiat.id" x-text="fiat.name"></option>
+                </template>
+            </select>
+        </div>
+
+        <span class="ml-auto text-lg text-gray-500">
+            <span x-text="filteredItems.length"></span> items
+        </span>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card bg-base-100 shadow-xl mt-4 border border-base-200">
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Name</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Stock</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Unit Rate</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="text-right"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="item in filteredItems" :key="item.id">
+                        <tr class="hover border-t border-base-200">
+                            <td>
+                                <span class="text-lg font-medium text-base-content" x-text="item.name"></span>
+                            </td>
+                            <td>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-lg font-medium text-base-content"
+                                            x-text="item.basic_balance || 0"></span>
+                                        <span class="text-lg text-gray-500" x-text="item.expression"></span>
+                                    </div>
+                                    <template x-if="item.adjustment_balance !== 0">
+                                        <div class="text-[10px] uppercase font-bold text-gray-400 mt-[-2px]">
+                                            Adj: <span x-text="item.adjustment_balance > 0 ? '+' : ''"></span><span x-text="item.adjustment_balance"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="badge badge-outline badge-md" :class="{
+                                    'badge-primary': item.type === 'ingredient',
+                                    'badge-neutral': item.type === 'utensil',
+                                    'badge-success': item.type === 'consumable',
+                                    'badge-secondary': item.type === 'by-product',
+                                    'badge-accent': item.type === 'made-from',
+                                    'badge-warning': item.type === 'other'
+                                }" x-text="item.type"></div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-lg font-medium text-base-content"
+                                        x-text="item.quantity_from || 1"></span>
+                                    <span class="text-lg text-gray-500" x-text="item.expression"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1" x-show="item.quantity_to > 0">
+                                    <span class="text-lg font-medium text-base-content"
+                                        x-text="calculatePrice(item)"></span>
+                                    <span class="text-lg text-gray-500" x-text="getViewFiatExpression()"></span>
+                                </div>
+                                <span class="text-gray-400" x-show="!item.quantity_to || item.quantity_to <= 0">-</span>
+                            </td>
+                            <td>
+                                <div class="flex justify-end gap-1 w-full">
+                                    <button class="btn btn-ghost btn-sm text-primary" @click="openAdjustModal(item)"
+                                        title="Adjust Stock">
+                                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm text-neutral" @click="editItem(item)"
+                                        title="Edit">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm text-error" @click="openDeleteModal(item)"
+                                        title="Delete">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="filteredItems.length === 0">
+                        <td colspan="6" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-3 text-gray-500">
+                                <i data-lucide="package-x" class="w-12 h-12 opacity-50"></i>
+                                <p class="text-lg font-medium">No inventory items found.</p>
+                                <p class="text-sm">Try adjusting your filters or add a new item.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="px-6 py-4 flex items-center justify-between border-t border-base-200">
+            <span class="text-sm text-gray-500">
+                Showing <span class="font-medium text-base-content" x-text="filteredItems.length"></span> items
+            </span>
+        </div>
+    </div>
+
+    <!-- Floating Action Button for Mobile -->
+    <div class="fixed bottom-8 right-8 z-40 sm:hidden">
+        <button class="btn btn-primary btn-circle btn-lg shadow-lg" @click="openAddModal">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Delete Modal -->
+    <dialog id="delete_modal" class="modal" :class="{ 'modal-open': deleteModalOpen }">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg text-error flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i> Delete Item
+            </h3>
+            <p class="py-4 text-base-content/80">Are you sure you want to delete <strong
+                    x-text="itemToDelete?.name"></strong>? This action cannot be undone.</p>
+            <div class="modal-action">
+                <button class="btn btn-ghost" @click="deleteModalOpen = false">Cancel</button>
+                <button class="btn btn-error" @click="confirmDelete">Delete</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="deleteModalOpen = false">close</button>
+        </form>
+    </dialog>
+
+    <!-- Form Modal -->
+    {% include "components/chinese-restaurant/inventoryFormModal.html" %}
+
+    <!-- Adjust Stock Modal -->
+    {% include "components/chinese-restaurant/adjustStockModal.html" %}
+
+</div>
+{% endblock %}

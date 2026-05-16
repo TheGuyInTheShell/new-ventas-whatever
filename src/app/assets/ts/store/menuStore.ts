@@ -4,7 +4,7 @@ import { businessEntityStore, businessEntityActions } from './chinese-restaurant
 import { api } from '../lib/api';
 import { RSQueryValueWithComparison, RSValue, RSComparisonValue, RSBalance } from '../types/api';
 
-export const inventoryStore = createStore({
+export const menuStore = createStore({
     context: {
         items: [],
         eligibleItems: [],
@@ -19,13 +19,13 @@ export const inventoryStore = createStore({
     }
 });
 
-inventoryStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
-    console.log('Inventory state changed:', snapshot.context);
+menuStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
+    console.log('Menu state changed:', snapshot.context);
 });
 
-export const inventoryActions = {
+export const menuActions = {
     async fetchItems() {
-        inventoryStore.trigger.setLoading({ value: true });
+        menuStore.trigger.setLoading({ value: true });
         try {
             await businessEntityActions.fetchEntity();
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
@@ -40,7 +40,7 @@ export const inventoryActions = {
 
             const items: InventoryItem[] = [];
             if (result.value) {
-                const allowedTypes = ['ingredient', 'consumable', 'utensil', 'other'];
+                const allowedTypes = ['dish'];
                 result.value.forEach((val: RSValue) => {
                     if (allowedTypes.includes(val.type)) {
                         const comps = result.comparison_value ? result.comparison_value.filter((c: RSComparisonValue) => c.value_from === val.id) : [];
@@ -83,13 +83,13 @@ export const inventoryActions = {
                     }
                 });
             }
-            inventoryStore.trigger.setItems({ data: items });
+            menuStore.trigger.setItems({ data: items });
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             console.error("Failed to fetch inventory items: ", error);
-            inventoryStore.trigger.setError({ message: msg });
+            menuStore.trigger.setError({ message: msg });
         } finally {
-            inventoryStore.trigger.setLoading({ value: false });
+            menuStore.trigger.setLoading({ value: false });
         }
     },
 
@@ -114,7 +114,7 @@ export const inventoryActions = {
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             console.error("Failed to adjust stock: ", error);
-            inventoryStore.trigger.setError({ message: msg });
+            menuStore.trigger.setError({ message: msg });
             return false;
         }
     },
@@ -141,7 +141,7 @@ export const inventoryActions = {
                     });
                 });
             }
-            inventoryStore.trigger.setEligibleItems({ data: items as InventoryItem[] });
+            menuStore.trigger.setEligibleItems({ data: items as InventoryItem[] });
         } catch (error: unknown) {
             console.error("Failed to fetch eligible items: ", error);
         }
@@ -186,8 +186,8 @@ export const inventoryActions = {
             return true;
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
-            console.error("Failed to save inventory item: ", error);
-            inventoryStore.trigger.setError({ message: msg });
+            console.error("Failed to save menu item: ", error);
+            menuStore.trigger.setError({ message: msg });
             return false;
         }
     },
@@ -200,8 +200,8 @@ export const inventoryActions = {
             return true;
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
-            console.error("Failed to delete inventory item: ", error);
-            inventoryStore.trigger.setError({ message: msg });
+            console.error("Failed to delete menu item: ", error);
+            menuStore.trigger.setError({ message: msg });
             return false;
         }
     }
