@@ -32,12 +32,11 @@ class ComparisonValuesController(Controller):
         )
         if error:
             raise error_response(error)
-        
+
         if not result:
-            return HTTPException(400, "comparisons not found")
-        
-        comparisons, total = result
-        return {"data": comparisons, "total": total}
+            return {"data": [], "total": 0}
+
+        return result
 
     @Post("/")
     @Shield.need(
@@ -60,7 +59,9 @@ class ComparisonValuesController(Controller):
         description="Update an existing comparison value rate",
     )
     async def update_comparison(self, id: str, payload: RQComparisonValue):
-        result, error = await self.ComparisonValuesService.update_comparison(id, payload)
+        result, error = await self.ComparisonValuesService.update_comparison(
+            id, payload
+        )
         if error:
             raise error_response(error)
         return result

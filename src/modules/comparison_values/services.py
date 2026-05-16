@@ -166,7 +166,16 @@ class ComparisonValuesService(Service):
             filters["ref_business_entity"] = ref_business_entity
 
         comparisons = await ComparisonValue.find_some(
-            db, pag=page, order_by=order_by, ord=order, status=status, filters=filters
+            db,
+            pag=page,
+            order_by=order_by,
+            ord=order,
+            status=status,
+            filters=filters,
+            options=[
+                selectinload(ComparisonValue.source_value),
+                selectinload(ComparisonValue.target_value),
+            ],
         )
 
         total = await ComparisonValue.count(db, status=status)

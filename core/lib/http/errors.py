@@ -7,4 +7,4 @@ def error_response(error: BaseError, status_code: int = 400) -> HTTPException:
     Converts a domain BaseError into a FastAPI JSONResponse.
     This keeps HTTP responsibility in the web/api layer.
     """
-    return HTTPException(status_code=status_code, detail=error)
+    return HTTPException(status_code=status_code, detail=str(error))
