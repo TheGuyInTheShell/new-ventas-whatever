@@ -1,6 +1,6 @@
 import Alpine from "alpinejs";
 import { fiatStore, fiatActions } from "../../store/fiatStore";
-import { inventoryStore, inventoryActions } from "../../store/inventoryStore";
+import { preparationsStore, preparationsActions } from "../../store/preparationsStore";
 import { notifySuccess, notifyError } from "../../includes/toast";
 import { createIcons, icons } from "lucide";
 import mask from '@alpinejs/mask';
@@ -8,6 +8,20 @@ import focus from '@alpinejs/focus';
 import collapse from '@alpinejs/collapse';
 import { InventoryItem, InventoryStoreContext } from "../../types/inventory";
 import { FiatStoreContext } from "../../types/fiat";
+
+type DecoratorOperation = 'percentage' | 'addition' | 'subtraction' | 'multiplication';
+
+interface ComponentDecorator {
+    name: string;
+    type: DecoratorOperation;
+    quantity: number;
+}
+
+interface RecipeComponent {
+    parent_value_id: number;
+    quantity: number;
+    decorators: ComponentDecorator[];
+}
 
 Alpine.plugin(mask);
 Alpine.plugin(focus);
@@ -39,7 +53,7 @@ document.addEventListener('alpine:init', () => {
 
         formData: {
             name: '',
-            type: 'ingredient',
+            type: 'made-from',
             expression: 'unit',
             price: 0,
             currency_id: null as number | null,
@@ -48,8 +62,23 @@ document.addEventListener('alpine:init', () => {
             value_ratio: 0
         },
 
+        // Recipe/BOM Management
+        recipeModalOpen: false,
+        recipeItem: null as InventoryItem | null,
+        recipeComponents: [] as RecipeComponent[],
+        selectedNewComponentId: '' as string | number,
+
+        // Per-component decorator sub-modal
+        decoratorModalOpen: false,
+        decoratorComponentIndex: -1,
+        decoratorDraft: { name: '', type: 'percentage' as DecoratorOperation, quantity: 0 },
+
+        // Form: initial component selectors (pre-populate on save)
+        formSelectedByProductSourceId: null as number | null,
+        formSelectedMadeFromIds: [] as number[],
+
         fiatContext: fiatStore.getSnapshot().context,
-        inventoryContext: inventoryStore.getSnapshot().context,
+        preparationsContext: preparationsStore.getSnapshot().context,
         viewFiatId: null as number | null,
 
         async init() {
@@ -57,8 +86,8 @@ document.addEventListener('alpine:init', () => {
                 this.fiatContext = snapshot.context;
             });
 
-            inventoryStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
-                this.inventoryContext = snapshot.context;
+            preparationsStore.subscribe((snapshot: { context: InventoryStoreContext }) => {
+                this.preparationsContext = snapshot.context;
             });
 
             if (this.fiatContext.fiats.length === 0) {
@@ -74,32 +103,31 @@ document.addEventListener('alpine:init', () => {
                 this.viewFiatId = this.fiatContext.mainFiatId;
             }
 
-            if (initialItems && initialItems.length > 0 && this.inventoryContext.items.length === 0) {
-                inventoryStore.trigger.setItems({ data: initialItems });
-            } else if (this.inventoryContext.items.length === 0) {
+            if (initialItems && initialItems.length > 0 && this.preparationsContext.items.length === 0) {
+                preparationsStore.trigger.setItems({ data: initialItems });
+            } else if (this.preparationsContext.items.length === 0) {
                 try {
-                    await inventoryActions.fetchItems();
+                    await preparationsActions.fetchItems();
                 } catch (e) {
                     const msg = e instanceof Error ? e.message : 'Unknown error';
                     notifyError(`Failed to load inventory items: ${msg}`, 'Error');
                 }
             }
 
+            // Always fetch eligible items to support BOM dropdown selection
+            try {
+                await preparationsActions.fetchEligibleItems();
+            } catch (e) {
+                console.error("Failed to prefetch eligible items:", e);
+            }
+
             this.$nextTick(() => {
                 createIcons({ icons });
-            });
-
-            this.$watch('formData.type', async (newType: string) => {
-                if (newType === 'made-from' || newType === 'by-product') {
-                    if (this.inventoryContext.eligibleItems.length === 0) {
-                        await inventoryActions.fetchEligibleItems();
-                    }
-                }
             });
         },
 
         get filteredItems(): InventoryItem[] {
-            let result = [...this.inventoryContext.items];
+            let result = [...this.preparationsContext.items];
 
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
@@ -117,6 +145,11 @@ document.addEventListener('alpine:init', () => {
             }
 
             return result;
+        },
+
+        get eligibleForRecipe(): InventoryItem[] {
+            if (!this.recipeItem) return [];
+            return this.preparationsContext.eligibleItems.filter(i => i.id !== this.recipeItem!.id);
         },
 
         toggleSort() {
@@ -140,13 +173,22 @@ document.addEventListener('alpine:init', () => {
             return fiat ? (fiat as any).name : '';
         },
 
+        getComponentName(parentId: number): string {
+            const item = this.preparationsContext.eligibleItems.find(i => i.id === parentId);
+            return item ? item.name : `Item #${parentId}`;
+        },
+
+        getComponentExpression(parentId: number): string {
+            const item = this.preparationsContext.eligibleItems.find(i => i.id === parentId);
+            return item ? item.expression : '';
+        },
+
         calculatePrice(item: InventoryItem): number | string {
             if (!item.quantity_to || item.quantity_to <= 0) return '-';
 
             const viewId = this.viewFiatId || this.fiatContext.mainFiatId;
             if (!viewId) return item.quantity_to;
 
-            // 1. Try to find an exact price match in the prices array
             if (item.prices && item.prices.length > 0) {
                 const exactMatch = item.prices.find(p => p.fiat_id === viewId);
                 if (exactMatch) {
@@ -154,10 +196,8 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            // 2. Fallback to conversion logic
             let price = item.quantity_to / item.quantity_from;
 
-            // If item primary currency is different from view currency
             if (item.value_to && item.value_to !== viewId) {
                 const mainId = this.fiatContext.mainFiatId;
                 if (!mainId) return '-';
@@ -189,9 +229,11 @@ document.addEventListener('alpine:init', () => {
 
         openAddModal() {
             this.editingItem = null;
+            this.formSelectedByProductSourceId = null;
+            this.formSelectedMadeFromIds = [];
             this.formData = {
                 name: '',
-                type: 'ingredient',
+                type: 'made-from',
                 expression: 'unit',
                 price: 0,
                 currency_id: this.fiatContext.mainFiatId,
@@ -205,6 +247,17 @@ document.addEventListener('alpine:init', () => {
 
         editItem(item: InventoryItem) {
             this.editingItem = item;
+            // Pre-populate form selectors from existing components
+            if (item.type === 'by-product' && item.components && item.components.length > 0) {
+                this.formSelectedByProductSourceId = item.components[0].parent_value_id;
+            } else {
+                this.formSelectedByProductSourceId = null;
+            }
+            if (item.type === 'made-from' && item.components) {
+                this.formSelectedMadeFromIds = item.components.map(c => c.parent_value_id);
+            } else {
+                this.formSelectedMadeFromIds = [];
+            }
             this.formData = {
                 name: item.name,
                 type: item.type,
@@ -213,7 +266,7 @@ document.addEventListener('alpine:init', () => {
                 currency_id: item.value_to || this.fiatContext.mainFiatId,
                 ingredients: item.type === 'made-from' ? item.ref_super_values_ids.map(id => id.toString()) : [],
                 source_id: item.type === 'by-product' ? item.ref_super_values_ids[0]?.toString() : null,
-                value_ratio: item.type === 'by-product' ? parseFloat(item.meta.find(m => m.key === 'value_ratio')?.value || '0') : 0
+                value_ratio: item.type === 'by-product' ? parseFloat(item.meta?.find(m => m.key === 'value_ratio')?.value || '0') : 0
             };
             this.formModalOpen = true;
             this.$nextTick(() => { createIcons({ icons }); });
@@ -242,7 +295,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.adjustItem) return;
             this.isAdjusting = true;
             try {
-                const success = await inventoryActions.adjustStock(
+                const success = await preparationsActions.adjustStock(
                     this.adjustItem,
                     this.adjustFormData.new_quantity,
                     this.adjustFormData.is_adjustment,
@@ -264,15 +317,143 @@ document.addEventListener('alpine:init', () => {
         async saveItemSubmit() {
             this.isSaving = true;
             try {
-                const success = await inventoryActions.saveItem({
+                // Build initial components from form-level selectors (quantity defaults to 1, decorators empty)
+                let initialComponents: RecipeComponent[] = [];
+
+                if (this.formData.type === 'by-product' && this.formSelectedByProductSourceId) {
+                    const existing = this.editingItem?.components?.find(
+                        c => c.parent_value_id === this.formSelectedByProductSourceId
+                    );
+                    initialComponents = [{
+                        parent_value_id: this.formSelectedByProductSourceId,
+                        quantity: existing?.quantity ?? 1,
+                        decorators: existing?.decorators ?? []
+                    }];
+                } else if (this.formData.type === 'made-from' && this.formSelectedMadeFromIds.length > 0) {
+                    initialComponents = this.formSelectedMadeFromIds.map(id => {
+                        const existing = this.editingItem?.components?.find(c => c.parent_value_id === id);
+                        return {
+                            parent_value_id: id,
+                            quantity: existing?.quantity ?? 1,
+                            decorators: existing?.decorators ?? []
+                        };
+                    });
+                } else {
+                    // Preserve existing components if no selector was used
+                    initialComponents = (this.editingItem?.components ?? []).map(c => ({
+                        parent_value_id: c.parent_value_id,
+                        quantity: c.quantity,
+                        decorators: c.decorators ?? []
+                    }));
+                }
+
+                const success = await preparationsActions.saveItem({
                     ...this.editingItem,
-                    ...this.formData
+                    ...this.formData,
+                    value_to: this.formData.currency_id,
+                    components: initialComponents.length > 0 ? initialComponents : null
                 });
                 if (success) {
                     this.formModalOpen = false;
                     notifySuccess(this.editingItem ? 'Item updated successfully' : 'Item added successfully', 'Inventory');
                 } else {
                     notifyError('Failed to save item. Check the console.', 'Error');
+                }
+            } catch (e: any) {
+                notifyError(e.message || 'Unknown error', 'Error');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        // Recipe Modal Handlers
+        openRecipeModal(item: InventoryItem) {
+            this.recipeItem = item;
+            this.recipeComponents = item.components
+                ? item.components.map(c => ({
+                    parent_value_id: c.parent_value_id,
+                    quantity: c.quantity,
+                    decorators: c.decorators ? c.decorators.map(d => ({ ...d })) : []
+                }))
+                : [];
+            this.selectedNewComponentId = '';
+            this.decoratorModalOpen = false;
+            this.decoratorComponentIndex = -1;
+            this.recipeModalOpen = true;
+        },
+
+        // Decorator sub-modal handlers
+        openDecoratorModal(index: number) {
+            this.decoratorComponentIndex = index;
+            this.decoratorDraft = { name: '', type: 'percentage', quantity: 0 };
+            this.decoratorModalOpen = true;
+            this.$nextTick(() => { createIcons({ icons }); });
+        },
+
+        closeDecoratorModal() {
+            this.decoratorModalOpen = false;
+            this.decoratorComponentIndex = -1;
+        },
+
+        addDecorator() {
+            const i = this.decoratorComponentIndex;
+            if (i < 0 || !this.decoratorDraft.name.trim()) return;
+            if (!this.recipeComponents[i].decorators) {
+                this.recipeComponents[i].decorators = [];
+            }
+            this.recipeComponents[i].decorators!.push({ ...this.decoratorDraft });
+            this.decoratorModalOpen = false;
+        },
+
+        removeDecorator(componentIndex: number, decoratorIndex: number) {
+            this.recipeComponents[componentIndex].decorators!.splice(decoratorIndex, 1);
+            this.$nextTick(() => { createIcons({ icons }); });
+        },
+
+        closeRecipeModal() {
+            this.recipeModalOpen = false;
+        },
+
+        addRecipeComponent() {
+            const parentId = parseInt(this.selectedNewComponentId.toString());
+            if (!parentId) return;
+            if (this.recipeComponents.some(c => c.parent_value_id === parentId)) {
+                notifyError('Component is already in this recipe', 'Recipe');
+                return;
+            }
+            this.recipeComponents.push({
+                parent_value_id: parentId,
+                quantity: 1.0,
+                decorators: []
+            });
+            this.selectedNewComponentId = '';
+            this.$nextTick(() => { createIcons({ icons }); });
+        },
+
+        removeRecipeComponent(index: number) {
+            this.recipeComponents.splice(index, 1);
+        },
+
+        async saveRecipeSubmit() {
+            if (!this.recipeItem) return;
+            this.isSaving = true;
+            try {
+                const success = await preparationsActions.saveItem({
+                    id: this.recipeItem.id,
+                    uid: this.recipeItem.uid,
+                    name: this.recipeItem.name,
+                    type: this.recipeItem.type,
+                    expression: this.recipeItem.expression,
+                    quantity_from: this.recipeItem.quantity_from,
+                    quantity_to: this.recipeItem.quantity_to,
+                    value_to: this.recipeItem.value_to,
+                    components: this.recipeComponents
+                });
+                if (success) {
+                    this.recipeModalOpen = false;
+                    notifySuccess('Recipe updated successfully', 'Recipe');
+                } else {
+                    notifyError('Failed to update recipe', 'Error');
                 }
             } catch (e: any) {
                 notifyError(e.message || 'Unknown error', 'Error');
@@ -290,7 +471,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.itemToDelete) return;
 
             try {
-                const success = await inventoryActions.deleteItem(this.itemToDelete);
+                const success = await preparationsActions.deleteItem(this.itemToDelete);
 
                 if (success) {
                     this.deleteModalOpen = false;

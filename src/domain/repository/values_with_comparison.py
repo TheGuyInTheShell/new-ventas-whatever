@@ -6,10 +6,12 @@ from typing import Optional, List
 from src.modules.values.models import Value
 from src.modules.comparison_values.models import ComparisonValue
 from src.modules.values.hierarchy.models import ValuesHierarchy
+from src.modules.comparison_values.decorators.models import ComparisonValueDecorator
 from src.domain.schemas.values_with_comparison import (
     QueryValuesWithComparison,
     ResultValueWithComparison,
     RSValueWithHierarchy,
+    RQBOMComponent,
 )
 
 
@@ -248,6 +250,49 @@ class BuilderValueWithComparison:
                     seen_values[h.ref_value_bottom].ref_super_values_ids.append(
                         h.ref_value_top
                     )
+
+            # Batch-load BOM component quantities using ComparisonValueDecorator
+            child_comps_stmt = select(ComparisonValue).where(
+                ComparisonValue.value_from.in_(seen_values.keys())
+            )
+            child_comps_res = await self.db.execute(child_comps_stmt)
+            child_comps = child_comps_res.scalars().all()
+            comp_to_val_map = {c.id: c.value_from for c in child_comps}
+            child_comp_ids = list(comp_to_val_map.keys())
+
+            if child_comp_ids:
+                dec_stmt = select(ComparisonValueDecorator).where(
+                    ComparisonValueDecorator.ref_comparation_values_to.in_(child_comp_ids)
+                )
+                dec_res = await self.db.execute(dec_stmt)
+                decorators = dec_res.scalars().all()
+
+                parent_comp_ids = [d.ref_comparation_values_from for d in decorators]
+                if parent_comp_ids:
+                    parent_comps_stmt = select(ComparisonValue).where(
+                        ComparisonValue.id.in_(parent_comp_ids)
+                    )
+                    parent_comps_res = await self.db.execute(parent_comps_stmt)
+                    parent_comps_map = {pc.id: pc.value_from for pc in parent_comps_res.scalars().all()}
+
+                    for d in decorators:
+                        child_val_id = comp_to_val_map.get(d.ref_comparation_values_to)
+                        parent_val_id = parent_comps_map.get(d.ref_comparation_values_from)
+                        if child_val_id is not None and parent_val_id is not None:
+                            qty = 1.0
+                            if d.comparison_decorators:
+                                try:
+                                    qty = float(d.comparison_decorators.get("quantity", 1.0))
+                                except (ValueError, TypeError):
+                                    qty = 1.0
+
+                            target_val = seen_values[child_val_id]
+                            if target_val.components is None:
+                                target_val.components = []
+                            if not any(c.parent_value_id == parent_val_id for c in target_val.components):
+                                target_val.components.append(
+                                    RQBOMComponent(parent_value_id=parent_val_id, quantity=qty)
+                                )
 
         return ResultValueWithComparison(
             value=values if values else None,

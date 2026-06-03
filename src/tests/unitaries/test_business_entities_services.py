@@ -22,7 +22,11 @@ def mock_db():
 def business_entities_service():
     return BusinessEntitiesService()
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+@pytest.mark.anyio
 class TestBusinessEntitiesServiceUnitaries:
     
     async def test_create_business_entity(self, business_entities_service, mock_db):

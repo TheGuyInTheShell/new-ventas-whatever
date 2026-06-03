@@ -73,6 +73,7 @@ export const preparationsActions = {
 
                             ref_super_values_ids: val.ref_super_values_ids || [],
                             meta: val.meta || [],
+                            components: (val as any).components || [],
                             prices: comps.map((c: RSComparisonValue) => ({
                                 comparison_id: c.id,
                                 quantity_to: c.quantity_to,
@@ -147,12 +148,13 @@ export const preparationsActions = {
         }
     },
 
-    async saveItem(itemData: Partial<InventoryItem>): Promise<boolean> {
+    async saveItem(itemData: Partial<InventoryItem> & { currency_id?: number | null }): Promise<boolean> {
         try {
             await businessEntityActions.fetchEntity();
             const inventoryId = businessEntityStore.getSnapshot().context.inventoryId;
             if (!inventoryId) throw new Error("Inventory sub-entity ID not found for saving items");
 
+            const valueTo = itemData.value_to || itemData.currency_id;
             const payload = {
                 value: {
                     name: itemData.name,
@@ -161,15 +163,16 @@ export const preparationsActions = {
                     ref_business_entity: inventoryId,
                     identifier: itemData.identifier,
                     price: itemData.quantity_to,
-                    currency_id: itemData.value_to
+                    currency_id: valueTo
                 },
                 comparison_value: {
                     quantity_from: itemData.quantity_from || 1,
                     quantity_to: itemData.quantity_to || 0,
-                    value_to: itemData.value_to,
+                    value_to: valueTo,
                     ref_business_entity: inventoryId
                 },
                 ref_super_values_ids: itemData.ref_super_values_ids || [],
+                components: itemData.components || null,
                 business_entity_ids: [inventoryId],
                 balance_type: 'basic'
             };

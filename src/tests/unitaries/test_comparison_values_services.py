@@ -25,7 +25,11 @@ def mock_db():
 def comparison_values_service():
     return ComparisonValuesService()
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+@pytest.mark.anyio
 class TestComparisonValuesServiceUnitaries:
     
     async def test_create_comparison(self, comparison_values_service, mock_db):

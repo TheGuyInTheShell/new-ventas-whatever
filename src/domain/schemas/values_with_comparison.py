@@ -6,12 +6,19 @@ from src.modules.comparison_values.schemas import RQComparisonValue, RSCompariso
 from src.modules.balances.models import BalanceType
 
 
+class RQBOMComponent(BaseModel):
+    parent_value_id: int
+    quantity: float
+    decorators: Optional[List[dict]] = None
+
+
 class RQValueWithComparison(BaseModel):
     value: RQValue
     comparison_value: RQComparisonValue
     ref_super_values_ids: Optional[List[int]] = []
     business_entity_ids: Optional[List[int]] = []
     balance_type: Optional[BalanceType] = None
+    components: Optional[List[RQBOMComponent]] = None
 
 
 class RSValueWithComparison(BaseModel):
@@ -19,6 +26,7 @@ class RSValueWithComparison(BaseModel):
     comparison_value: RSComparisonValue
     ref_super_values_ids: Optional[List[int]] = []
     business_entity_ids: Optional[List[int]] = []
+    components: Optional[List[RQBOMComponent]] = None
 
 
 class QueryValue(BaseModel):
@@ -53,9 +61,10 @@ class QueryValuesWithComparison(BaseModel):
 
 
 class RSValueWithHierarchy(RSValue):
-    """RSValue extended with its parent hierarchy IDs."""
+    """RSValue extended with its parent hierarchy IDs and BOM components."""
 
     ref_super_values_ids: List[int] = []
+    components: Optional[List[RQBOMComponent]] = None
 
 
 class ResultValueWithComparison(BaseModel):

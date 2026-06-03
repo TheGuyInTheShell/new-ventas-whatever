@@ -6,7 +6,7 @@
     <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold">Preparations</h1>
         <button class="btn btn-primary hidden sm:flex" @click="openAddModal">
-            <i data-lucide="plus" class="w-5 h-5"></i> Add Item
+            <i data-lucide="plus" class="w-5 h-5"></i> New Preparation
         </button>
     </div>
 
@@ -21,12 +21,8 @@
         </div>
         <select x-model="typeFilter" class="select select-bordered w-40">
             <option value="all">All types</option>
-            <option value="ingredient">Ingredient</option>
-            <option value="utensil">Utensil</option>
-            <option value="consumable">Consumable</option>
-            <option value="by-product">By-product</option>
             <option value="made-from">Made-from</option>
-            <option value="other">Other</option>
+            <option value="by-product">By-product</option>
         </select>
         <button class="btn btn-outline" @click="toggleSort">
             <i :data-lucide="sortOrder === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow'"
@@ -56,10 +52,10 @@
                 <thead>
                     <tr>
                         <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Name</th>
-                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Stock</th>
                         <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Components</th>
                         <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Unit Rate</th>
-                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="text-sm font-semibold uppercase tracking-wider text-gray-500">Cost (reactive)</th>
                         <th class="text-right"></th>
                     </tr>
                 </thead>
@@ -67,57 +63,63 @@
                     <template x-for="item in filteredItems" :key="item.id">
                         <tr class="hover border-t border-base-200">
                             <td>
-                                <span class="text-lg font-medium text-base-content" x-text="item.name"></span>
-                            </td>
-                            <td>
                                 <div class="flex flex-col">
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-lg font-medium text-base-content"
-                                            x-text="item.basic_balance || 0"></span>
-                                        <span class="text-lg text-gray-500" x-text="item.expression"></span>
-                                    </div>
-                                    <template x-if="item.adjustment_balance !== 0">
-                                        <div class="text-[10px] uppercase font-bold text-gray-400 mt-[-2px]">
-                                            Adj: <span x-text="item.adjustment_balance > 0 ? '+' : ''"></span><span x-text="item.adjustment_balance"></span>
-                                        </div>
-                                    </template>
+                                    <span class="text-base font-semibold text-base-content" x-text="item.name"></span>
+                                    <span class="text-xs text-base-content/50" x-text="item.expression"></span>
                                 </div>
                             </td>
                             <td>
                                 <div class="badge badge-outline badge-md" :class="{
-                                    'badge-primary': item.type === 'ingredient',
-                                    'badge-neutral': item.type === 'utensil',
-                                    'badge-success': item.type === 'consumable',
                                     'badge-secondary': item.type === 'by-product',
-                                    'badge-accent': item.type === 'made-from',
-                                    'badge-warning': item.type === 'other'
+                                    'badge-accent': item.type === 'made-from'
                                 }" x-text="item.type"></div>
                             </td>
                             <td>
+                                <template x-if="item.components && item.components.length > 0">
+                                    <div class="flex flex-wrap gap-1">
+                                        <template x-for="comp in item.components.slice(0,3)" :key="comp.parent_value_id">
+                                            <span class="badge badge-sm badge-ghost font-mono"
+                                                x-text="`${getComponentName(comp.parent_value_id)} ×${comp.quantity}`"></span>
+                                        </template>
+                                        <template x-if="item.components.length > 3">
+                                            <span class="badge badge-sm badge-ghost opacity-60"
+                                                x-text="`+${item.components.length - 3} more`"></span>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!item.components || item.components.length === 0">
+                                    <span class="text-base-content/30 text-xs italic">No recipe yet</span>
+                                </template>
+                            </td>
+                            <td>
                                 <div class="flex items-center gap-1">
-                                    <span class="text-lg font-medium text-base-content"
+                                    <span class="text-base font-medium text-base-content"
                                         x-text="item.quantity_from || 1"></span>
-                                    <span class="text-lg text-gray-500" x-text="item.expression"></span>
+                                    <span class="text-sm text-gray-500" x-text="item.expression"></span>
                                 </div>
                             </td>
                             <td>
                                 <div class="flex items-center gap-1" x-show="item.quantity_to > 0">
-                                    <span class="text-lg font-medium text-base-content"
+                                    <span class="text-base font-medium text-base-content"
                                         x-text="calculatePrice(item)"></span>
-                                    <span class="text-lg text-gray-500" x-text="getViewFiatExpression()"></span>
+                                    <span class="text-sm text-gray-500" x-text="getViewFiatExpression()"></span>
                                 </div>
-                                <span class="text-gray-400" x-show="!item.quantity_to || item.quantity_to <= 0">-</span>
+                                <span class="text-gray-400 text-xs italic"
+                                    x-show="!item.quantity_to || item.quantity_to <= 0">Awaiting recipe</span>
                             </td>
                             <td>
                                 <div class="flex justify-end gap-1 w-full">
-                                    <button class="btn btn-ghost btn-sm text-primary" @click="openAdjustModal(item)"
-                                        title="Adjust Stock">
-                                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                                    <!-- Manage Recipe -->
+                                    <button id="open-recipe-btn" class="btn btn-ghost btn-sm text-accent"
+                                        @click="openRecipeModal(item)" title="Manage Recipe">
+                                        <i data-lucide="git-branch" class="w-4 h-4"></i>
                                     </button>
+                                    <!-- Edit -->
                                     <button class="btn btn-ghost btn-sm text-neutral" @click="editItem(item)"
                                         title="Edit">
                                         <i data-lucide="edit" class="w-4 h-4"></i>
                                     </button>
+                                    <!-- Delete -->
                                     <button class="btn btn-ghost btn-sm text-error" @click="openDeleteModal(item)"
                                         title="Delete">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -129,9 +131,9 @@
                     <tr x-show="filteredItems.length === 0">
                         <td colspan="6" class="text-center py-12">
                             <div class="flex flex-col items-center gap-3 text-gray-500">
-                                <i data-lucide="package-x" class="w-12 h-12 opacity-50"></i>
-                                <p class="text-lg font-medium">No inventory items found.</p>
-                                <p class="text-sm">Try adjusting your filters or add a new item.</p>
+                                <i data-lucide="layers" class="w-12 h-12 opacity-30"></i>
+                                <p class="text-lg font-medium">No preparations found.</p>
+                                <p class="text-sm">Create your first preparation using the button above.</p>
                             </div>
                         </td>
                     </tr>
@@ -140,7 +142,7 @@
         </div>
         <div class="px-6 py-4 flex items-center justify-between border-t border-base-200">
             <span class="text-sm text-gray-500">
-                Showing <span class="font-medium text-base-content" x-text="filteredItems.length"></span> items
+                Showing <span class="font-medium text-base-content" x-text="filteredItems.length"></span> preparations
             </span>
         </div>
     </div>
@@ -156,7 +158,7 @@
     <dialog id="delete_modal" class="modal" :class="{ 'modal-open': deleteModalOpen }">
         <div class="modal-box">
             <h3 class="font-bold text-lg text-error flex items-center gap-2">
-                <i data-lucide="alert-triangle" class="w-5 h-5"></i> Delete Item
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i> Delete Preparation
             </h3>
             <p class="py-4 text-base-content/80">Are you sure you want to delete <strong
                     x-text="itemToDelete?.name"></strong>? This action cannot be undone.</p>
@@ -170,11 +172,301 @@
         </form>
     </dialog>
 
-    <!-- Form Modal -->
+    <!-- Form Modal (create/edit preparation name + type) -->
     {% include "components/chinese-restaurant/inventoryFormModal.html" %}
 
-    <!-- Adjust Stock Modal -->
-    {% include "components/chinese-restaurant/adjustStockModal.html" %}
+    <!-- Recipe / BOM Management Modal -->
+    <div x-cloak x-show="recipeModalOpen"
+        x-transition.opacity.duration.200ms
+        x-trap.inert.noscroll="recipeModalOpen"
+        x-on:keydown.esc.window="closeRecipeModal"
+        x-on:click.self="closeRecipeModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 pb-8 backdrop-blur-md lg:p-8"
+        role="dialog" aria-modal="true" aria-labelledby="recipeModalTitle">
+
+        <div x-show="recipeModalOpen"
+            x-transition:enter="transition ease-out duration-200 delay-100"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 text-base-content shadow-2xl">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-base-200 bg-base-200/50 px-6 py-4">
+                <h3 id="recipeModalTitle" class="font-bold text-lg flex items-center gap-3">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-accent/10 text-accent">
+                        <i data-lucide="git-branch" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span>Recipe / BOM</span>
+                        <span class="text-xs font-normal text-base-content/60"
+                            x-text="recipeItem ? recipeItem.name : ''"></span>
+                    </div>
+                </h3>
+                <button type="button" @click="closeRecipeModal" aria-label="close recipe modal"
+                    class="btn btn-sm btn-circle btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none"
+                        stroke-width="1.4" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="flex flex-col gap-5 px-6 py-5 overflow-y-auto max-h-[65vh]">
+
+                <!-- Reactive pricing note -->
+                <div class="alert bg-accent/5 border border-accent/15 rounded-xl py-3 flex items-start gap-3">
+                    <i data-lucide="zap" class="w-5 h-5 text-accent mt-0.5 shrink-0"></i>
+                    <span class="text-xs text-base-content/80 leading-relaxed">
+                        Costs are <strong class="text-accent">reactive</strong>. When a component's price changes, this
+                        preparation's cost updates automatically throughout the hierarchy.
+                    </span>
+                </div>
+
+                <!-- Existing components list -->
+                <div class="flex flex-col gap-2">
+                    <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-0 text-accent">
+                        Components
+                    </div>
+
+                    <template x-if="recipeComponents.length === 0">
+                        <div class="text-center py-6 text-base-content/30 text-sm italic">
+                            No components yet. Add one below.
+                        </div>
+                    </template>
+
+                    <template x-for="(comp, index) in recipeComponents" :key="comp.parent_value_id">
+                        <div class="flex flex-col rounded-xl border border-base-300 bg-base-200/60 overflow-hidden">
+
+                            <!-- Component row -->
+                            <div class="flex items-center gap-3 px-4 py-3">
+                                <!-- Icon -->
+                                <div class="bg-accent/10 p-2 rounded-lg shrink-0">
+                                    <i data-lucide="box" class="w-4 h-4 text-accent"></i>
+                                </div>
+
+                                <!-- Name + unit -->
+                                <div class="flex flex-col flex-1 min-w-0">
+                                    <span class="font-semibold text-sm truncate"
+                                        x-text="getComponentName(comp.parent_value_id)"></span>
+                                    <span class="text-xs text-base-content/50"
+                                        x-text="getComponentExpression(comp.parent_value_id)"></span>
+                                </div>
+
+                                <!-- Quantity input -->
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <label class="text-xs text-base-content/50 font-semibold uppercase">Qty</label>
+                                    <input type="number" step="0.001" min="0.001"
+                                        :id="`recipe-qty-${comp.parent_value_id}`"
+                                        x-model.number="recipeComponents[index].quantity"
+                                        class="input input-bordered input-sm w-24 text-right font-mono focus:input-accent"
+                                        required />
+                                    <span class="text-xs text-base-content/50"
+                                        x-text="getComponentExpression(comp.parent_value_id)"></span>
+                                </div>
+
+                                <!-- Add decorator -->
+                                <button type="button" @click="openDecoratorModal(index)"
+                                    class="btn btn-ghost btn-sm btn-circle text-warning/70 hover:text-warning hover:bg-warning/10 shrink-0"
+                                    title="Add price decorator">
+                                    <i data-lucide="percent" class="w-4 h-4"></i>
+                                </button>
+
+                                <!-- Remove component -->
+                                <button type="button" @click="removeRecipeComponent(index)"
+                                    class="btn btn-ghost btn-sm btn-circle text-error/70 hover:text-error hover:bg-error/10 shrink-0">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <!-- Decorator chain (shown when decorators exist) -->
+                            <template x-if="comp.decorators && comp.decorators.length > 0">
+                                <div class="border-t border-base-300 bg-base-100/60 px-4 py-2 flex flex-col gap-1.5">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <i data-lucide="arrow-right" class="w-3 h-3 text-warning/60"></i>
+                                        <span class="text-xs font-semibold text-warning/70 uppercase tracking-wider">Price Decorators</span>
+                                    </div>
+
+                                    <!-- Visual chain: base → decorators -->
+                                    <div class="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+                                        <!-- Base qty bubble -->
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+                                            <i data-lucide="box" class="w-2.5 h-2.5"></i>
+                                            <span x-text="comp.quantity + ' ' + getComponentExpression(comp.parent_value_id)"></span>
+                                        </span>
+
+                                        <template x-for="(dec, di) in comp.decorators" :key="di">
+                                            <div class="flex items-center gap-1.5">
+                                                <i data-lucide="chevron-right" class="w-3 h-3 text-base-content/30"></i>
+                                                <!-- Decorator pill -->
+                                                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20 group relative">
+                                                    <span class="font-semibold" x-text="dec.name"></span>
+                                                    <span class="opacity-60" x-text="{
+                                                        'percentage': `×${dec.quantity}%`,
+                                                        'addition': `+${dec.quantity}`,
+                                                        'subtraction': `−${dec.quantity}`,
+                                                        'multiplication': `×${dec.quantity}`
+                                                    }[dec.type]"></span>
+                                                    <button type="button" @click="removeDecorator(index, di)"
+                                                        class="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-error hover:text-error">
+                                                        <i data-lucide="x" class="w-2.5 h-2.5"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Result arrow -->
+                                        <div class="flex items-center gap-1.5">
+                                            <i data-lucide="chevron-right" class="w-3 h-3 text-base-content/30"></i>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                                <i data-lucide="zap" class="w-2.5 h-2.5"></i>
+                                                <span>Decorated price</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Add new component row -->
+                <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-0">Add Component</div>
+                <div class="flex items-center gap-3">
+                    <select id="recipe-new-component-select" x-model="selectedNewComponentId"
+                        class="select select-bordered flex-1 focus:select-accent h-11">
+                        <option value="">Select ingredient or preparation…</option>
+                        <template x-for="item in eligibleForRecipe" :key="item.id">
+                            <option :value="item.id"
+                                x-text="`${item.name} (${item.expression})`"></option>
+                        </template>
+                    </select>
+                    <button type="button" id="recipe-add-btn"
+                        @click="addRecipeComponent"
+                        :disabled="!selectedNewComponentId"
+                        class="btn btn-accent btn-sm px-4 h-11 disabled:opacity-40">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="flex flex-col-reverse justify-between gap-3 border-t border-base-200 bg-base-200/50 px-6 py-4 sm:flex-row sm:items-center md:justify-end">
+                <button type="button" @click="closeRecipeModal"
+                    class="btn btn-ghost px-6 font-medium text-base-content/80"
+                    :disabled="isSaving">Cancel</button>
+                <button type="button" id="recipe-save-btn"
+                    @click="saveRecipeSubmit"
+                    :disabled="isSaving"
+                    class="btn btn-accent px-8 shadow-lg shadow-accent/20 font-medium">
+                    <span x-show="isSaving" class="loading loading-spinner loading-sm" x-cloak></span>
+                    <span x-show="!isSaving" class="flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save Recipe
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Decorator Sub-Modal ===== -->
+    <div x-cloak x-show="decoratorModalOpen"
+        x-transition.opacity.duration.150ms
+        x-on:keydown.esc.window="closeDecoratorModal"
+        x-on:click.self="closeDecoratorModal"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        role="dialog" aria-modal="true" aria-labelledby="decoratorModalTitle">
+
+        <div x-show="decoratorModalOpen"
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0 scale-90"
+            x-transition:enter-end="opacity-100 scale-100"
+            class="flex w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-warning/30 bg-base-100 shadow-2xl">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-base-200 bg-warning/5 px-5 py-3">
+                <h4 id="decoratorModalTitle" class="font-bold text-base flex items-center gap-2 text-warning">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-warning/15">
+                        <i data-lucide="percent" class="w-4 h-4"></i>
+                    </div>
+                    <span x-text="decoratorComponentIndex >= 0 ? 'Add Decorator — ' + getComponentName(recipeComponents[decoratorComponentIndex]?.parent_value_id) : 'Add Decorator'"></span>
+                </h4>
+                <button type="button" @click="closeDecoratorModal"
+                    class="btn btn-xs btn-circle btn-ghost text-base-content/60">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="flex flex-col gap-4 px-5 py-4">
+
+                <!-- Hierarchy info -->
+                <div class="text-xs text-base-content/60 leading-relaxed bg-base-200/60 rounded-xl px-3 py-2 border border-base-300">
+                    Decorators are applied <strong class="text-warning">in sequence</strong>:<br />
+                    <span class="font-mono text-xs">base → [Dec 1] → [Dec 2] → decorated price</span>
+                </div>
+
+                <!-- Name -->
+                <div class="form-control">
+                    <label class="label pt-0"><span class="label-text font-semibold text-sm">Name <span class="text-error">*</span></span></label>
+                    <input id="decorator-name" type="text" x-model="decoratorDraft.name"
+                        placeholder="e.g. VAT, Waste Factor, Margin…"
+                        class="input input-bordered input-sm w-full focus:input-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        @keydown.enter.prevent="addDecorator" />
+                </div>
+
+                <!-- Operation + Quantity -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-control">
+                        <label class="label pt-0"><span class="label-text font-semibold text-sm">Operation</span></label>
+                        <select id="decorator-type" x-model="decoratorDraft.type"
+                            class="select select-bordered select-sm w-full focus:select-warning">
+                            <option value="percentage">% Percentage</option>
+                            <option value="addition">+ Addition</option>
+                            <option value="subtraction">− Subtraction</option>
+                            <option value="multiplication">× Multiplication</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label pt-0"><span class="label-text font-semibold text-sm">Amount <span class="text-error">*</span></span></label>
+                        <input id="decorator-qty" type="number" step="0.001"
+                            x-model.number="decoratorDraft.quantity"
+                            placeholder="0.00"
+                            class="input input-bordered input-sm w-full font-mono focus:input-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                            @keydown.enter.prevent="addDecorator" />
+                    </div>
+                </div>
+
+                <!-- Live preview -->
+                <div class="rounded-xl bg-base-200 border border-base-300 px-3 py-2 font-mono text-xs flex items-center gap-2" x-show="decoratorDraft.name.trim()">
+                    <i data-lucide="eye" class="w-3.5 h-3.5 text-base-content/40 shrink-0"></i>
+                    <span class="text-base-content/60">Preview:</span>
+                    <span class="text-warning font-semibold" x-text="decoratorDraft.name || '…'"></span>
+                    <span class="text-base-content/50" x-text="{
+                        'percentage': `base + base × ${decoratorDraft.quantity}%`,
+                        'addition': `base + ${decoratorDraft.quantity}`,
+                        'subtraction': `base − ${decoratorDraft.quantity}`,
+                        'multiplication': `base × ${decoratorDraft.quantity}`
+                    }[decoratorDraft.type] || ''" ></span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end gap-2 border-t border-base-200 bg-base-200/50 px-5 py-3">
+                <button type="button" @click="closeDecoratorModal"
+                    class="btn btn-ghost btn-sm font-medium">Cancel</button>
+                <button type="button" id="decorator-add-btn"
+                    @click="addDecorator"
+                    :disabled="!decoratorDraft.name.trim()"
+                    class="btn btn-warning btn-sm px-5 font-medium disabled:opacity-40">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Decorator
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <!-- ===== /Decorator Sub-Modal ===== -->
 
 </div>
 {% endblock %}

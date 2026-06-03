@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.modules.permissions.services import PermissionsService
@@ -26,7 +25,11 @@ def mock_db():
 def permissions_service():
     return PermissionsService()
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+@pytest.mark.anyio
 class TestPermissionsServiceUnitaries:
     
     async def test_create_permission(self, permissions_service, mock_db):
@@ -111,7 +114,7 @@ class TestPermissionsServiceUnitaries:
         assert result is True
         mock_db.execute.assert_called_once()
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPermissionsServiceIntegration:
     """
     Since SQLite doesn't support Postgres' composite autoincrement primary keys,

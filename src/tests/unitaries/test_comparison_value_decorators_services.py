@@ -17,7 +17,11 @@ class TestComparisonValueDecoratorService:
     def mock_db(self):
         return MagicMock(spec=AsyncSession)
 
-    @pytest.mark.asyncio
+    @pytest.fixture
+    def anyio_backend(self):
+        return 'asyncio'
+
+    @pytest.mark.anyio
     async def test_create_decorator(self, service, mock_db):
         # Setup
         data = RQComparisonValueDecorator(
@@ -41,7 +45,7 @@ class TestComparisonValueDecoratorService:
         mock_db.add.assert_called_once()
         mock_db.commit.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_decorator_link_not_found(self, service, mock_db):
         # Mock DB response
         mock_result = MagicMock()

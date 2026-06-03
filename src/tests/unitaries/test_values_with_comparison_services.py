@@ -35,9 +35,12 @@ def values_with_comparison_service():
     service.ValuesService = MagicMock()
     service.ComparisonValuesService = MagicMock()
     return service
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValuesWithComparisonServiceUnitaries:
 
     async def test_save_value_with_comparison(
@@ -138,10 +141,12 @@ class TestValuesWithComparisonServiceUnitaries:
         )
 
         class MockComp:
-            def __init__(self, id, value_from, quantity_to):
+            def __init__(self, id, value_from, quantity_to, ref_business_entity=1, quantity_from=1.0):
                 self.id = id
                 self.value_from = value_from
                 self.quantity_to = quantity_to
+                self.ref_business_entity = ref_business_entity
+                self.quantity_from = quantity_from
 
         # Data for Comparisons
         mock_comp_10 = MockComp(100, 10, 100.0)  # Parent 1 (Updated)

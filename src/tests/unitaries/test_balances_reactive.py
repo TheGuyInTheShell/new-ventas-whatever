@@ -1,4 +1,5 @@
 import pytest
+import anyio
 from unittest.mock import AsyncMock, MagicMock, patch, call
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.modules.balances.services import BalancesService
@@ -10,6 +11,10 @@ from core.database.models_registry import import_models
 
 import_models()
 
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
 class TestBalancesReactiveUpdate:
     @pytest.fixture
     def service(self):
@@ -19,7 +24,7 @@ class TestBalancesReactiveUpdate:
     def mock_db(self):
         return MagicMock(spec=AsyncSession)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_update_balance_triggers_hook(self, service, mock_db):
         """
         Verify that BalancesService.update_balance successfully updates
@@ -47,7 +52,7 @@ class TestBalancesReactiveUpdate:
             mock_db.commit.assert_called_once()
             mock_db.refresh.assert_called_once_with(mock_balance)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_recursive_update_reactive_flow(self, mock_db):
         """
         Test that updating a base balance propagates to reactive children.
@@ -93,7 +98,7 @@ class TestBalancesReactiveUpdate:
         # Verify child was updated to min of yields (100.0 / 1.0 = 100.0)
         assert mock_child_balance.quantity == 100.0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_recursive_update_non_reactive_reverse_scenario(self, mock_db):
         """
         Test the reverse scenario: if is_reactive=False, it should NOT propagate.

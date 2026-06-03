@@ -27,7 +27,11 @@ def mock_db():
 def values_service():
     return ValuesService()
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+@pytest.mark.anyio
 class TestValuesServiceUnitaries:
     
     async def test_create_value_with_meta(self, values_service, mock_db):

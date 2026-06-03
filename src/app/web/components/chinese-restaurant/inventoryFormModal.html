@@ -1,4 +1,4 @@
-<!-- Inventory Form Modal (PenguinUI Inspired) -->
+<!-- Inventory Form Modal — Preparations (BOM) only -->
 <div x-cloak x-show="formModalOpen" x-transition.opacity.duration.200ms x-trap.inert.noscroll="formModalOpen"
     x-on:keydown.esc.window="closeFormModal" x-on:click.self="closeFormModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 pb-8 backdrop-blur-md sm:items-center lg:p-8"
@@ -14,13 +14,15 @@
         <!-- Dialog Header -->
         <div class="flex items-center justify-between border-b border-base-200 bg-base-200/50 px-6 py-4">
             <h3 id="inventoryModalTitle" class="font-bold text-lg flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-base-100">
-                    <i :data-lucide="editingItem ? 'edit' : 'package-plus'" class="w-5 h-5"></i>
+                <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary">
+                    <i :data-lucide="editingItem ? 'edit' : 'layers'" class="w-5 h-5"></i>
                 </div>
                 <div class="flex flex-col">
-                    <span x-text="editingItem ? 'Edit Item' : 'New Item'"></span>
-                    <span class="text-xs font-normal text-base-content/60"
-                        x-text="editingItem ? 'Update inventory details' : 'Add to your inventory'"></span>
+                    <span x-text="editingItem ? 'Edit Preparation' : 'New Preparation'"></span>
+                    <span class="text-xs font-normal text-base-content/60">
+                        Sub-products &amp; assemblies. Quantities are set after creation via
+                        <span class="font-semibold text-primary">Manage Recipe</span>.
+                    </span>
                 </div>
             </h3>
             <button type="button" @click="closeFormModal" aria-label="close modal"
@@ -35,96 +37,110 @@
         <!-- Dialog Body -->
         <form @submit.prevent="saveItemSubmit" class="flex flex-col gap-5 px-6 py-5">
 
+            <!-- Name -->
             <div class="form-control">
-                <label class="label pt-0"><span class="label-text font-semibold">Item Name <span
+                <label class="label pt-0"><span class="label-text font-semibold">Name <span
                             class="text-error">*</span></span></label>
-                <input type="text" x-model="formData.name" placeholder="e.g. Soy Sauce, Wok Pan..."
+                <input id="prep-name" type="text" x-model="formData.name"
+                    placeholder="e.g. Cooked Rice, Chicken Broth…"
                     class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-base-100 h-11"
                     required />
             </div>
 
+            <!-- Category + Unit -->
             <div class="grid grid-cols-2 gap-4">
+                <!-- Category: only made-from and by-product -->
                 <div class="form-control">
                     <label class="label pt-0"><span class="label-text font-semibold">Category <span
                                 class="text-error">*</span></span></label>
-                    <select x-model="formData.type"
+                    <select id="prep-type" x-model="formData.type"
                         class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11"
                         required>
-                        <option value="ingredient">Ingredient</option>
-                        <option value="utensil">Utensil</option>
-                        <option value="consumable">Consumable</option>
-                        <option value="by-product">By-product</option>
                         <option value="made-from">Made-from</option>
-                        <option value="other">Other</option>
+                        <option value="by-product">By-product</option>
                     </select>
                 </div>
+
+                <!-- Unit Expression -->
                 <div class="form-control">
                     <label class="label pt-0"><span class="label-text font-semibold">Unit <span
                                 class="text-error">*</span></span></label>
-                    <input type="text" x-model="formData.expression" placeholder="kg, unit, l"
+                    <input id="prep-unit" type="text" x-model="formData.expression" placeholder="kg, unit, l, portion"
                         class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11"
                         required />
                 </div>
             </div>
 
-            <!-- Made From Section (Preparations) -->
-            <div x-show="formData.type === 'made-from'" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-                class="space-y-4">
-                <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2 text-primary">Composition Details</div>
-                <div class="form-control">
-                    <label class="label pt-0"><span class="label-text font-semibold">Ingredients & Components</span></label>
-                    <select multiple x-model="formData.ingredients"
-                        class="select select-bordered w-full h-32 focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 py-2">
-                        <template x-for="item in inventoryContext.eligibleItems" :key="item.id">
-                            <option :value="item.id" x-text="item.name"></option>
-                        </template>
-                    </select>
-                    <label class="label"><span class="label-text-alt text-base-content/50">Hold Ctrl (Cmd) to select multiple ingredients for this preparation.</span></label>
+            <!-- Component Source Selector — conditional by type -->
+
+            <!-- By-product: single source selector -->
+            <div class="form-control" x-show="formData.type === 'by-product'" x-cloak>
+                <label class="label pt-0">
+                    <span class="label-text font-semibold">Source Item <span class="text-error">*</span></span>
+                    <span class="label-text-alt text-base-content/50">What produces this by-product?</span>
+                </label>
+                <select id="prep-byproduct-source" x-model.number="formSelectedByProductSourceId"
+                    class="select select-bordered w-full focus:select-secondary focus:outline-none focus:ring-2 focus:ring-secondary/20 bg-base-100 h-11">
+                    <option :value="null">Select a source ingredient or preparation…</option>
+                    <template x-for="item in preparationsContext.eligibleItems" :key="item.id">
+                        <option :value="item.id" x-text="`${item.name} (${item.expression})`"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Made-from: multi-select checklist -->
+            <div class="form-control" x-show="formData.type === 'made-from'" x-cloak>
+                <label class="label pt-0">
+                    <span class="label-text font-semibold">Ingredients / Sub-preparations</span>
+                    <span class="label-text-alt text-base-content/50">Select one or more. Set quantities in Recipe.</span>
+                </label>
+                <div class="flex flex-col gap-1 max-h-40 overflow-y-auto border border-base-300 rounded-xl p-3 bg-base-100">
+                    <template x-if="preparationsContext.eligibleItems.length === 0">
+                        <p class="text-xs text-base-content/40 italic text-center py-2">No eligible items found.</p>
+                    </template>
+                    <template x-for="item in preparationsContext.eligibleItems" :key="item.id">
+                        <label class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-base-200 cursor-pointer">
+                            <input type="checkbox" class="checkbox checkbox-accent checkbox-sm"
+                                :value="item.id"
+                                :checked="formSelectedMadeFromIds.includes(item.id)"
+                                @change="formSelectedMadeFromIds.includes(item.id)
+                                    ? formSelectedMadeFromIds = formSelectedMadeFromIds.filter(id => id !== item.id)
+                                    : formSelectedMadeFromIds.push(item.id)" />
+                            <span class="flex flex-col min-w-0">
+                                <span class="text-sm font-medium truncate" x-text="item.name"></span>
+                                <span class="text-xs text-base-content/40" x-text="item.expression"></span>
+                            </span>
+                        </label>
+                    </template>
+                </div>
+                <div class="label pt-1" x-show="formSelectedMadeFromIds.length > 0">
+                    <span class="label-text-alt text-accent font-semibold"
+                        x-text="`${formSelectedMadeFromIds.length} item(s) selected`"></span>
                 </div>
             </div>
 
-            <!-- By-product Section -->
-            <div x-show="formData.type === 'by-product'" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-                class="space-y-4">
-                <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2 text-secondary">By-product Details</div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-control">
-                        <label class="label pt-0"><span class="label-text font-semibold">Source Ingredient</span></label>
-                        <select x-model="formData.source_id"
-                            class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11">
-                            <option value="">Select source...</option>
-                            <template x-for="item in inventoryContext.eligibleItems" :key="item.id">
-                                <option :value="item.id" x-text="item.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="form-control">
-                        <label class="label pt-0"><span class="label-text font-semibold">Value Ratio / Price</span></label>
-                        <input type="number" step="0.01" x-model.number="formData.value_ratio" placeholder="0.00"
-                            class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11" />
-                    </div>
-                </div>
-                <div class="alert bg-secondary/10 border border-secondary/20 rounded-xl py-3 flex items-start gap-3">
-                    <i data-lucide="info" class="w-5 h-5 text-secondary mt-0.5"></i>
-                    <span class="text-xs text-base-content/80 leading-relaxed">
-                        Define which ingredient this sub-product comes from (e.g., Whey as a byproduct of Milk) and its relative market value.
-                    </span>
-                </div>
+            <!-- BOM info callout -->
+            <div class="alert bg-primary/5 border border-primary/15 rounded-xl py-3 flex items-start gap-3">
+                <i data-lucide="info" class="w-5 h-5 text-primary mt-0.5 shrink-0"></i>
+                <span class="text-xs text-base-content/80 leading-relaxed">
+                    Cost is <strong class="text-primary">automatically calculated</strong> from component prices.
+                    Use <span class="font-semibold">Manage Recipe</span> after saving to fine-tune quantities and add price decorators.
+                </span>
             </div>
 
+            <!-- Pricing Details -->
             <div class="divider text-xs uppercase tracking-wider opacity-50 font-bold my-2">Pricing Details</div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="form-control">
-                    <label class="label pt-0"><span class="label-text font-semibold">Price</span></label>
-                    <input type="number" step="0.01" x-model.number="formData.price" placeholder="0.00"
+                    <label class="label pt-0"><span class="label-text font-semibold">Base Price</span></label>
+                    <input id="prep-price" type="number" step="0.01" x-model.number="formData.price"
+                        placeholder="0.00"
                         class="input input-bordered w-full focus:input-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11" />
                 </div>
                 <div class="form-control">
                     <label class="label pt-0"><span class="label-text font-semibold">Currency</span></label>
-                    <select x-model.number="formData.currency_id"
+                    <select id="prep-currency" x-model.number="formData.currency_id"
                         class="select select-bordered w-full focus:select-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-base-100 h-11">
                         <template x-for="fiat in fiatContext.fiats" :key="fiat.id">
                             <option :value="fiat.id" x-text="fiat.name"></option>
@@ -133,14 +149,15 @@
                 </div>
             </div>
 
-            <!-- Main Currency Info Bar -->
+            <!-- Main Currency reference bar -->
             <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-base-300 border border-primary/10 text-sm">
-                <div class="bg-primary/10 p-1.5 rounded-full text-base-100 shrink-0">
+                <div class="bg-primary/10 p-1.5 rounded-full text-primary shrink-0">
                     <i data-lucide="info" class="w-4 h-4"></i>
                 </div>
                 <span class="text-base-content/80 text-sm leading-tight">
-                    Calculations use <strong class="text-primary font-semibold" x-text="getMainFiatName()"></strong> as
-                    reference.
+                    Reactive pricing uses <strong class="text-primary font-semibold"
+                        x-text="getMainFiatName()"></strong> as
+                    reference. Prices update automatically when component costs change.
                 </span>
             </div>
 
@@ -149,7 +166,7 @@
                 class="flex flex-col-reverse justify-between gap-3 border-t border-base-200 bg-base-200/50 px-6 py-4 -mx-6 -mb-5 sm:flex-row sm:items-center md:justify-end mt-2">
                 <button type="button" @click="closeFormModal"
                     class="btn btn-ghost px-6 font-medium text-base-content/80" :disabled="isSaving">Cancel</button>
-                <button type="submit" class="btn btn-primary px-8 shadow-lg shadow-primary/20 font-medium"
+                <button type="submit" id="prep-save-btn" class="btn btn-primary px-8 shadow-lg shadow-primary/20 font-medium"
                     :disabled="isSaving">
                     <span x-show="isSaving" class="loading loading-spinner loading-sm" x-cloak></span>
                     <span x-show="!isSaving" class="flex items-center gap-2">
@@ -159,4 +176,5 @@
             </div>
         </form>
     </div>
+
 </div>

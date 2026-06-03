@@ -28,6 +28,11 @@ export interface InventoryItem {
         quantity_from: number;
         fiat_id: number;
     }>;
+    components?: Array<{
+        parent_value_id: number;
+        quantity: number;
+        decorators?: Array<{ name: string; type: 'percentage' | 'addition' | 'subtraction' | 'multiplication'; quantity: number }>;
+    }>;
 }
 
 export interface InventoryStoreContext {
